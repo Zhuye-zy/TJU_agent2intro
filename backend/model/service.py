@@ -80,7 +80,13 @@ def map_provider_error(e,rid):
   if e.status_code==429:return DomainError("RATE_LIMITED","模型网关限流，请稍后以新请求重试",429,rid,True)
   return DomainError("UPSTREAM_PROTOCOL_ERROR","模型网关暂时不可用",503,rid,e.status_code>=500)
  return DomainError("UPSTREAM_PROTOCOL_ERROR","模型网关响应格式无效",503,rid)
-def _model_ok(requested,returned): return returned in _ALIASES.get(requested,{requested})
+def _model_ok(requested,returned): return isinstance(returned,str) and returned in _ALIASES.get(requested,{requested})
+
+class StreamFailure(DomainError):
+ def __init__(self,code,message,rid,reason,retryable=False):
+  super().__init__(code,message,503,rid,retryable)
+  self.reason=reason
+
 
 @dataclass
 class Prepared:
@@ -124,7 +130,7 @@ class OpenAICompatibleProvider:
  async def stream(self,rid,messages):
   """Yield visible deltas and a final metadata item; SDK owns SSE framing/UTF-8 decoding."""
   from .runtime import runtime
-  start=time.monotonic();last_visible=start;body=0;finish=None;returned=self.settings.llm_model;usage=None
+  start=time.monotonic();last_visible=start;body=0;finish=None;returned=None;usage=None
   stream=None
   try:
    record=runtime.get(rid);client=self._get_client()
@@ -141,11 +147,18 @@ class OpenAICompatibleProvider:
     try:chunk=await asyncio.wait_for(iterator.__anext__(),remaining)
     except StopAsyncIteration:break
     if first_event:runtime.trace(rid,action="stream",stage="first_event",status="completed",elapsed_ms=(time.monotonic()-start)*1000);first_event=False
-    returned=getattr(chunk,"model",None) or returned
+    chunk_model=getattr(chunk,"model",None)
+    if chunk_model:
+     if not _model_ok(self.settings.llm_model,chunk_model):raise StreamFailure("UPSTREAM_PROTOCOL_ERROR","?????????????",rid,"upstream")
+     returned=chunk_model
     usage=_usage(getattr(chunk,"usage",None)) or usage
     for choice in getattr(chunk,"choices",[]) or []:
+     if getattr(choice,"index",0) != 0:raise StreamFailure("UPSTREAM_PROTOCOL_ERROR","????????????",rid,"upstream")
+     choice_delta=getattr(choice,"delta",None)
+     if getattr(choice_delta,"tool_calls",None) or getattr(choice_delta,"function_call",None):raise StreamFailure("UPSTREAM_PROTOCOL_ERROR","?????????????",rid,"upstream")
+     delta=getattr(choice_delta,"content",None)
+     if finish is not None and delta:raise StreamFailure("UPSTREAM_PROTOCOL_ERROR","??????????",rid,"upstream")
      if getattr(choice,"finish_reason",None) is not None:finish=choice.finish_reason
-     delta=getattr(getattr(choice,"delta",None),"content",None)
      if isinstance(delta,str) and delta:
       if first_content:runtime.trace(rid,action="stream",stage="first_content",status="completed",elapsed_ms=(time.monotonic()-start)*1000);first_content=False
       body+=len(delta);last_visible=time.monotonic()
@@ -165,13 +178,20 @@ class OpenAICompatibleProvider:
   except asyncio.CancelledError:runtime.emit(rid,"model","cancelled",{"code":"CANCELLED","model":self.settings.llm_model},(time.monotonic()-start)*1000);raise
   except DomainError as e:e.request_id=e.request_id or rid;runtime.emit(rid,"model","failed",{"code":e.code,"model":self.settings.llm_model},(time.monotonic()-start)*1000);raise
   except Exception as e:
-   mapped=map_provider_error(e,rid);runtime.emit(rid,"model","failed",{"code":mapped.code,"model":self.settings.llm_model},(time.monotonic()-start)*1000);raise mapped from None
+   mapped=map_provider_error(e,rid)
+   if body:
+    reason="timeout" if mapped.code=="UPSTREAM_TIMEOUT" else "disconnect"
+    mapped=StreamFailure("INCOMPLETE_OUTPUT","????????",rid,reason)
+   runtime.emit(rid,"model","failed",{"code":mapped.code,"model":self.settings.llm_model},(time.monotonic()-start)*1000);raise mapped from None
   finally:
    if stream is not None:
     close=getattr(stream,"close",None)
     if close:
-     result=close()
-     if hasattr(result,"__await__"):await result
+     try:
+      result=close()
+      if hasattr(result,"__await__"):await result
+     except Exception:
+      pass  # Cleanup cannot replace the recorded success/failure/cancellation.
 
 class CampusModelService:
  def __init__(self,settings=None,provider=None,history=None):
