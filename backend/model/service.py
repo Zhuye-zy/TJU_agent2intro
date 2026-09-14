@@ -178,7 +178,11 @@ class OpenAICompatibleProvider:
             answer = content.strip()
             if len(answer) > _MAX_ANSWER_CHARS:
                 raise DomainError("model_answer_too_long", "模型答案超过安全长度限制", 503, request_id)
+            if completion.model != self.settings.llm_model:
+                raise DomainError("model_mismatch", "网关返回的模型与指定模型不一致", 503, request_id)
             usage = _extract_usage(completion.usage)
+            if record.cancel_requested:
+                raise asyncio.CancelledError
             self.state.verified = True
             self.state.last_model = completion.model or self.settings.llm_model
             self.state.last_usage = usage

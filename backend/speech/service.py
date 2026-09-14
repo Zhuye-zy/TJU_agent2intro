@@ -91,6 +91,7 @@ def decode_pcm16_wav(request: AsrRequest) -> bytes:
 class CampusSpeechService:
     def __init__(self, settings: Settings | None = None, audio_root: Path | None = None):
         self.settings = settings or get_settings()
+        self.tts_verified = False
         project_root = Path(__file__).resolve().parents[2]
         self.audio_root = audio_root or project_root / ".runtime" / "speech-audio"
         self._operations: dict[UUID, Operation] = {}
@@ -105,7 +106,7 @@ class CampusSpeechService:
         if self._voice_cache and time.monotonic() - self._voice_cache[0] < 3600:
             return list(self._voice_cache[1])
         try:
-            raw_voices = await edge_tts.list_voices()
+            raw_voices = await asyncio.wait_for(edge_tts.list_voices(), timeout=10)
             voices = sorted(
                 (
                     Voice(
@@ -132,7 +133,7 @@ class CampusSpeechService:
             not asr_url
             or not self.settings.asr_model
             or not key
-            or asr_url == self.settings.llm_url.rstrip("/")
+            or asr_url in (self.settings.llm_url.rstrip("/"), self.settings.llm_url.removesuffix("/chat/completions").rstrip("/"))
         ):
             raise DomainError(
                 "asr_not_configured",
@@ -176,12 +177,13 @@ class CampusSpeechService:
         destination = self.audio_root / f"{token}.mp3"
         operation.upstream_started = True
         try:
-            await prepare_edge_tts(request.text, voice).save(str(temporary))
+            await asyncio.wait_for(prepare_edge_tts(request.text, voice).save(str(temporary)), timeout=30)
             temporary.replace(destination)
             size = destination.stat().st_size
             if size <= 0 or size > MAX_AUDIO_BYTES:
                 destination.unlink(missing_ok=True)
                 raise DomainError("tts_invalid_audio", "语音服务返回了无效音频", 503, request.request_id, True)
+            self.tts_verified = True
             self._audio[token] = AudioFile(destination, "audio/mpeg", time.monotonic(), size)
             self._cleanup_audio()
             return TtsResponse(

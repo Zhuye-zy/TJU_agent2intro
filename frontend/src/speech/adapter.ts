@@ -170,7 +170,7 @@ export class CampusSpeechAdapter implements SpeechAdapter {
   }
 
   async listVoices(): Promise<Voice[]> {
-    const [server, browser] = await Promise.all([this.listServerVoices(), waitForBrowserVoices()]);
+    const [server, browser] = await Promise.all([this.listServerVoices(), waitForBrowserVoices(), this.refreshAsrCapability()]);
     const browserVoices = browser
       .filter((voice) => voice.lang.toLowerCase().startsWith('zh'))
       .map((voice): Voice => ({
@@ -341,7 +341,7 @@ export class CampusSpeechAdapter implements SpeechAdapter {
     }
     const generation = ++this.playbackGeneration;
     const controller = new AbortController();
-    const abort = () => controller.abort();
+    const abort = () => { controller.abort(); if (this.playback?.generation === generation) this.cancelPlayback(); };
     context.signal.addEventListener('abort', abort, { once: true });
     this.playback = {
       requestId: context.request_id,
@@ -362,6 +362,7 @@ export class CampusSpeechAdapter implements SpeechAdapter {
           voice_id: voiceId,
         }),
       });
+      if (generation !== this.playbackGeneration || context.signal.aborted) return { status: 'failed', error_code: 'stopped' };
       if (!response.ok) {
         const code = await safeErrorCode(response, 'tts_unavailable');
         callbacks.onFailure(utteranceId, code);
@@ -419,6 +420,7 @@ export class CampusSpeechAdapter implements SpeechAdapter {
     } catch (error) {
       context.signal.removeEventListener('abort', abort);
       if (generation === this.playbackGeneration && !context.signal.aborted) {
+        this.playback?.stop();
         this.playback = undefined;
         const code = error instanceof DOMException && error.name === 'NotAllowedError'
           ? 'playback_permission_denied'
@@ -482,6 +484,17 @@ export class CampusSpeechAdapter implements SpeechAdapter {
     window.speechSynthesis.speak(utterance);
     this.capabilities.tts = true;
     return { status: 'ready' };
+  }
+
+  private async refreshAsrCapability(): Promise<void> {
+    if (this.recognitionMode === 'browser') { this.capabilities.asr = !!browserRecognitionConstructor(); return; }
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 4000);
+    try {
+      const response = await fetch('/api/health', { signal: controller.signal });
+      if (response.ok) this.capabilities.asr = (await response.json()).capabilities?.asr === true;
+    } catch { this.capabilities.asr = false; }
+    finally { window.clearTimeout(timeout); }
   }
 
   private async listServerVoices(): Promise<Voice[]> {

@@ -19,6 +19,8 @@ async def chat(request: ChatRequest):
             if not building or building.campus_id != request.campus_id:
                 raise DomainError("building_not_found", "建筑不存在或不属于所选校区", 422, request.request_id)
         response = await model.generate(request)
+        if record.cancel_requested:
+            raise asyncio.CancelledError
         commit = getattr(model, "commit", None)
         if commit is not None:
             commit(request, response)
@@ -45,8 +47,10 @@ def events(request_id: UUID, cursor: int = Query(0, ge=0)):
 async def cancel(request_id: UUID, body: CancelRequest):
     record = runtime.get(request_id, body.session_id)
     running = record.status == "running"
-    if running and record.task:
-        record.task.cancel()
+    if running:
+        record.cancel_requested = True
+        if record.task:
+            record.task.cancel()
     return CancelResponse(request_id=request_id, status="cancel_requested" if running else "already_terminal",
         local_task_stopped=not running, upstream_stop=record.upstream_stop)
 @router.post("/scene/ack", response_model=SceneAckResponse)

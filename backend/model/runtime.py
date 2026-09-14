@@ -13,6 +13,7 @@ class RequestRecord:
     session_id: UUID
     created: float = field(default_factory=time.monotonic)
     status: str = "running"
+    cancel_requested: bool = False
     upstream_stop: str = "not_started"
     task: asyncio.Task | None = None
     actions: dict = field(default_factory=dict)
@@ -68,7 +69,7 @@ class RuntimeStore:
             raise DomainError("building_not_found", "动作建筑不存在或校区不匹配", 422, action.request_id)
         if len(record.actions) >= 16 or action.action_id in record.actions:
             raise DomainError("invalid_action", "动作重复或超过每请求16个上限", 409, action.request_id)
-        if record.status != "running":
+        if record.status != "running" or record.cancel_requested:
             raise DomainError("request_terminal", "终态请求不能发布动作", 409, action.request_id)
         record.actions[action.action_id] = action
         self.emit(action.request_id, "scene", "started", {"action_id": str(action.action_id), "building_id": building.id})
@@ -76,7 +77,7 @@ class RuntimeStore:
         record = self.get(ack.request_id, ack.session_id)
         if ack.action_id not in record.actions:
             raise DomainError("action_not_published", "动作未由后端发布", 404, ack.request_id)
-        if record.status == "cancelled":
+        if record.status == "cancelled" or record.cancel_requested:
             raise DomainError("request_terminal", "已取消请求不接受新场景回执", 409, ack.request_id)
         if (ack.status == "completed" and ack.error_code is not None) or (ack.status == "failed" and ack.error_code is None):
             raise DomainError("invalid_ack", "成功回执不得带错误，失败回执须带错误码", 422, ack.request_id)

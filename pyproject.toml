@@ -12,6 +12,7 @@ dev = ["pytest==9.1.1"]
 [tool.uv]
 package = false
 [tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
 testpaths = ["tests"]
 norecursedirs = [".worktrees", ".venv", ".tools", "node_modules", "dist"]
 pythonpath = ["."]

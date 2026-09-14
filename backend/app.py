@@ -15,6 +15,9 @@ from backend.contracts import ApiError, ErrorDetail, Health, CONTRACT_VERSION
 from backend.model.routes import router as model_router
 from backend.speech.routes import router as speech_router
 from backend.knowledge.routes import router as knowledge_router
+from backend.model.service import connectivity
+from backend.knowledge.service import knowledge
+from backend.speech.service import speech
 settings = get_settings()
 app = FastAPI(title="AI4TJU campus guide", version=CONTRACT_VERSION,
     responses={status: {"model": ApiError} for status in (400,404,409,413,422,429,499,500,501,503)})
@@ -49,8 +52,10 @@ async def internal_error(request, error):
 @app.get("/api/health", response_model=Health)
 def health():
     return Health(status="ok", contract_version=CONTRACT_VERSION,
-        model={"configured": bool(settings.llm_api_key.get_secret_value()), "verified": False},
-        capabilities={"chat": False, "asr": False, "tts": False, "knowledge": False, "scene_3d": False})
+        model={"configured": connectivity.configured, "verified": connectivity.verified},
+        capabilities={"chat": connectivity.configured,
+            "asr": bool(settings.asr_url and settings.asr_model and settings.asr_api_key.get_secret_value() and settings.asr_url.rstrip("/") not in (settings.llm_url.rstrip("/"), settings.sdk_base_url.rstrip("/"))),
+            "tts": speech.tts_verified, "knowledge": knowledge.get_status().status == "ready", "scene_3d": False})
 app.include_router(model_router)
 app.include_router(speech_router)
 app.include_router(knowledge_router)
@@ -68,8 +73,8 @@ if os.environ.get("AI4TJU_SERVE_FRONTEND") == "1":
     @app.get("/{path:path}", include_in_schema=False)
     def frontend(path: str):
         if path == "api" or path.startswith("api/") or any(part.startswith(".") for part in path.split("/")):
-            return error_response("http_error", "?????", 404)
+            return error_response("http_error", "端点或资源不存在", 404)
         # No arbitrary filesystem lookup: public assets have dedicated mounts.
         if "." in path:
-            return error_response("http_error", "?????", 404)
+            return error_response("http_error", "端点或资源不存在", 404)
         return FileResponse(dist / "index.html", headers={"Cache-Control": "no-cache"})

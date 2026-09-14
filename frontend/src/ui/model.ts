@@ -44,7 +44,8 @@ export function sanitizedLogExport(events: RuntimeEvent[]): string {
     if (!requestAliases.has(event.request_id)) requestAliases.set(event.request_id, `request-${requestAliases.size + 1}`);
     return {
       request: requestAliases.get(event.request_id), timestamp: event.timestamp, source: event.origin,
-      stage: event.stage, status: event.status, duration_ms: event.duration_ms, data: event.data,
+      stage: event.stage, status: event.status, duration_ms: event.duration_ms,
+      data: { code: event.data.code, count: event.data.count, model: event.data.model, building_id: event.data.building_id },
     };
   });
   return JSON.stringify({ exported_at: new Date().toISOString(), events: output }, null, 2);

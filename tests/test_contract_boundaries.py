@@ -8,13 +8,17 @@ import backend.model.runtime as runtime_module
 client=TestClient(app)
 def payload():
     return dict(request_id=str(uuid4()),session_id=str(uuid4()),message="你好",mode="campus_qa",campus_id="weijinlu",selected_building_id=None)
-def test_stub_events_redaction_and_duplicate():
-    body=payload(); body["message"]="private_marker_not_for_logs"
+def test_unconfigured_events_redaction_and_duplicate(monkeypatch):
+    import backend.model.routes as routes
+    from backend.model.service import CampusModelService
+    from backend.common.config import Settings
+    monkeypatch.setattr(routes, "model", CampusModelService(Settings(llm_api_key="")))
+    body=payload(); body["mode"]="general_chat"; body["message"]="private_marker_not_for_logs"
     response=client.post("/api/chat",json=body)
-    assert response.status_code==501
-    assert response.json()["error"]["code"]=="not_implemented"
+    assert response.status_code==503
+    assert response.json()["error"]["code"]=="model_not_configured"
     page=client.get("/api/runtime/events",params={"request_id":body["request_id"]}).json()
-    assert [e["status"] for e in page["events"]]==["started","failed"]
+    assert [e["stage"]+":"+e["status"] for e in page["events"]]==["request:started","model:started","model:failed","request:failed"]
     assert "private_marker" not in str(page)
     assert all(e["origin"]=="backend" for e in page["events"])
     assert client.post("/api/chat",json=body).status_code==409
@@ -34,14 +38,15 @@ def test_building_forged_ack_and_frontend_provenance():
     assert client.post("/api/runtime/client-events",json=event).json()["seq"]==first.json()["seq"]
     event["status"]="failed"
     assert client.post("/api/runtime/client-events",json=event).status_code==409
-def test_limits_and_empty_knowledge():
+def test_limits_and_real_knowledge():
     body=payload(); body["history"]=[{"role":"system","content":"secret_marker"}]
     response=client.post("/api/chat",json=body)
     assert response.status_code==422 and "secret_marker" not in response.text
     assert client.post("/api/chat",content="x"*65537).status_code==413
-    assert client.get("/api/knowledge/status").json()==dict(status="unavailable",version=None,document_count=0,building_count=0,updated_at=None)
+    status=client.get("/api/knowledge/status").json()
+    assert status["status"]=="ready" and status["version"] and status["document_count"]>=7 and status["building_count"]==2
     assert client.get("/api/knowledge/buildings",params={"campus_id":"weijinlu"}).json()=={"buildings":[]}
-    assert client.get("/api/knowledge/search",params={"campus_id":"weijinlu","query":"图书馆"}).json()["hits"]==[]
+    assert client.get("/api/knowledge/search",params={"campus_id":"weijinlu","query":"zzzxqvnonexistent"}).json()["hits"]==[]
     assert client.get("/api/knowledge/buildings/unknown").status_code==404
     assert client.get("/api/health").json()["model"]["verified"] is False
 def test_published_ack_and_bounded_events(monkeypatch):

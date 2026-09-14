@@ -71,18 +71,21 @@ export function App() {
   const [buildingsLoading, setBuildingsLoading] = useState(true); const [buildingNotice, setBuildingNotice] = useState(''); const [notice, setNotice] = useState('');
   const [events, setEvents] = useState<RuntimeEvent[]>([]); const [logsOpen, setLogsOpen] = useState(false); const [settingsOpen, setSettingsOpen] = useState(false); const [sourcesOpenFor, setSourcesOpenFor] = useState<string | null>(null);
   const [avatarState, setAvatarState] = useState<AvatarState>('idle'); const [avatarReady, setAvatarReady] = useState(false); const [avatarMessage, setAvatarMessage] = useState('正在连接人物渲染器…');
-  const [voices, setVoices] = useState<Voice[]>([]); const [speechBusy, setSpeechBusy] = useState(false); const [busy, setBusy] = useState(false); const [truncatedLogs, setTruncatedLogs] = useState(false);
+  const [voices, setVoices] = useState<Voice[]>([]); const [speechBusy, setSpeechBusyState] = useState(false); const [busy, setBusyState] = useState(false); const [truncatedLogs, setTruncatedLogs] = useState(false);
+  const speechBusyRef = useRef(false); const busyRef = useRef(false); const speechAbortRef = useRef<AbortController | null>(null);
+  function setSpeechBusy(value: boolean) { speechBusyRef.current = value; setSpeechBusyState(value); }
+  function setBusy(value: boolean) { busyRef.current = value; setBusyState(value); }
   const sessionRef = useRef(freshUuid()); const requestRef = useRef<string | null>(null); const generationRef = useRef(0); const abortRef = useRef<AbortController | null>(null); const pollStopRef = useRef<(() => void) | null>(null);
   const avatarHostRef = useRef<HTMLDivElement>(null); const avatarRef = useRef<AvatarAdapter | null>(null); const speechRef = useRef<SpeechAdapter | null>(null); const composingRef = useRef(false); const selectedBuildingRef = useRef<Building | null>(null);
 
   useEffect(() => { selectedBuildingRef.current = selectedBuilding; }, [selectedBuilding]);
-  useEffect(() => { localStorage.setItem('ai4tju.preferences', JSON.stringify(prefs)); }, [prefs]);
+  useEffect(() => { try { localStorage.setItem('ai4tju.preferences', JSON.stringify(prefs)); } catch { /* Storage may be disabled. */ } }, [prefs]);
   useEffect(() => {
     let active = true; const avatar = createAvatarAdapter(); const speech = createSpeechAdapter(); avatarRef.current = avatar; speechRef.current = speech;
     Promise.all([transport.health(), transport.knowledgeStatus()]).then(([h, k]) => { if (active) { setHealth(h); setKnowledge(k); setServiceError(false); } }).catch(() => { if (active) setServiceError(true); });
     if (avatarHostRef.current) avatar.mount(avatarHostRef.current).then((result) => { if (active) { setAvatarReady(result.status === 'ready'); setAvatarMessage(result.status === 'ready' ? '人物已就位' : result.status === 'failed' ? '人物渲染失败' : '人物渲染尚未接入'); } }).catch(() => { if (active) setAvatarMessage('人物渲染失败'); });
     speech.listVoices().then((items) => { if (active) setVoices(items); }).catch(() => { if (active) setVoices([]); });
-    return () => { active = false; generationRef.current += 1; abortRef.current?.abort(); pollStopRef.current?.(); avatar.dispose(); if (requestRef.current) void speech.stop(requestRef.current); };
+    return () => { active = false; generationRef.current += 1; abortRef.current?.abort(); speechAbortRef.current?.abort(); pollStopRef.current?.(); avatar.dispose(); if (requestRef.current) void speech.stop(requestRef.current); };
   }, []);
   useEffect(() => {
     let active = true; setBuildingsLoading(true); setBuildingNotice('');
@@ -98,34 +101,55 @@ export function App() {
   function operationIsCurrent(operation: ReturnType<typeof operationSnapshot>) { return isCurrentOperation(operation, { sessionId: sessionRef.current, requestId: requestRef.current, generation: generationRef.current }); }
   function emitClient(stage: 'speech' | 'avatar', status: 'started' | 'completed' | 'failed' | 'cancelled', operation: ReturnType<typeof operationSnapshot>, code?: 'not_implemented' | 'playback_failed' | 'permission_denied' | 'stopped') {
     if (!operationIsCurrent(operation)) return;
-    void transport.clientEvent({ event_id: freshUuid(), request_id: operation.requestId, session_id: operation.sessionId, stage, status, duration_ms: null, data: code ? { code } : {} }).catch(() => undefined);
+    void transport.clientEvent({ event_id: freshUuid(), request_id: operation.requestId, session_id: operation.sessionId, stage, status, duration_ms: null, data: code ? { code } : {} }).then((event) => { if (operationIsCurrent(operation)) setEvents((current) => mergeRuntimeEvents(current, [event])); }).catch(() => undefined);
   }
   function trackAvatar(state: AvatarState, operation: ReturnType<typeof operationSnapshot>) {
-    setAvatarState(state); if (!avatarReady) return;
+    setAvatarState(state); if (!avatarReady) return; avatarRef.current?.setState(state);
     const status = state === 'error' ? 'failed' : state === 'idle' ? 'completed' : 'started'; queueMicrotask(() => emitClient('avatar', status, operation));
   }
   function startPolling(requestId: string, operation: ReturnType<typeof operationSnapshot>) {
-    let cursor = 0; let stopped = false; let polling = false;
-    const poll = async () => { if (stopped || polling || !operationIsCurrent(operation)) return; polling = true; try { const page = await transport.events(requestId, cursor); if (!operationIsCurrent(operation)) return; cursor = page.next_cursor; setTruncatedLogs((value) => value || page.truncated); setEvents((current) => mergeRuntimeEvents(current, page.events)); } catch (error) { const code = (error as Partial<ApiError>)?.error?.code; if (code !== 'not_found' && operationIsCurrent(operation)) setNotice('运行日志暂时无法读取。'); } finally { polling = false; } };
-    void poll(); const timer = window.setInterval(() => void poll(), 500); const stop = () => { stopped = true; window.clearInterval(timer); }; pollStopRef.current = stop; return async () => { await poll(); stop(); };
+    let cursor = 0; let stopped = false; let pending: Promise<void> | null = null;
+    const poll = (): Promise<void> => {
+      if (stopped || !operationIsCurrent(operation)) return Promise.resolve();
+      if (pending) return pending;
+      pending = (async () => {
+        try {
+          const page = await transport.events(requestId, cursor);
+          if (!operationIsCurrent(operation)) return;
+          cursor = page.next_cursor; setTruncatedLogs((value) => value || page.truncated);
+          setEvents((current) => mergeRuntimeEvents(current, page.events));
+        } catch (error) {
+          if ((error as Partial<ApiError>)?.error?.code !== 'request_not_found' && operationIsCurrent(operation))
+            setNotice('运行日志暂时无法读取。');
+        } finally { pending = null; }
+      })();
+      return pending;
+    };
+    void poll();
+    const timer = window.setInterval(() => void poll(), 500);
+    const stop = () => { stopped = true; window.clearInterval(timer); };
+    pollStopRef.current = stop;
+    return async () => { if (pending) await pending; await poll(); stop(); };
   }
   async function executeActions(response: ChatResponse, operation: ReturnType<typeof operationSnapshot>) {
     const scene = new CampusCardSceneAdapter({
-      focusBuilding: (id) => { const item = buildings.find((building) => building.id === id); if (!item) return false; setSelectedBuilding(item); document.getElementById(`building-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return true; },
+      focusBuilding: (id) => { const item = buildings.find((building) => building.id === id); if (!item || !document.getElementById('building-' + id)) return false; setSelectedBuilding(item); document.getElementById(`building-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return true; },
       showBuildingCard: (id) => { const item = buildings.find((building) => building.id === id); if (!item) return false; setSelectedBuilding(item); return true; },
     });
-    for (const action of response.actions) { if (!operationIsCurrent(operation)) return; const result = await scene.execute(action); if (!operationIsCurrent(operation)) return; await transport.ack({ request_id: response.request_id, session_id: response.session_id, action_id: action.action_id, status: result.status, ...(result.error_code ? { error_code: result.error_code } : {}) }).catch(() => setNotice('点位卡片已处理，但执行回执发送失败。')); }
+    for (const action of response.actions) { if (!operationIsCurrent(operation)) return; let result = await scene.execute(action); await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))); if (!operationIsCurrent(operation)) return; if (!document.querySelector('[data-building-id="' + action.parameters.building_id + '"]')) result = { status: 'failed', error_code: 'execution_failed' }; await transport.ack({ request_id: response.request_id, session_id: response.session_id, action_id: action.action_id, status: result.status, ...(result.error_code ? { error_code: result.error_code } : {}) }).catch(() => setNotice('点位卡片已处理，但执行回执发送失败。')); }
   }
   async function speakText(requestId: string, text: string, operation: ReturnType<typeof operationSnapshot>) {
     if (!speechRef.current?.capabilities.tts) { setNotice('语音合成服务尚不可用，回答仍可阅读。'); return; }
+    if (text.length > 4000) { setNotice('这条回答超过单次语音的 4000 字上限，请分段提问后播放。'); return; }
     const voice = chineseVoices[0]; if (!voice) { setNotice('未检测到可用中文音色，已保留文字回答。'); return; }
-    const utteranceId = freshUuid(); const controller = new AbortController();
+    speechAbortRef.current?.abort();
+    const utteranceId = freshUuid(); const controller = new AbortController(); speechAbortRef.current = controller;
     setSpeechBusy(true);
     const result = await speechRef.current.speak({ request_id: requestId, session_id: operation.sessionId, signal: controller.signal }, utteranceId, text, voice.id, {
       onText: () => undefined,
       onStart: (id) => { if (!operationIsCurrent(operation) || id !== utteranceId) return; setSpeechBusy(true); trackAvatar('speaking', operation); emitClient('speech', 'started', operation); },
       onEnd: (id) => { if (!operationIsCurrent(operation) || id !== utteranceId) return; setSpeechBusy(false); trackAvatar('idle', operation); emitClient('speech', 'completed', operation); },
-      onFailure: (id, code) => { if (!operationIsCurrent(operation) || id !== utteranceId) return; setSpeechBusy(false); trackAvatar('idle', operation); emitClient('speech', 'failed', operation, code === 'permission_denied' ? 'permission_denied' : 'playback_failed'); setNotice(code === 'permission_denied' ? '语音播放权限被拒绝。' : '语音服务暂不可用，回答仍可阅读。'); },
+      onFailure: (id, code) => { if (!operationIsCurrent(operation) || id !== utteranceId) return; setSpeechBusy(false); trackAvatar('idle', operation); emitClient('speech', 'failed', operation, (code === 'permission_denied' || code === 'playback_permission_denied') ? 'permission_denied' : 'playback_failed'); setNotice((code === 'permission_denied' || code === 'playback_permission_denied') ? '语音播放权限被拒绝。' : '语音服务暂不可用，回答仍可阅读。'); },
     });
     if (operationIsCurrent(operation) && result.status !== 'ready') setSpeechBusy(false);
   }
@@ -134,29 +158,33 @@ export function App() {
     await speakText(response.request_id, response.answer, operation);
   }
   async function playMessage(message: DisplayMessage) {
-    if (busy) { setNotice('请等待当前回答完成后再播放。'); return; }
+    if (busyRef.current || speechBusyRef.current) { setNotice('请等待当前操作完成后再播放。'); return; }
     const operation = operationSnapshot(message.requestId);
     if (!operationIsCurrent(operation)) { setNotice('请播放当前请求的回答，旧请求不会重新进入播放队列。'); return; }
     await speakText(message.requestId, message.text, operation);
   }
   async function sendMessage(text = input, modeOverride?: Mode) {
-    const clean = text.trim(); if (!clean || busy || composingRef.current) return;
+    const clean = text.trim(); if (!clean || busyRef.current || composingRef.current) return;
+    setBusy(true); speechAbortRef.current?.abort(); abortRef.current?.abort();
+    if (requestRef.current) void speechRef.current?.stop(requestRef.current);
+    generationRef.current += 1; setSpeechBusy(false); pollStopRef.current?.();
     const requestId = freshUuid(requestRef.current ?? undefined); const controller = new AbortController(); requestRef.current = requestId; abortRef.current = controller; const operation = operationSnapshot(requestId);
     const userMessage: DisplayMessage = { id: freshUuid(), role: 'user', text: clean, requestId, status: 'done' }; const assistantId = freshUuid();
     setMessages((current) => [...current, userMessage, { id: assistantId, role: 'assistant', text: '', requestId, status: 'waiting' }]); setInput(''); setNotice(''); setBusy(true); trackAvatar('thinking', operation); const finishPolling = startPolling(requestId, operation);
+    let requestFailed = false;
     try {
-      const response = await transport.chat({ request_id: requestId, session_id: operation.sessionId, message: clean, mode: modeOverride ?? mode, campus_id: prefs.campus, selected_building_id: selectedBuildingRef.current?.id ?? null }, controller.signal);
+      const response = await transport.chat({ request_id: requestId, session_id: operation.sessionId, message: clean, mode: modeOverride ?? mode, campus_id: prefs.campus, selected_building_id: selectedBuildingRef.current?.campus_id === prefs.campus ? selectedBuildingRef.current.id : null }, controller.signal);
       if (!operationIsCurrent(operation)) return;
       if (!response.answer.trim()) throw { error: { code: 'empty_answer', message: '模型没有返回可显示的答案。', request_id: requestId, retryable: true } } satisfies ApiError;
       setMessages((current) => current.map((item) => item.id === assistantId ? { ...item, text: response.answer, status: 'done', sources: response.sources, model: response.model, usage: response.usage, elapsedMs: response.elapsed_ms } : item));
       await executeActions(response, operation); if (operationIsCurrent(operation)) await speakAnswer(response, operation);
     } catch (error) {
-      if (!operationIsCurrent(operation)) return; const cancelled = controller.signal.aborted || (error as Partial<ApiError>)?.error?.code === 'cancelled';
+      if (!operationIsCurrent(operation)) return; requestFailed = true; const cancelled = controller.signal.aborted || (error as Partial<ApiError>)?.error?.code === 'request_cancelled';
       setMessages((current) => current.map((item) => item.id === assistantId ? { ...item, text: cancelled ? '本次请求已取消。' : errorMessage(error), status: cancelled ? 'cancelled' : 'error' } : item)); trackAvatar(cancelled ? 'idle' : 'error', operation);
-    } finally { await finishPolling(); if (operationIsCurrent(operation)) { setBusy(false); abortRef.current = null; if (!speechBusy) trackAvatar('idle', operation); } }
+    } finally { await finishPolling(); if (operationIsCurrent(operation)) { setBusy(false); abortRef.current = null; if (!speechBusyRef.current && !requestFailed) trackAvatar('idle', operation); void transport.health().then(setHealth).catch(() => undefined); } }
   }
   async function stopCurrent() {
-    const requestId = requestRef.current; if (!requestId) return; const sessionId = sessionRef.current; const operation = operationSnapshot(requestId); generationRef.current += 1; abortRef.current?.abort(); abortRef.current = null; pollStopRef.current?.(); pollStopRef.current = null;
+    const requestId = requestRef.current; if (!requestId) return; const sessionId = sessionRef.current; const operation = operationSnapshot(requestId); generationRef.current += 1; abortRef.current?.abort(); speechAbortRef.current?.abort(); abortRef.current = null; pollStopRef.current?.(); pollStopRef.current = null;
     setBusy(false); setSpeechBusy(false); setAvatarState('idle'); setMessages((current) => current.map((item) => item.requestId === requestId && item.status === 'waiting' ? { ...item, text: '本次请求已取消。', status: 'cancelled' } : item));
     const stopped = await Promise.allSettled([speechRef.current?.stop(requestId), transport.cancel(requestId, sessionId), transport.speechStop(requestId, sessionId)]);
     if (stopped[0].status === 'fulfilled' && stopped[0].value?.local_stopped) {
@@ -164,16 +192,17 @@ export function App() {
     }
   }
   async function clearConversation() {
-    if (busy || speechBusy) await stopCurrent(); const previous = sessionRef.current; generationRef.current += 1; sessionRef.current = freshUuid(previous); requestRef.current = null;
+    if (busyRef.current || speechBusyRef.current) void stopCurrent(); const previous = sessionRef.current; generationRef.current += 1; sessionRef.current = freshUuid(previous); requestRef.current = null;
     setMessages([]); setEvents([]); setTruncatedLogs(false); setNotice('已开始新会话。'); setSourcesOpenFor(null);
   }
   async function startListening() {
+    if (busyRef.current || speechBusyRef.current) return;
     const speech = speechRef.current; if (!speech || !speech.capabilities.asr) { setNotice('语音识别服务尚不可用，请继续使用文字输入。'); return; }
     const requestId = freshUuid(requestRef.current ?? undefined); requestRef.current = requestId; const controller = new AbortController(); abortRef.current = controller; const operation = operationSnapshot(requestId); setSpeechBusy(true); trackAvatar('listening', operation);
     try {
       const result = await speech.start({ request_id: requestId, session_id: operation.sessionId, signal: controller.signal }, {
         onText: (text, isFinal) => { if (!operationIsCurrent(operation)) return; setInput(text); if (isFinal) { setSpeechBusy(false); trackAvatar('idle', operation); emitClient('speech', 'completed', operation); setNotice('识别文字已填入，请确认后发送。'); } }, onStart: () => emitClient('speech', 'started', operation), onEnd: () => undefined,
-        onFailure: (id, code) => { if (!operationIsCurrent(operation) || id !== requestId) return; setSpeechBusy(false); trackAvatar('idle', operation); emitClient('speech', 'failed', operation, code === 'permission_denied' ? 'permission_denied' : 'not_implemented'); setNotice(code === 'permission_denied' ? '麦克风权限被拒绝，请在浏览器设置中允许后重试。' : '语音识别服务暂不可用。'); },
+        onFailure: (id, code) => { if (!operationIsCurrent(operation) || id !== requestId) return; setSpeechBusy(false); trackAvatar('idle', operation); emitClient('speech', 'failed', operation, (code === 'permission_denied' || code === 'playback_permission_denied') ? 'permission_denied' : 'not_implemented'); setNotice((code === 'permission_denied' || code === 'playback_permission_denied') ? '麦克风权限被拒绝，请在浏览器设置中允许后重试。' : '语音识别服务暂不可用。'); },
       });
       if (operationIsCurrent(operation) && result.status !== 'ready') { setSpeechBusy(false); trackAvatar('idle', operation); }
     } catch { if (operationIsCurrent(operation)) { setSpeechBusy(false); trackAvatar('idle', operation); setNotice('无法启动语音识别，请检查麦克风权限或服务状态。'); } }
@@ -189,11 +218,11 @@ export function App() {
     <main className="workspace"><section className="guide-stage" aria-label="数字人导览区"><div className={`avatar-stage ${prefs.backdrop}`}><div className="stage-grid" aria-hidden="true"/><div className="campus-stamp"><span>AI4TJU</span><strong>{CAMPUS_NAMES[prefs.campus]}</strong></div><div className="avatar-host" ref={avatarHostRef} style={{ transform: `scale(${prefs.avatarScale})` }}/>{!avatarReady && <div className="avatar-fallback" role="status"><span className="fallback-monogram">海</span><strong>{avatarMessage}</strong><p>不会用替代人物冒充已提供形象</p></div>}<div className={`avatar-state ${avatarState}`}><span/><div><small>珂莱塔</small><strong>{AVATAR_LABELS[avatarState]}</strong></div></div></div>
       <section className="campus-panel"><div className="section-heading"><div><span className="kicker">CAMPUS GUIDE</span><h2>校园点位</h2></div><div className="campus-switch" role="group" aria-label="选择校区">{(Object.keys(CAMPUS_NAMES) as CampusId[]).map((campus) => <button key={campus} className={prefs.campus === campus ? 'active' : ''} onClick={() => setPrefs({ ...prefs, campus })}>{CAMPUS_NAMES[campus]}</button>)}</div></div>
         {buildingsLoading ? <div className="card-skeletons" aria-label="正在加载点位"><span/><span/><span/></div> : buildingNotice ? <div className="empty-card"><Icon name="pin"/><p>{buildingNotice}</p></div> : <div className="building-row">{buildings.map((building) => <article id={`building-${building.id}`} key={building.id} className={`building-card ${selectedBuilding?.id === building.id ? 'selected' : ''}`} onClick={() => setSelectedBuilding(building)}><div className="building-title"><span><Icon name="pin" size={16}/></span><div><small>{CAMPUS_NAMES[building.campus_id]}</small><h3>{building.title}</h3></div></div><p>{building.summary}</p><div className="card-actions"><button onClick={(event) => { event.stopPropagation(); setSelectedBuilding(building); }}>查看资料卡</button><button className="primary-small" disabled={busy} onClick={(event) => { event.stopPropagation(); introduceBuilding(building); }}>介绍这里</button></div></article>)}</div>}
-        {selectedBuilding && <details className="building-detail" open><summary>{selectedBuilding.title} · 资料卡</summary><p>{selectedBuilding.summary}</p><div><span>资料获取：{new Date(selectedBuilding.retrieved_at).toLocaleDateString('zh-CN')}</span>{safeSourceUrl(selectedBuilding.url) && <a href={safeSourceUrl(selectedBuilding.url)!} target="_blank" rel="noreferrer">查看实际来源 ↗</a>}</div></details>}</section></section>
+        {selectedBuilding && <details className="building-detail" data-building-id={selectedBuilding.id} open><summary>{selectedBuilding.title} · 资料卡</summary><p>{selectedBuilding.summary}</p><div><span>资料获取：{new Date(selectedBuilding.retrieved_at).toLocaleDateString('zh-CN')}</span>{safeSourceUrl(selectedBuilding.url) && <a href={safeSourceUrl(selectedBuilding.url)!} target="_blank" rel="noreferrer">查看实际来源 ↗</a>}</div></details>}</section></section>
       <section className="conversation" aria-label="与珂莱塔对话"><div className="conversation-header"><div><span className="kicker">CONVERSATION</span><h2>问问珂莱塔</h2></div><button className="icon-button" aria-label="清空并开始新会话" title="清空并开始新会话" onClick={() => void clearConversation()}><Icon name="trash"/></button></div><div className="mode-tabs" role="tablist" aria-label="对话模式">{(Object.keys(MODE_LABELS) as Mode[]).map((item) => <button role="tab" aria-selected={mode === item} key={item} onClick={() => setMode(item)}>{MODE_LABELS[item]}</button>)}</div>
         <div className="message-list" aria-live="polite">{messages.length === 0 && <div className="conversation-empty"><span className="empty-seal">珂</span><h3>今天想从哪里逛起？</h3><p>可以问校园历史、建筑与到访信息，也可以让我帮你写一段校园内容。</p><div>{['北洋园有哪些已核实点位？', '介绍一下选中的建筑', '帮我写一段参观感想'].map((prompt) => <button key={prompt} onClick={() => setInput(prompt)}>{prompt}</button>)}</div></div>}
-          {messages.map((message) => <div key={message.id} className={`message ${message.role} ${message.status}`}><div className="message-meta"><strong>{message.role === 'user' ? '你' : '珂莱塔'}</strong>{message.status === 'waiting' && <span>等待模型返回</span>}{message.status === 'cancelled' && <span>已取消</span>}{message.status === 'error' && <span>未完成</span>}</div>{message.status === 'waiting' ? <div className="waiting-answer"><span/><p>模型正在处理。当前接口为非流式，完整答案返回后会一次显示。</p></div> : <RichText text={message.text}/>} {message.role === 'assistant' && message.status === 'done' && <div className="answer-footer"><span>{message.model ?? '模型未返回'}</span><span>{message.elapsedMs != null ? `${message.elapsedMs} ms` : '耗时未返回'}</span><span>{message.usage ? `${message.usage.total_tokens} tokens` : '用量未返回'}</span>{message.requestId === requestRef.current && <button aria-label="播放这条回答" onClick={() => void playMessage(message)}><Icon name="volume" size={14}/> 播放</button>}{message.sources && message.sources.length > 0 && <button onClick={() => setSourcesOpenFor(sourcesOpenFor === message.id ? null : message.id)}>来源 {message.sources.length} 条 <span>{sourcesOpenFor === message.id ? '−' : '+'}</span></button>}</div>}{sourcesOpenFor === message.id && message.sources && <div className="source-list">{message.sources.map((source) => <article key={source.id}><div><span>{CAMPUS_NAMES[source.campus_id]}</span><time>{source.published_at ? new Date(source.published_at).toLocaleDateString('zh-CN') : '发布日期未提供'}</time></div><h4>{source.title}</h4><p>{source.snippet}</p>{safeSourceUrl(source.url) ? <a href={safeSourceUrl(source.url)!} target="_blank" rel="noreferrer">打开来源 ↗</a> : <span className="invalid-source">来源地址无效</span>}</article>)}</div>}</div>)}</div>
+          {messages.map((message) => <div key={message.id} className={`message ${message.role} ${message.status}`}><div className="message-meta"><strong>{message.role === 'user' ? '你' : '珂莱塔'}</strong>{message.status === 'waiting' && <span>等待模型返回</span>}{message.status === 'cancelled' && <span>已取消</span>}{message.status === 'error' && <span>未完成</span>}</div>{message.status === 'waiting' ? <div className="waiting-answer"><span/><p>模型正在处理。当前接口为非流式，完整答案返回后会一次显示。</p></div> : <RichText text={message.text}/>} {message.role === 'assistant' && message.status === 'done' && <div className="answer-footer"><span>{message.model ?? '模型未返回'}</span><span>{message.elapsedMs != null ? `${Math.round(message.elapsedMs)} ms` : '耗时未返回'}</span><span>{message.usage ? `${message.usage.total_tokens} tokens` : '用量未返回'}</span>{message.requestId === requestRef.current && <button aria-label="播放这条回答" onClick={() => void playMessage(message)}><Icon name="volume" size={14}/> 播放</button>}{message.sources && message.sources.length > 0 && <button onClick={() => setSourcesOpenFor(sourcesOpenFor === message.id ? null : message.id)}>来源 {message.sources.length} 条 <span>{sourcesOpenFor === message.id ? '−' : '+'}</span></button>}</div>}{sourcesOpenFor === message.id && message.sources && <div className="source-list">{message.sources.map((source) => <article key={source.id}><div><span>{CAMPUS_NAMES[source.campus_id]}</span><time>{source.published_at ? new Date(source.published_at).toLocaleDateString('zh-CN') : '发布日期未提供'}</time></div><h4>{source.title}</h4><p>{source.snippet}</p>{safeSourceUrl(source.url) ? <a href={safeSourceUrl(source.url)!} target="_blank" rel="noreferrer">打开来源 ↗</a> : <span className="invalid-source">来源地址无效</span>}</article>)}</div>}</div>)}</div>
         <div className="composer-area">{selectedBuilding && <div className="context-chip"><Icon name="pin" size={14}/><span>当前点位：{selectedBuilding.title}</span><button aria-label="取消选择点位" onClick={() => setSelectedBuilding(null)}>×</button></div>}{notice && <p className="notice" role="status">{notice}</p>}<div className="composer"><textarea value={input} maxLength={8000} rows={3} placeholder={mode === 'content_generation' ? '告诉我你想生成什么校园内容…' : '输入你的问题…'} onChange={(event) => setInput(event.target.value)} onCompositionStart={() => { composingRef.current = true; }} onCompositionEnd={() => { composingRef.current = false; }} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing && !composingRef.current) { event.preventDefault(); void sendMessage(); } }}/><div className="composer-footer"><div><button className={`icon-button ${speechBusy ? 'active' : ''}`} aria-label={speechBusy ? '停止语音识别' : '语音输入'} title="识别文字会先填入输入框" onClick={() => speechBusy ? void stopCurrent() : void startListening()}><Icon name="mic"/></button><label className="auto-speak"><input type="checkbox" checked={prefs.autoSpeak} onChange={(event) => setPrefs({ ...prefs, autoSpeak: event.target.checked })}/><Icon name="volume" size={16}/><span>自动播报</span></label></div>{busy || speechBusy ? <button className="stop-button" onClick={() => void stopCurrent()}><Icon name="stop"/>停止</button> : <button className="send-button" disabled={!input.trim()} onClick={() => void sendMessage()}><span>发送</span><Icon name="send"/></button>}</div></div>{hasRetry && <button className="retry-button" onClick={() => void sendMessage(lastUser!.text)}><Icon name="retry" size={16}/>使用新请求重试</button>}<p className="composer-hint">Enter 发送 · Shift + Enter 换行 · 对话不会默认保存到本机</p></div></section></main>
-    <div className={`drawer-backdrop ${logsOpen ? 'open' : ''}`} onClick={() => setLogsOpen(false)}/><aside className={`log-drawer ${logsOpen ? 'open' : ''}`} aria-hidden={!logsOpen} aria-label="当前会话运行日志"><div className="drawer-header"><div><span className="kicker">RUNTIME EVENTS</span><h2>当前会话日志</h2></div><button className="icon-button" aria-label="关闭日志" onClick={() => setLogsOpen(false)}><Icon name="close"/></button></div><div className="drawer-tools"><p>仅显示后端与浏览器实际返回的事件。</p><button disabled={!events.length} onClick={exportLogs}><Icon name="download" size={16}/>脱敏导出</button></div>{truncatedLogs && <div className="log-warning">早期日志已由服务端淘汰。</div>}<div className="log-list">{events.length === 0 ? <div className="logs-empty"><Icon name="logs" size={24}/><p>当前会话还没有运行事件。</p></div> : events.map((event) => <article key={`${event.origin}:${event.event_id}`}><div className="log-rail"><span className={event.status}/><i/></div><div className="log-body"><div><strong>{event.origin === 'backend' ? '后端' : '浏览器'} · {event.stage}</strong><time>{new Date(event.timestamp).toLocaleTimeString('zh-CN', { hour12: false })}</time></div><p>{event.status}{event.data.code ? ` · ${event.data.code}` : ''}{event.data.count != null ? ` · ${event.data.count} 项` : ''}</p><span>{event.duration_ms == null ? '耗时未返回' : `${event.duration_ms} ms`}</span></div></article>)}</div></aside>
+    <div className={`drawer-backdrop ${logsOpen ? 'open' : ''}`} onClick={() => setLogsOpen(false)}/><aside className={`log-drawer ${logsOpen ? 'open' : ''}`} aria-hidden={!logsOpen} inert={!logsOpen} aria-label="当前会话运行日志"><div className="drawer-header"><div><span className="kicker">RUNTIME EVENTS</span><h2>当前会话日志</h2></div><button className="icon-button" aria-label="关闭日志" onClick={() => setLogsOpen(false)}><Icon name="close"/></button></div><div className="drawer-tools"><p>仅显示后端与浏览器实际返回的事件。</p><button disabled={!events.length} onClick={exportLogs}><Icon name="download" size={16}/>脱敏导出</button></div>{truncatedLogs && <div className="log-warning">早期日志已由服务端淘汰。</div>}<div className="log-list">{events.length === 0 ? <div className="logs-empty"><Icon name="logs" size={24}/><p>当前会话还没有运行事件。</p></div> : events.map((event) => <article key={`${event.origin}:${event.event_id}`}><div className="log-rail"><span className={event.status}/><i/></div><div className="log-body"><div><strong>{event.origin === 'backend' ? '后端' : '浏览器'} · {event.stage}</strong><time>{new Date(event.timestamp).toLocaleTimeString('zh-CN', { hour12: false })}</time></div><p>{event.status}{event.data.code ? ` · ${event.data.code}` : ''}{event.data.count != null ? ` · ${event.data.count} 项` : ''}</p><span>{event.duration_ms == null ? '耗时未返回' : `${Math.round(event.duration_ms)} ms`}</span></div></article>)}</div></aside>
   </div>;
 }
