@@ -14,6 +14,8 @@ async def chat(request: ChatRequest):
     started = time.monotonic()
     runtime.emit(request.request_id, "request", "started")
     try:
+        if request.mode == "content_generation":
+            raise DomainError("VALIDATION_ERROR", "内容生成必须使用 R2 流式入口并提供 generation 参数", 422, request.request_id)
         if request.selected_building_id:
             building = knowledge.get_building(request.selected_building_id)
             if not building or building.campus_id != request.campus_id:
@@ -24,15 +26,15 @@ async def chat(request: ChatRequest):
         commit = getattr(model, "commit", None)
         if commit is not None:
             commit(request, response)
-        record.status = "completed"
+        runtime.finish(request.request_id, "completed", len(response.answer))
         runtime.emit(request.request_id, "request", "completed", duration_ms=(time.monotonic()-started)*1000)
         return response
     except asyncio.CancelledError:
-        record.status = "cancelled"
+        runtime.finish(request.request_id, "cancelled")
         runtime.emit(request.request_id, "request", "cancelled", duration_ms=(time.monotonic()-started)*1000)
-        raise DomainError("request_cancelled", "本地请求已取消；上游停止状态须单独确认", 499, request.request_id)
+        raise DomainError("CANCELLED", "本地请求已取消；上游停止状态须单独确认", 499, request.request_id)
     except Exception as error:
-        record.status = "failed"
+        runtime.finish(request.request_id, "failed")
         code = error.code if isinstance(error, DomainError) else "internal_error"
         runtime.emit(request.request_id, "request", "failed", {"code": code}, (time.monotonic()-started)*1000)
         if isinstance(error, DomainError):
