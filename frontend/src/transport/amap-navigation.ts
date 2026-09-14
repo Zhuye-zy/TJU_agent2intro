@@ -35,7 +35,12 @@ function callbackResult<T>(signal:AbortSignal,invoke:(done:Callback)=>void,parse
   const timer=setTimeout(()=>finish(new MapCallError('map_timeout')),timeoutMs);
   signal.addEventListener('abort',abort,{once:true});
   if(signal.aborted){abort();return;}
-  try {invoke((status,result)=>{if(settled)return;if(status!=='complete'){finish(new MapCallError(status==='no_data'?'route_no_data':'map_provider_failed'));return;}try{finish(null,parse(result));}catch(error){finish(error);}});}catch(error){finish(error);}
+  try {invoke((status,result)=>{if(settled)return;if(status!=='complete'){
+     const data=result as {info?:unknown;message?:unknown;code?:unknown}|null;
+     const reason=[data?.info,data?.message,data?.code].filter(x=>typeof x==='string').join(' ').toUpperCase();
+     const code=/PERMISSION_DENIED|USER_DENIED|USER DENIED/.test(reason)?'permission_denied':/TIME_OUT|TIMEOUT|TIME OUT/.test(reason)?'location_timeout':status==='no_data'?'route_no_data':'map_provider_failed';
+     finish(new MapCallError(code));return;
+    }try{finish(null,parse(result));}catch(error){finish(error);}});}catch(error){finish(error);}
  });
 }
 export class AmapNavigation {

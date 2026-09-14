@@ -90,3 +90,19 @@ test('route narration delegates actual step text to the existing speech controll
  let text;await speakRoute({playFull:async(run,value)=>{text=value;return {status:'ready'}}},{},route);
  assert.equal(text,routeNarration(route));assert.ok(text.includes('沿测试步道前行'));assert.ok(text.includes('尚待核验'));
 });
+
+test('provider permission and timeout failures expose only safe codes',async()=>{
+ for(const [message,code] of [['PERMISSION_DENIED secret fixture detail','permission_denied'],['TIME_OUT private fixture detail','location_timeout']]){
+  const f=fakeSdk();f.sdk.Geolocation=class{getCurrentPosition(cb){cb('error',{message})}};
+  const budget=new MapBudget();const nav=new AmapNavigation(config,budget,async()=>f.sdk);
+  await assert.rejects(nav.locate('g',sig(),true),error=>error.code===code&&!error.message.includes('fixture'));
+  assert.equal(budget.snapshot().counters.geolocation.failed,1);
+ }
+});
+test('manual origins remain explicit and do not invent GPS accuracy',async()=>{
+ const f=fakeSdk();const nav=new AmapNavigation(config,new MapBudget(),async()=>f.sdk);
+ const req={...request(),origin:{...position(),source:'manual',accuracy_m:null}};
+ assert.equal((await nav.walk(req,poi(),sig())).destination_poi_id,poi().id);
+ const another=new AmapNavigation(config,new MapBudget(),async()=>f.sdk);
+ await assert.rejects(another.walk({...req,origin:{...req.origin,accuracy_m:0}},poi(),sig()),{code:'location_expired_or_inaccurate'});
+});
