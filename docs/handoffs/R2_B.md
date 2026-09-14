@@ -106,3 +106,9 @@ Chrome 是 headless 会话，虽有真实解码、`play()` resolved、AudioConte
 供 A 装配：使用具体 CampusSpeechController 的 getAdapter()/replay()/continueRemaining()，播放启用和恢复必须由明确用户点击触发；ASR 开始前应调用 controller.stop('new_request')，避免只停止 adapter 音频而留下 controller 队列。读取音色失败后保留显式刷新按钮。全文/选段由同一个 controller 播放。
 
 新增提交完成后 B 已停止写入，可以由 M 按祖先关系合并及独立复验。本报告不自行关闭共享 REWORK，不以隔离测试替代真实可听验收。
+
+### M 复验追加：测试不再依赖过期构建产物
+
+M 在独立复验发现 adapter.test.mjs 曾直接读取 .runtime/adapter-build/speech.js；单独 npm build 不刷新该文件。现测试在 import 前通过 Vite 从当前 adapter.ts 自构建，输出独立 .runtime/speech-adapter-test-build/speech-test.js 及专属 chunks。路径从测试文件自身定位；不依赖预先运行 check-adapters，也不和 controller 测试写同一目录。
+
+本次只修改 adapter.test.mjs 与本交接。直接运行 node --test tests/speech/adapter.test.mjs tests/speech/controller.test.mjs（没有前置构建命令）得到 **21/21 PASS**，git diff --check 通过。真实语音/浏览器验收结论不变。提交后已停止写入。

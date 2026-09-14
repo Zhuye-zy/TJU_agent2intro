@@ -1,7 +1,29 @@
 // Isolated audio/fetch substitutes; never contact the live app or claim browser QA.
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { CampusSpeechAdapter } from '../../.runtime/adapter-build/speech.js';
+import { fileURLToPath } from 'node:url';
+import { build } from 'vite';
+
+// Build this test's own entry and chunks from the checked-out source on every run.
+// Keep them separate from controller.test.mjs and the shared adapter smoke build.
+const projectRoot = fileURLToPath(new URL('../../', import.meta.url));
+const outputUrl = new URL('../../.runtime/speech-adapter-test-build/', import.meta.url);
+await build({
+  root: projectRoot,
+  configFile: false,
+  logLevel: 'silent',
+  build: {
+    outDir: fileURLToPath(outputUrl),
+    emptyOutDir: false,
+    minify: false,
+    lib: {
+      entry: fileURLToPath(new URL('../../frontend/src/speech/adapter.ts', import.meta.url)),
+      formats: ['es'],
+      fileName: () => 'speech-test.js',
+    },
+  },
+});
+const { CampusSpeechAdapter } = await import(new URL('speech-test.js', outputUrl).href);
 const context = () => ({request_id:crypto.randomUUID(),session_id:crypto.randomUUID(),signal:new AbortController().signal});
 const callbacks = (events) => ({onText(){},onStart:id=>events.push(['start',id]),onEnd:id=>events.push(['end',id]),onFailure:(id,code)=>events.push(['failure',id,code])});
 
