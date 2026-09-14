@@ -70,7 +70,7 @@ export function readableParagraphs(text: string): string[] {
 }
 
 export function applyStreamEvent(task: StreamTaskView, event: StreamEvent): StreamTaskView {
-  if (event.request_id !== task.requestId) return task;
+  if (event.request_id !== task.requestId || ['complete', 'error', 'cancelled'].includes(task.phase)) return task;
   if (event.type === 'accepted') return { ...task, phase: 'running', stage: 'request' };
   if (event.type === 'status') return { ...task, phase: task.answer ? 'has_content' : 'running', stage: event.payload.stage };
   if (event.type === 'answer_delta') return { ...task, phase: task.phase === 'complete' ? 'complete' : 'has_content', answer: task.answer + event.payload.text };
@@ -78,7 +78,7 @@ export function applyStreamEvent(task: StreamTaskView, event: StreamEvent): Stre
   if (event.type === 'usage') return { ...task, model: event.payload.model, usage: event.payload.usage };
   if (event.type === 'completed') {
     const response = event.payload.response;
-    return { ...task, phase: response.answer.trim() ? 'complete' : 'error', answer: response.answer, sources: appendUniqueSources(task.sources, response.sources), model: response.model, usage: response.usage, elapsedMs: response.elapsed_ms, errorCode: response.answer.trim() ? null : 'EMPTY_ANSWER', errorMessage: response.answer.trim() ? null : '服务返回了空正文，未计为生成成功。', finishedAt: Date.now() };
+    return { ...task, phase: response.answer.trim() ? 'complete' : 'error', answer: response.answer, sources: response.sources, model: response.model, usage: response.usage, elapsedMs: response.elapsed_ms, errorCode: response.answer.trim() ? null : 'EMPTY_ANSWER', errorMessage: response.answer.trim() ? null : '服务返回了空正文，未计为生成成功。', finishedAt: Date.now() };
   }
   if (event.type === 'error') return { ...task, phase: 'error', answer: event.payload.answer || task.answer, errorCode: event.payload.code, errorMessage: safeBackendMessage(event.payload.message), partial: event.payload.partial, finishedAt: Date.now() };
   if (event.type === 'cancelled') return { ...task, phase: 'cancelled', errorCode: 'CANCELLED', errorMessage: '本次操作已取消。', finishedAt: Date.now() };
@@ -96,7 +96,7 @@ export async function consumeR2Stream(
   signal: AbortSignal,
   onEvent: (event: StreamEvent) => void,
   createParser: typeof ParserFactory,
-  options: { totalTimeoutMs?: number; visibleIdleMs?: number; onTimeout?: () => void; expected?: { sessionId: string; messageId: string; campusId: string; mode: string } } = {},
+  options: { startedAt?: number; totalTimeoutMs?: number; visibleIdleMs?: number; onTimeout?: () => void; expected?: { sessionId: string; messageId: string; campusId: string; mode: string } } = {},
 ): Promise<ChatResponse> {
   if (!response.ok) {
     let body: unknown;
@@ -106,12 +106,14 @@ export async function consumeR2Stream(
   }
   if (!response.body) throw new StreamTaskError('STREAM_UNAVAILABLE', '服务没有返回可读取的内容流。', false, '', 'disconnect');
   const reader = response.body.getReader(); const decoder = new TextDecoder(); const seen = new Set<string>();
-  const started = Date.now(); let lastVisible = started; let lastSeq = 0; let answer = ''; let terminal: ChatResponse | null = null; let terminalError: StreamTaskError | null = null; let parserError: StreamTaskError | null = null; let terminalSeen = false; let acceptedSeen = false;
+  const started = options.startedAt ?? Date.now(); let lastVisible = started; let lastSeq = 0; let answer = ''; let terminal: ChatResponse | null = null; let terminalError: StreamTaskError | null = null; let parserError: StreamTaskError | null = null; let terminalSeen = false; let acceptedSeen = false;
   const parser = createParser({ maxBufferSize: 262144, onError: () => { parserError = new StreamTaskError('STREAM_PROTOCOL_ERROR', '响应流格式不完整。', Boolean(answer), answer, 'disconnect'); }, onEvent: (record) => {
     try {
       const event = JSON.parse(record.data) as StreamEvent;
       if (!event || event.request_id !== requestId || typeof event.event_id !== 'string' || typeof event.seq !== 'number' || event.type !== record.event || (record.id && record.id !== event.event_id)) throw new Error('envelope');
       if (seen.has(event.event_id)) return;
+      if (terminalSeen) throw new Error('event_after_terminal');
+      if (!['accepted','status','answer_delta','sources','poi_action','usage','completed','error','cancelled'].includes(event.type)) throw new Error('unknown_event');
       if (event.seq <= lastSeq) throw new Error('sequence');
       if (!acceptedSeen && event.type !== 'accepted') throw new Error('accepted_required');
       if (event.type === 'accepted' && acceptedSeen) throw new Error('duplicate_accepted');
@@ -119,7 +121,7 @@ export async function consumeR2Stream(
       if (event.type === 'completed' && (event.payload.response.request_id !== requestId || (options.expected && event.payload.response.session_id !== options.expected.sessionId))) throw new Error('completed_snapshot');
       if (event.type === 'completed' || event.type === 'error' || event.type === 'cancelled') { if (terminalSeen) throw new Error('duplicate_terminal'); terminalSeen = true; }
       seen.add(event.event_id); lastSeq = event.seq; if (event.type === 'accepted') acceptedSeen = true;
-      if (event.type === 'answer_delta') { answer += event.payload.text; lastVisible = Date.now(); }
+      if (event.type === 'answer_delta') { if (typeof event.payload.text !== 'string' || answer.length + event.payload.text.length > 23000) throw new Error('invalid_answer'); answer += event.payload.text; if (event.payload.text.trim()) lastVisible = Date.now(); }
       onEvent(event);
       if (event.type === 'completed') {
         if (!event.payload.response.answer.trim()) terminalError = new StreamTaskError('EMPTY_ANSWER', '服务返回了空正文，未计为成功。', false, '', 'empty');
@@ -149,4 +151,22 @@ export async function consumeR2Stream(
 export function exportGeneratedText(task: StreamTaskView): Blob | null {
   if (!task.answer.trim()) return null;
   return new Blob([task.answer], { type: 'text/plain;charset=utf-8' });
+}
+
+/** Deadline starts before fetch, not after response headers. */
+export async function responseWithDeadline(open: () => Promise<Response>, controller: AbortController, timeoutMs = 60000): Promise<Response> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let onAbort: (() => void) | undefined;
+  try {
+    return await Promise.race([open(), new Promise<never>((_, reject) => {
+      onAbort = () => reject(new StreamTaskError('CANCELLED', '本次操作已取消。', false, '', 'cancelled'));
+      controller.signal.addEventListener('abort', onAbort, { once: true });
+      if (controller.signal.aborted) onAbort();
+      timer = setTimeout(() => {
+        controller.signal.removeEventListener('abort', onAbort!);
+        reject(new StreamTaskError('INCOMPLETE_OUTPUT', '等待服务响应超时，请稍后重试。', false, '', 'timeout'));
+        controller.abort();
+      }, timeoutMs);
+    })]);
+  } finally { if (timer) clearTimeout(timer); if (onAbort) controller.signal.removeEventListener('abort', onAbort); }
 }

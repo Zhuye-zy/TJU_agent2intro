@@ -3,8 +3,8 @@ import test from 'node:test';
 import { createParser } from 'eventsource-parser';
 import type { ChatResponse } from '../../shared/contracts.ts';
 import type { POI, StreamEvent } from '../../shared/r2.ts';
-import { classifyAmapLocation } from '../../frontend/src/scene/amap.ts';
-import { applyStreamEvent, campusMediaFor, consumeR2Stream, exportGeneratedText, mergePoiPages, newTask, readableParagraphs, shouldFollowLatest, StreamTaskError, validateGenerationDraft } from '../../frontend/src/ui/r2-model.ts';
+import { classifyAmapLocation } from '../../frontend/src/ui/navigation-model.ts';
+import { applyStreamEvent, campusMediaFor, consumeR2Stream, exportGeneratedText, mergePoiPages, newTask, readableParagraphs, shouldFollowLatest, StreamTaskError, validateGenerationDraft, responseWithDeadline } from '../../frontend/src/ui/r2-model.ts';
 
 const requestId = '11111111-1111-4111-8111-111111111111';
 const sessionId = '22222222-2222-4222-8222-222222222222';
@@ -76,4 +76,20 @@ test('POI pagination is stable-id deduplicated and location quality is explicit'
   assert.deepEqual(mergePoiPages([poi], [updated, { ...poi, id: 'p2' }]), [updated, { ...poi, id: 'p2' }]);
   const coarse = classifyAmapLocation({ position: { lng: 117, lat: 39 }, accuracy: 3000, location_type: 'ip' }); assert.ok(!(coarse instanceof Error) && coarse.coarse && coarse.sourceLabel.includes('IP'));
   const precise = classifyAmapLocation({ position: { lng: 117, lat: 39 }, accuracy: 20, location_type: 'gps' }); assert.ok(!(precise instanceof Error) && !precise.coarse);
+});
+
+test('A03 terminal frame is immutable and authoritative sources replace retrieval', async () => {
+  await assert.rejects(() => consumeR2Stream(streamResponse([accepted(),wire('completed',{response},2),wire('answer_delta',{text:'late'},3)]),requestId,new AbortController().signal,()=>undefined,createParser), (error:unknown)=>error instanceof StreamTaskError && error.code==='STREAM_PROTOCOL_ERROR');
+  const completed=applyStreamEvent({...newTask(requestId,messageId),sources:[{id:'retrieved-only'} as any]}, {request_id:requestId,type:'completed',payload:{response}} as any);
+  assert.deepEqual(completed.sources,[]);
+  assert.equal(applyStreamEvent(completed,{request_id:requestId,type:'answer_delta',payload:{text:'late'}} as any).answer,response.answer);
+});
+test('A02 headers deadline and cancellation settle even if network ignores abort', async () => {
+  const controller=new AbortController();
+  await assert.rejects(()=>responseWithDeadline(()=>new Promise(()=>{}),controller,15),(error:unknown)=>error instanceof StreamTaskError && error.reason==='timeout');
+  assert.equal(controller.signal.aborted,true);
+  const cancelled=new AbortController();
+  const pending=responseWithDeadline(()=>new Promise(()=>{}),cancelled,1000);
+  cancelled.abort();
+  await assert.rejects(()=>pending,(error:unknown)=>error instanceof StreamTaskError && error.reason==='cancelled');
 });

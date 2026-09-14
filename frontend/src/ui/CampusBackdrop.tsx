@@ -11,7 +11,7 @@ export function CampusBackdrop({ campus, assets, children }: Props) {
   const [active, setActive] = useState<0 | 1>(0); const [missing, setMissing] = useState(true); const generationRef = useRef(0); const activeRef = useRef<0 | 1>(0);
   useEffect(() => {
     const generation = ++generationRef.current; const target = campusMediaFor(assets, campus);
-    if (!target) { setMissing(true); setLayers([null, null]); return; }
+    if (!target) { if (assets !== null) { setMissing(true); setLayers([null, null]); } return; }
     const image = new Image(); image.onload = () => {
       if (generationRef.current !== generation) return; const next = activeRef.current === 0 ? 1 : 0;
       setLayers((current) => { const copy: [CampusMedia | null, CampusMedia | null] = [...current]; copy[next] = target; return copy; });
@@ -25,6 +25,6 @@ export function CampusBackdrop({ campus, assets, children }: Props) {
   return <div className={`campus-backdrop ${missing ? 'missing' : ''}`}>
     {layers.map((media, index) => <div key={index} className={`campus-photo-layer ${active === index && media ? 'active' : ''}`} style={media ? { backgroundImage: `linear-gradient(180deg,rgba(4,24,45,.12),rgba(4,24,45,.7)),url("${media.local_path.replace(/["\\]/g, '')}")`, backgroundPosition: `${media.focal_point[0] * 100}% ${media.focal_point[1] * 100}%` } : undefined}/>) }
     {children}
-    <div className="photo-credit">{visible && !missing ? <>{visible.caption} · {visible.creator ?? '作者未署名'} · {sourceUrl ? <a href={sourceUrl} target="_blank" rel="noreferrer">图源</a> : '图源地址不可用'}</> : <>当前校区暂无可用实景照片 · 使用中性背景</>}</div>
+    <div className="photo-credit">{visible && !missing ? <>{visible.campus_id !== campus ? '正在切换校区 · ' : ''}{visible.caption} · {visible.creator ?? '作者未署名'} · {sourceUrl ? <a href={sourceUrl} target="_blank" rel="noreferrer">图源</a> : '图源地址不可用'}</> : <>当前校区暂无可用实景照片 · 使用中性背景</>}</div>
   </div>;
 }

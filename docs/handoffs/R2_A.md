@@ -91,3 +91,33 @@ CUA 实际返回 `apps=[]`、`browsers=[]`。没有可操作浏览器，未生�
 - `docs/requests/A/R2-manual-origin-source.md`：共享 `UserPosition.source` 只允许 `amap_geolocation`。当前手动起点诚实标为 manual 并禁用应用内路线；若需提交手动路线，请 M/C 扩展并校验契约。
 - B 的 R2 语音控制器、C 的 R2 流/地图服务、D 的 POI/图面/照片需按顺序合入后，再执行矩阵要求的真实浏览器、真实模型、地图权限与音频测试。
 
+
+
+## M1-R2 返修 A01—A06（2026-09-14）
+
+状态：PARTIAL（代码返修与隔离验证完成；真实浏览器、麦克风、人耳听音和在线地图验证仍待M）。
+同步候选基线：6827a0570f4fc9d9d698af1e96beede95dd1c2cc，使用一次 git merge --ff-only。
+已停止修改，可以合并：是。仅修改A的ui/scene/tests/ui及本交接。
+
+- A01：外链渲染双重绑定稳定实体ID；切点清外链/路线，旧响应不得落到新卡片。路线结果也绑定目标。
+- A02：60秒headers deadline、从提交起120秒总deadline；正文流首字/空闲计时与总时限分开。生成完成渲染回执由实际DOM effect发起，音频finish独立运行；语音播放被阻止不会让文字loading一直等待。错误、清空、切校区停止旧声音。
+- A03：同chunk终态后事件拒绝；task终态不可变；completed正文和来源权威替换。来源在完成前标“检索候选”，完成后标“最终来源”。
+- A04：本地目录、校园图面、地图配置分别加载，地图请求不阻塞目录；图面严格使用manifest宽高比，标注使用同一坐标平面，资料年代/非精确导航可见。在线地图只使用M的AmapNavigation+MapBudget和同一加载的AMap namespace；JS Walking优先，无REST路线调用。在线实例跨视图和校区保留，避免重复加载耗费预算。授权一次定位、停止等待、手动GCJ-02起点、路线取消、真实路线步骤和现有B控制器朗读已接。持续定位明确暂未实现，无假按钮。
+- A05：ASR复用B controller.getAdapter，新增中文音色选择/刷新、恢复声音、继续讲及真实错误提示。生成“展开讲讲”沿生成session，携带受限的选中原稿文本而不建立第二套历史存储。新任务/清空/切校区失效旧ASR和音频。
+- A06：目标照片加载期间保留旧层并标校区正在切换，新图成功后过渡；真实无照片/加载失败回中性背景，不用其他校区冒充。素材是否达到数量/许可目标由D/M独立核验。
+
+### 实际验证
+
+1. node --test tests/ui/model.test.ts tests/ui/r2-model.test.ts tests/ui/navigation.test.ts：21/21通过。新增错实体外链、旧路线、目标/校区取消代次、headers挂起/取消、终态后delta和最终来源覆盖用例。均为隔离逻辑测试，不冒充浏览器/提供方成功。
+2. npm run typecheck：通过。
+3. npm run build：通过，144模块。
+4. scripts/Start-Frontend.ps1 -Port 5174 -ApiPort 8001：实际启动Vite，监听127.0.0.1:5174，PID 63464。GET /=200、GET /src/ui/App.tsx=200。跨树/@fs/E:/AI4TJU/.worktrees/api/frontend/src/ui/App.tsx=403。
+5. 不存在的跨树.env路径返回200 text/html（534字节，应用SPA壳），未返回秘密。已通知M补前置403/404规则，A未修改共享Vite配置。
+6. 上述Vite测试进程已通过自身会话Ctrl-C关闭，再查5174无监听；未动root8000。
+7. 本返修真实地图加载/定位/POI搜索/步行规划调用均0。默认M预算1/1/0/1，统计应用发起次数，失败/取消不退额、刷新不重置，不代表高德平台扣减统计。
+
+### 待M集成复验
+
+M的7760979定位错误分类协调已在总控分支，A已接permission_denied/location_timeout/location_accuracy_unverified提示，无需重放提交。
+真实三种生成页面、generation.rendered事件、5次自动可听播报、权限/精确定位/路线、桌面小屏与图片现场效果仍须M实测。API或构建不替代浏览器PASS。
+最短现场流程：启动应用→双校区图面各点选/查来源→开启语音选音色→三类生成分别提交→取消/重试/继续讲→切校区确认旧声音停止→在在线配置明确时各授权一次定位/一次路线，额度用完后保留外链。
