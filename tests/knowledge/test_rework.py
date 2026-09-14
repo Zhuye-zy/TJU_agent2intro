@@ -40,8 +40,10 @@ def test_malformed_cursors_are_domain_errors(payload):
 def test_coverage_counts_records_not_legacy_summaries():
     k=LocalKnowledge(); facts=json.loads((DATA_DIRECTORY/"facts.json").read_text(encoding="utf-8"))
     assert k.get_coverage().fact_count==len(facts)
+    assert len(facts)>=200
+    assert len({f["fact"] for f in facts})==len(facts)
     assert k.get_coverage().fact_count==sum(c.facts for c in k.get_coverage().campuses)
-    assert k.get_coverage().source_pages==8
+    assert k.get_coverage().source_pages==15
     assert sum(c.verified_coordinates for c in k.get_coverage().campuses)==0
 
 def test_historical_maps_are_local_relative_only():

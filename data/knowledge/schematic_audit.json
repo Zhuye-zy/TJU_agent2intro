@@ -235,7 +235,13 @@
     "basis": "manually read label on public 2017 map",
     "map_data_as_of": "2017-06-01",
     "reviewed_at": "2026-09-14",
-    "current_location_verified": false
+    "current_location_verified": false,
+    "identity_corroboration": {
+      "source_url": "https://news.tju.edu.cn/info/1003/108399.htm",
+      "section": "大通学生中心",
+      "statement": "主轴线尽端临水半岛；三个矩形体块",
+      "method": "名称与位置描述交叉比对，非当前现场核验"
+    }
   },
   {
     "poi_id": "beiyangyuan-gym",
