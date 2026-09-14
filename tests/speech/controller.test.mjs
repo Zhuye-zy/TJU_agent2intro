@@ -17,6 +17,18 @@ await build({
 const moduleUrl = pathToFileURL(`${process.cwd()}/.runtime/adapter-build/controller-r2.js`).href;
 const { CampusSpeechController, IncrementalSpeechSanitizer, sanitizeSpeechText } = await import(moduleUrl);
 
+test('source IDs are silent in full and streaming speech at every split',()=>{
+ const raw='第一步[source:local-one]。第二步。\n[source:web-official]';
+ const expected=sanitizeSpeechText(raw).text;
+ assert.equal(expected,'第一步。第二步。');
+ for(let split=1;split<raw.length;split++){
+  const sanitizer=new IncrementalSpeechSanitizer();
+  const chunks=[...sanitizer.append(raw.slice(0,split)),...sanitizer.append(raw.slice(split)),...sanitizer.finish('第一步。第二步。')];
+  assert.ok(!chunks.join('').includes('source:'));
+  assert.ok(!chunks.join('').includes('official'));
+ }
+});
+
 const ids = () => ({
   request_id: crypto.randomUUID(),
   session_id: crypto.randomUUID(),
@@ -287,7 +299,7 @@ test('B04 brief counts actual sentences, bounds long first sentences, and contin
   }
 });
 
-test('B05 slow server discovery and delayed browser voices succeed; an explicit next call retries failure', async () => {
+test('server voice discovery retries explicitly without adding browser voices', async () => {
   const original = { window: globalThis.window, fetch: globalThis.fetch, SpeechSynthesisUtterance: globalThis.SpeechSynthesisUtterance };
   const listeners = new Set(), scheduled = new Set();
   let browserVoices = [], fail = true, calls = 0;
@@ -320,7 +332,7 @@ test('B05 slow server discovery and delayed browser voices succeed; an explicit 
       for (const cb of [...listeners]) cb();
     }, 2500);
     const first = await c.listVoices();
-    assert.ok(first.some((v) => v.id === 'browser:browser-voice'));
+    assert.equal(first.length, 0); // Only the four configured server voices are exposed.
     assert.ok(!first.some((v) => v.id === 'edge:voice'));
     fail = false;
     const second = await c.listVoices();

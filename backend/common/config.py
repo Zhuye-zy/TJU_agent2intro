@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     amap_js_key: str = ""
     amap_security_key: SecretStr = SecretStr("")
     amap_web_service_key: SecretStr = SecretStr("")
+    web_search_enabled: bool = True
+    web_search_timeout: float = 12.0
+    web_search_backend: str = "bing,duckduckgo,brave"
     @property
     def sdk_base_url(self) -> str:
         suffix = "/chat/completions"

@@ -51,10 +51,6 @@ async def stream_chat(body:R2ChatRequest):
    if prepared.needs_selection and body.mode=="content_generation":raise DomainError("VALIDATION_ERROR","请先选择讲解对象，或明确生成要求",422,body.request_id)
    if prepared.needs_selection:
     answer="请先选择具体点位，我才能确定“这里”指的是哪一处。"
-   elif body.mode=="campus_qa" and not prepared.knowledge_ready:
-    raise DomainError("UPSTREAM_PROTOCOL_ERROR","校园资料库尚不可用",503,body.request_id)
-   elif body.mode=="campus_qa" and not prepared.hits:
-    answer="当前检索没有找到足够资料，我不能在缺少事实依据时猜测。"
    else:
     if prepared.hits:yield emit("sources",{"sources":prepared.hits,"kind":"retrieved"})
     yield emit("status",{"stage":"model","status":"started"})

@@ -3,6 +3,7 @@ export type MapOperation = 'map_load'|'geolocation'|'poi_search'|'walking_route'
 export type MapCounters = {initiated:number;completed:number;failed:number;cancelled:number;blocked:number};
 export type MapLimits = Record<MapOperation,number>;
 export const MAP_SMOKE_LIMITS:Readonly<MapLimits> = Object.freeze({map_load:1,geolocation:1,poi_search:0,walking_route:1});
+export const MAP_DAILY_LIMITS:Readonly<MapLimits> = Object.freeze({map_load:100,geolocation:3000,poi_search:100,walking_route:200});
 export interface CounterStorage {getItem(key:string):string|null;setItem(key:string,value:string):void}
 const kinds:MapOperation[]=['map_load','geolocation','poi_search','walking_route'];
 const empty=():Record<MapOperation,MapCounters>=>Object.fromEntries(kinds.map(k=>[k,{initiated:0,completed:0,failed:0,cancelled:0,blocked:0}])) as Record<MapOperation,MapCounters>;

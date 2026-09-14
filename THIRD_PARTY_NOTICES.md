@@ -33,3 +33,8 @@ OLV后端MIT、OLV-Web附加条件许可、AIRI MIT、TalkingHead MIT、three-vr
 
 eventsource-parser 4.1.0（MIT）：M的frontend/src/transport/r2.ts导出createParser给A做真实SSE消费；许可证快照见docs/licenses/eventsource-parser/LICENSE。R2的frontend/src/ui/r2-model.ts实际消费该解析器，正文/终态实现已合并；真实浏览器渲染另待验。
 @amap/amap-jsapi-loader 1.0.1：发布包package.json声明MIT，已安装供A按需加载JSAPI2.0及Geolocation插件；发布包没有单独LICENSE文本，保存PACKAGE_METADATA.json并记录此缺口，不能将其MIT元数据扩大为高德在线服务/底图/厂商POI许可。在线平台条款和来源限制单独适用。
+# 联网检索增补
+
+- DDGS 9.11.4：公开搜索聚合组件，MIT，https://github.com/deedy5/ddgs 。
+- lxml 6.1.3：网页 HTML 文本解析，BSD，https://lxml.de/ 。其底层库及传递依赖仍适用各自许可证。
+- 搜索所得网页的内容权利属于原站点；应用短时保留检索摘要和有限正文摘录，显示原始链接，不把搜索结果作为项目授权素材。

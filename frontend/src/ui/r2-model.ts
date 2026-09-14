@@ -66,7 +66,8 @@ export function shouldFollowLatest(scrollTop: number, scrollHeight: number, clie
 }
 
 export function readableParagraphs(text: string): string[] {
-  return text.replace(/\r\n/g, '\n').split(/\n{2,}/).filter((paragraph) => paragraph.trim().length > 0);
+  // Hide complete and still-streaming source markers; final references have their own panel.
+  return text.replace(/\[source:[^\]]*(?:\]|$)/gi, '').replace(/\[(?:s|so|sou|sour|sourc|source)?$/i, '').replace(/\r\n/g, '\n').split(/\n{2,}/).filter((paragraph) => paragraph.trim().length > 0);
 }
 
 export function applyStreamEvent(task: StreamTaskView, event: StreamEvent): StreamTaskView {

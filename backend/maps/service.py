@@ -23,7 +23,7 @@ _PROXY={
  "v3/direction/walking":("https://restapi.amap.com/v3/direction/walking",{"origin","destination","isindoor","originid","destinationid","show_fields"},"walking_route"),
  "v5/direction/walking":("https://restapi.amap.com/v5/direction/walking",{"origin","destination","show_fields"},"walking_route"),
 }
-_COMMON={"key","callback","output","platform","logversion","appname","csid","sdkversion"}
+_COMMON={"key","callback","output","platform","s","logversion","appname","csid","sdkversion"}
 def _validate_proxy(params,allowed,js):
  if any(k not in allowed|_COMMON for k in params):raise DomainError("VALIDATION_ERROR","查询参数不在允许列表",422)
  if "key" in params and params["key"] != js:raise DomainError("VALIDATION_ERROR","JS Key 与应用配置不一致",422)
@@ -47,6 +47,8 @@ def _validate_proxy(params,allowed,js):
   if key in enums and value not in enums[key]:raise DomainError("VALIDATION_ERROR","地图参数枚举无效",422)
   clean[key]=value
  clean["key"]=js
+ clean["platform"]="JS"
+ clean["s"]="rsv3"
  return clean
 
 def _proxy_payload(response,callback):
@@ -112,7 +114,10 @@ class MapService:
    if len(response.content)>2_000_000:raise DomainError("UPSTREAM_PROTOCOL_ERROR","高德响应超过安全上限",503)
    data=_proxy_payload(response,clean.get("callback"))
    success=str(data.get("status"))=="1" or (path=="v4/map/styles" and data.get("errcode")==0)
-   if not success:raise DomainError("UPSTREAM_PROTOCOL_ERROR","高德服务未返回业务成功",503)
+   if not success:
+    info=str(data.get("info",""))
+    messages={"USERKEY_PLAT_NOMATCH":"高德 Key 平台类型不匹配，请使用 Web 端 JS API Key", "INVALID_USER_KEY":"高德 Key 无效或已停用", "INVALID_USER_SCODE":"高德 Key 与安全密钥不匹配", "INVALID_USER_DOMAIN":"当前域名不在高德 Key 的允许列表", "DAILY_QUERY_OVER_LIMIT":"高德每日调用额度已用完", "INSUFFICIENT_PRIVILEGES":"此高德 Key 未开通相应服务"}
+    raise DomainError(info if info in messages else "UPSTREAM_PROTOCOL_ERROR",messages.get(info,"高德服务未返回业务成功"),503)
    self.proxy_counts[category]["completed"]+=1
    self.trace(action,"completed",elapsed_ms=(time.monotonic()-started)*1000)
    # Proxy success is not proof that a browser rendered a map, located a device or executed a route.
