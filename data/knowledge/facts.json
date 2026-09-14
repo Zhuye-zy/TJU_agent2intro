@@ -1,0 +1,3072 @@
+[
+  {
+    "id": "poi-weijinlu-09-teaching",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-09-teaching",
+    "title": "第九教学楼",
+    "category": "teaching",
+    "aliases": [
+      "9教"
+    ],
+    "fact": "校方资料在卫津路校区列有第九教学楼。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "第九教学楼",
+        "snippet": "校方资料在卫津路校区列有第九教学楼。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-history-museum",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-history-museum",
+    "title": "天津大学校史博物馆",
+    "category": "culture",
+    "aliases": [
+      "校史馆"
+    ],
+    "fact": "校方资料在卫津路校区列有天津大学校史博物馆。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "天津大学校史博物馆",
+        "snippet": "校方资料在卫津路校区列有天津大学校史博物馆。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-chunshui-library",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-chunshui-library",
+    "title": "春水图书馆（北馆）",
+    "category": "library",
+    "aliases": [
+      "北馆",
+      "春水图书馆"
+    ],
+    "fact": "校方资料在卫津路校区列有春水图书馆（北馆）。",
+    "sources": [
+      {
+        "id": "src-library",
+        "title": "春水图书馆（北馆）",
+        "snippet": "校方资料在卫津路校区列有春水图书馆（北馆）。",
+        "url": "https://www.tju.edu.cn/info/1046/1302.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-science-library",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-science-library",
+    "title": "科学图书馆（南馆）",
+    "category": "library",
+    "aliases": [
+      "南馆",
+      "科学图书馆"
+    ],
+    "fact": "校方资料在卫津路校区列有科学图书馆（南馆）。",
+    "sources": [
+      {
+        "id": "src-library",
+        "title": "科学图书馆（南馆）",
+        "snippet": "校方资料在卫津路校区列有科学图书馆（南馆）。",
+        "url": "https://www.tju.edu.cn/info/1046/1302.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-student-center",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-student-center",
+    "title": "大学生活动中心",
+    "category": "service",
+    "aliases": [
+      "大活"
+    ],
+    "fact": "校方资料在卫津路校区列有大学生活动中心。",
+    "sources": [
+      {
+        "id": "src-venues",
+        "title": "大学生活动中心",
+        "snippet": "校方资料在卫津路校区列有大学生活动中心。",
+        "url": "https://www.tju.edu.cn/info/1046/1285.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-old-gym",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-old-gym",
+    "title": "老体育馆（篮球馆）",
+    "category": "sports",
+    "aliases": [
+      "篮球馆"
+    ],
+    "fact": "校方资料在卫津路校区列有老体育馆（篮球馆）。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "老体育馆（篮球馆）",
+        "snippet": "校方资料在卫津路校区列有老体育馆（篮球馆）。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-stadium",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-stadium",
+    "title": "体育场",
+    "category": "sports",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有体育场。",
+    "sources": [
+      {
+        "id": "src-venues",
+        "title": "体育场",
+        "snippet": "校方资料在卫津路校区列有体育场。",
+        "url": "https://www.tju.edu.cn/info/1046/1285.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-gym",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-gym",
+    "title": "体育馆",
+    "category": "sports",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有体育馆。",
+    "sources": [
+      {
+        "id": "src-venues",
+        "title": "体育馆",
+        "snippet": "校方资料在卫津路校区列有体育馆。",
+        "url": "https://www.tju.edu.cn/info/1046/1285.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-swimming",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-swimming",
+    "title": "游泳馆",
+    "category": "sports",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有游泳馆。",
+    "sources": [
+      {
+        "id": "src-venues",
+        "title": "游泳馆",
+        "snippet": "校方资料在卫津路校区列有游泳馆。",
+        "url": "https://www.tju.edu.cn/info/1046/1285.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-water-building",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-water-building",
+    "title": "水利馆",
+    "category": "teaching",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有水利馆。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "水利馆",
+        "snippet": "校方资料在卫津路校区列有水利馆。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-wang-xuezhong",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-wang-xuezhong",
+    "title": "王学仲艺术研究所",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有王学仲艺术研究所。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "王学仲艺术研究所",
+        "snippet": "校方资料在卫津路校区列有王学仲艺术研究所。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-feng-jicai",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-feng-jicai",
+    "title": "冯骥才文学艺术研究院",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有冯骥才文学艺术研究院。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "冯骥才文学艺术研究院",
+        "snippet": "校方资料在卫津路校区列有冯骥才文学艺术研究院。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-25-teaching",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-25-teaching",
+    "title": "曾宪梓楼（25教）",
+    "category": "teaching",
+    "aliases": [
+      "25教",
+      "曾宪梓楼"
+    ],
+    "fact": "校方资料在卫津路校区列有曾宪梓楼（25教）。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "曾宪梓楼（25教）",
+        "snippet": "校方资料在卫津路校区列有曾宪梓楼（25教）。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-alumni-home",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-alumni-home",
+    "title": "校友之家",
+    "category": "service",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有校友之家。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "校友之家",
+        "snippet": "校方资料在卫津路校区列有校友之家。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-east-gate",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-east-gate",
+    "title": "卫津路校区东门",
+    "category": "gate",
+    "aliases": [
+      "卫津路东门",
+      "东门"
+    ],
+    "fact": "校方资料在卫津路校区列有卫津路校区东门。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "卫津路校区东门",
+        "snippet": "校方资料在卫津路校区列有卫津路校区东门。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-east-gate-square",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-east-gate-square",
+    "title": "东门广场",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有东门广场。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "东门广场",
+        "snippet": "校方资料在卫津路校区列有东门广场。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-dream-stone",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-dream-stone",
+    "title": "梦成真石",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有梦成真石。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "梦成真石",
+        "snippet": "校方资料在卫津路校区列有梦成真石。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-beiyang-pavilion",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-beiyang-pavilion",
+    "title": "北洋大学堂纪念碑亭",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有北洋大学堂纪念碑亭。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "北洋大学堂纪念碑亭",
+        "snippet": "校方资料在卫津路校区列有北洋大学堂纪念碑亭。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-qin-exam",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-qin-exam",
+    "title": "钦字第一号考凭",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有钦字第一号考凭。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "钦字第一号考凭",
+        "snippet": "校方资料在卫津路校区列有钦字第一号考凭。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-school-song",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-school-song",
+    "title": "校歌",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有校歌。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "校歌",
+        "snippet": "校方资料在卫津路校区列有校歌。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-beiyang-square",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-beiyang-square",
+    "title": "北洋广场",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有北洋广场。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "北洋广场",
+        "snippet": "校方资料在卫津路校区列有北洋广场。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-qiushi-pavilion",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-qiushi-pavilion",
+    "title": "求是亭",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有求是亭。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "求是亭",
+        "snippet": "校方资料在卫津路校区列有求是亭。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-haitang",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-haitang",
+    "title": "铭德道海棠",
+    "category": "culture",
+    "aliases": [
+      "海棠"
+    ],
+    "fact": "校方资料在卫津路校区列有铭德道海棠。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "铭德道海棠",
+        "snippet": "校方资料在卫津路校区列有铭德道海棠。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-newton-tree",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-newton-tree",
+    "title": "牛顿苹果树",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有牛顿苹果树。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "牛顿苹果树",
+        "snippet": "校方资料在卫津路校区列有牛顿苹果树。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-jingye-stone",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-jingye-stone",
+    "title": "敬业石",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有敬业石。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "敬业石",
+        "snippet": "校方资料在卫津路校区列有敬业石。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-tiangong-stone",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-tiangong-stone",
+    "title": "天工石",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有天工石。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "天工石",
+        "snippet": "校方资料在卫津路校区列有天工石。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-suyuan-stone",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-suyuan-stone",
+    "title": "溯源石",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有溯源石。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "溯源石",
+        "snippet": "校方资料在卫津路校区列有溯源石。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-jingye-lake",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-jingye-lake",
+    "title": "敬业湖",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有敬业湖。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "敬业湖",
+        "snippet": "校方资料在卫津路校区列有敬业湖。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-youth-lake",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-youth-lake",
+    "title": "青年湖",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有青年湖。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "青年湖",
+        "snippet": "校方资料在卫津路校区列有青年湖。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-aiwan-lake",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-aiwan-lake",
+    "title": "爱晚湖",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有爱晚湖。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "爱晚湖",
+        "snippet": "校方资料在卫津路校区列有爱晚湖。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-youyi-lake",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-youyi-lake",
+    "title": "友谊湖",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有友谊湖。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "友谊湖",
+        "snippet": "校方资料在卫津路校区列有友谊湖。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-xiliang-garden",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-xiliang-garden",
+    "title": "锡良模型园",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有锡良模型园。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "锡良模型园",
+        "snippet": "校方资料在卫津路校区列有锡良模型园。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-double-pavilions",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-double-pavilions",
+    "title": "青年湖畔双亭",
+    "category": "culture",
+    "aliases": [
+      "双亭"
+    ],
+    "fact": "校方资料在卫津路校区列有青年湖畔双亭。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "青年湖畔双亭",
+        "snippet": "校方资料在卫津路校区列有青年湖畔双亭。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-xue-4-dining",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-xue-4-dining",
+    "title": "学四食堂",
+    "category": "dining",
+    "aliases": [
+      "学4食堂"
+    ],
+    "fact": "校方资料在卫津路校区列有学四食堂。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-dining-2024",
+        "title": "学四食堂",
+        "snippet": "校方资料在卫津路校区列有学四食堂。资料为历史信息，当前用途待核验。",
+        "url": "https://yx.tju.edu.cn/jztd/ys/201806/t20180602_307309.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-weijinlu-xue-5-dining",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-xue-5-dining",
+    "title": "学五食堂",
+    "category": "dining",
+    "aliases": [
+      "学5食堂",
+      "清真食堂"
+    ],
+    "fact": "校方资料在卫津路校区列有学五食堂。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-dining-2024",
+        "title": "学五食堂",
+        "snippet": "校方资料在卫津路校区列有学五食堂。资料为历史信息，当前用途待核验。",
+        "url": "https://yx.tju.edu.cn/jztd/ys/201806/t20180602_307309.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-weijinlu-liuyuan-dining",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-liuyuan-dining",
+    "title": "留园餐厅",
+    "category": "dining",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有留园餐厅。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-dining-2024",
+        "title": "留园餐厅",
+        "snippet": "校方资料在卫津路校区列有留园餐厅。资料为历史信息，当前用途待核验。",
+        "url": "https://yx.tju.edu.cn/jztd/ys/201806/t20180602_307309.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-weijinlu-zhang-tailei",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-zhang-tailei",
+    "title": "张太雷像",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有张太雷像。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "张太雷像",
+        "snippet": "校方资料在卫津路校区列有张太雷像。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-sheng-xuanhuai",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-sheng-xuanhuai",
+    "title": "盛宣怀像",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有盛宣怀像。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "盛宣怀像",
+        "snippet": "校方资料在卫津路校区列有盛宣怀像。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-ma-yinchu",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-ma-yinchu",
+    "title": "马寅初像",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有马寅初像。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "马寅初像",
+        "snippet": "校方资料在卫津路校区列有马寅初像。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-li-shusen",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-li-shusen",
+    "title": "李曙森像",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有李曙森像。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "李曙森像",
+        "snippet": "校方资料在卫津路校区列有李曙森像。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-xu-zhong",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-xu-zhong",
+    "title": "徐中像",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有徐中像。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "徐中像",
+        "snippet": "校方资料在卫津路校区列有徐中像。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-lu-sheng",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-lu-sheng",
+    "title": "卢绳像",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有卢绳像。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "卢绳像",
+        "snippet": "校方资料在卫津路校区列有卢绳像。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-shen-yulin",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-shen-yulin",
+    "title": "沈玉麟像",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有沈玉麟像。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "沈玉麟像",
+        "snippet": "校方资料在卫津路校区列有沈玉麟像。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-weijinlu-liu-bao",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-liu-bao",
+    "title": "刘豹像",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有刘豹像。",
+    "sources": [
+      {
+        "id": "src-fw-weijin",
+        "title": "刘豹像",
+        "snippet": "校方资料在卫津路校区列有刘豹像。",
+        "url": "https://fw.tju.edu.cn/Weijin.html",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-main-building",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-main-building",
+    "title": "北洋园校区主楼",
+    "category": "teaching",
+    "aliases": [
+      "主楼"
+    ],
+    "fact": "校方资料在北洋园校区列有北洋园校区主楼。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "北洋园校区主楼",
+        "snippet": "校方资料在北洋园校区列有北洋园校区主楼。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-qiushi-hall",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-qiushi-hall",
+    "title": "求实会堂",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有求实会堂。",
+    "sources": [
+      {
+        "id": "src-venues",
+        "title": "求实会堂",
+        "snippet": "校方资料在北洋园校区列有求实会堂。",
+        "url": "https://www.tju.edu.cn/info/1046/1285.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-jufang-guiyuan",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-jufang-guiyuan",
+    "title": "矩方规圆楼",
+    "category": "teaching",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有矩方规圆楼。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "矩方规圆楼",
+        "snippet": "校方资料在北洋园校区列有矩方规圆楼。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-datong-center",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-datong-center",
+    "title": "大通学生中心",
+    "category": "service",
+    "aliases": [
+      "学生中心"
+    ],
+    "fact": "校方资料在北洋园校区列有大通学生中心。",
+    "sources": [
+      {
+        "id": "src-venues",
+        "title": "大通学生中心",
+        "snippet": "校方资料在北洋园校区列有大通学生中心。",
+        "url": "https://www.tju.edu.cn/info/1046/1285.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-gym",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-gym",
+    "title": "综合体育馆",
+    "category": "sports",
+    "aliases": [
+      "体育馆"
+    ],
+    "fact": "校方资料在北洋园校区列有综合体育馆。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "综合体育馆",
+        "snippet": "校方资料在北洋园校区列有综合体育馆。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-xingsun-building",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-xingsun-building",
+    "title": "杏荪楼",
+    "category": "teaching",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有杏荪楼。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "杏荪楼",
+        "snippet": "校方资料在北洋园校区列有杏荪楼。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-earthquake-facility",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-earthquake-facility",
+    "title": "国家大型地震工程模拟研究设施",
+    "category": "teaching",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有国家大型地震工程模拟研究设施。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "国家大型地震工程模拟研究设施",
+        "snippet": "校方资料在北洋园校区列有国家大型地震工程模拟研究设施。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-east-gate",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-east-gate",
+    "title": "北洋园校区东门",
+    "category": "gate",
+    "aliases": [
+      "北洋园东门",
+      "东门"
+    ],
+    "fact": "校方资料在北洋园校区列有北洋园校区东门。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "北洋园校区东门",
+        "snippet": "校方资料在北洋园校区列有北洋园校区东门。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-qiushi-avenue",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-qiushi-avenue",
+    "title": "求是大道",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有求是大道。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "求是大道",
+        "snippet": "校方资料在北洋园校区列有求是大道。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-xuanhuai-square",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-xuanhuai-square",
+    "title": "宣怀广场",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有宣怀广场。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "宣怀广场",
+        "snippet": "校方资料在北洋园校区列有宣怀广场。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-tailei-square",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-tailei-square",
+    "title": "太雷广场",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有太雷广场。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "太雷广场",
+        "snippet": "校方资料在北洋园校区列有太雷广场。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-tianlin-square",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-tianlin-square",
+    "title": "天麟广场",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有天麟广场。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "天麟广场",
+        "snippet": "校方资料在北洋园校区列有天麟广场。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-shutian-square",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-shutian-square",
+    "title": "书田广场",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有书田广场。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "书田广场",
+        "snippet": "校方资料在北洋园校区列有书田广场。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-xingxue-road",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-xingxue-road",
+    "title": "兴学路",
+    "category": "other",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有兴学路。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "兴学路",
+        "snippet": "校方资料在北洋园校区列有兴学路。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-bowen-road",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-bowen-road",
+    "title": "博文路",
+    "category": "other",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有博文路。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "博文路",
+        "snippet": "校方资料在北洋园校区列有博文路。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-xigu-road",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-xigu-road",
+    "title": "西沽路",
+    "category": "other",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有西沽路。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "西沽路",
+        "snippet": "校方资料在北洋园校区列有西沽路。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-qixing-road",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-qixing-road",
+    "title": "七星路",
+    "category": "other",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有七星路。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "七星路",
+        "snippet": "校方资料在北洋园校区列有七星路。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-shuangtai-road",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-shuangtai-road",
+    "title": "双台路",
+    "category": "other",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有双台路。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "双台路",
+        "snippet": "校方资料在北洋园校区列有双台路。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-xinyuan-road",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-xinyuan-road",
+    "title": "新元路",
+    "category": "other",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有新元路。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "新元路",
+        "snippet": "校方资料在北洋园校区列有新元路。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-li-garden",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-li-garden",
+    "title": "礼园",
+    "category": "other",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有礼园。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "礼园",
+        "snippet": "校方资料在北洋园校区列有礼园。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "pending"
+  },
+  {
+    "id": "poi-beiyangyuan-le-garden",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-le-garden",
+    "title": "乐园",
+    "category": "other",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有乐园。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "乐园",
+        "snippet": "校方资料在北洋园校区列有乐园。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "pending"
+  },
+  {
+    "id": "poi-beiyangyuan-she-garden",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-she-garden",
+    "title": "射园",
+    "category": "other",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有射园。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "射园",
+        "snippet": "校方资料在北洋园校区列有射园。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "pending"
+  },
+  {
+    "id": "poi-beiyangyuan-yu-garden",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-yu-garden",
+    "title": "御园",
+    "category": "other",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有御园。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "御园",
+        "snippet": "校方资料在北洋园校区列有御园。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "pending"
+  },
+  {
+    "id": "poi-beiyangyuan-shu-garden",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-shu-garden",
+    "title": "书园",
+    "category": "other",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有书园。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "书园",
+        "snippet": "校方资料在北洋园校区列有书园。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "pending"
+  },
+  {
+    "id": "poi-beiyangyuan-shu-garden-2",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-shu-garden-2",
+    "title": "数园",
+    "category": "other",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有数园。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "数园",
+        "snippet": "校方资料在北洋园校区列有数园。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "pending"
+  },
+  {
+    "id": "poi-beiyangyuan-memorial-pavilion",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-memorial-pavilion",
+    "title": "北洋纪念亭",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有北洋纪念亭。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "北洋纪念亭",
+        "snippet": "校方资料在北洋园校区列有北洋纪念亭。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-qin-exam",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-qin-exam",
+    "title": "钦字第一号考凭",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有钦字第一号考凭。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "钦字第一号考凭",
+        "snippet": "校方资料在北洋园校区列有钦字第一号考凭。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-haitang-bank",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-haitang-bank",
+    "title": "海棠堤",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有海棠堤。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "海棠堤",
+        "snippet": "校方资料在北洋园校区列有海棠堤。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-peach-bank",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-peach-bank",
+    "title": "桃花堤",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有桃花堤。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "桃花堤",
+        "snippet": "校方资料在北洋园校区列有桃花堤。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-sanwen-bridge",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-sanwen-bridge",
+    "title": "三问桥",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有三问桥。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "三问桥",
+        "snippet": "校方资料在北洋园校区列有三问桥。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-youth-lake",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-youth-lake",
+    "title": "青年湖",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有青年湖。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "青年湖",
+        "snippet": "校方资料在北洋园校区列有青年湖。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-tju-star",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-tju-star",
+    "title": "天津大学星",
+    "category": "culture",
+    "aliases": [
+      "天大星"
+    ],
+    "fact": "校方资料在北洋园校区列有天津大学星。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "天津大学星",
+        "snippet": "校方资料在北洋园校区列有天津大学星。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-shangxian-stone",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-shangxian-stone",
+    "title": "尚贤石",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有尚贤石。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "尚贤石",
+        "snippet": "校方资料在北洋园校区列有尚贤石。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-gaokao-wall",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-gaokao-wall",
+    "title": "恢复高考纪念墙",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有恢复高考纪念墙。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "恢复高考纪念墙",
+        "snippet": "校方资料在北洋园校区列有恢复高考纪念墙。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-motto-stone",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-motto-stone",
+    "title": "实事求是校训石",
+    "category": "culture",
+    "aliases": [
+      "校训石"
+    ],
+    "fact": "校方资料在北洋园校区列有实事求是校训石。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "实事求是校训石",
+        "snippet": "校方资料在北洋园校区列有实事求是校训石。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-suzhou-pavilion",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-suzhou-pavilion",
+    "title": "苏州亭",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有苏州亭。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "苏州亭",
+        "snippet": "校方资料在北洋园校区列有苏州亭。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-chunhui-garden",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-chunhui-garden",
+    "title": "春晖园",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有春晖园。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "春晖园",
+        "snippet": "校方资料在北洋园校区列有春晖园。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-alumni-forest",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-alumni-forest",
+    "title": "校友林景观带",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有校友林景观带。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "校友林景观带",
+        "snippet": "校方资料在北洋园校区列有校友林景观带。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-newton-tree",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-newton-tree",
+    "title": "牛顿苹果树",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有牛顿苹果树。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "牛顿苹果树",
+        "snippet": "校方资料在北洋园校区列有牛顿苹果树。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-motto-ding",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-motto-ding",
+    "title": "校训鼎",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有校训鼎。",
+    "sources": [
+      {
+        "id": "src-fw-beiyang",
+        "title": "校训鼎",
+        "snippet": "校方资料在北洋园校区列有校训鼎。",
+        "url": "https://fw.tju.edu.cn/Beiyang.html",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-xue-1-dining",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-xue-1-dining",
+    "title": "学一食堂（梅园餐厅）",
+    "category": "dining",
+    "aliases": [
+      "学1食堂",
+      "梅园餐厅"
+    ],
+    "fact": "校方资料在北洋园校区列有学一食堂（梅园餐厅）。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-dining-2024",
+        "title": "学一食堂（梅园餐厅）",
+        "snippet": "校方资料在北洋园校区列有学一食堂（梅园餐厅）。资料为历史信息，当前用途待核验。",
+        "url": "https://yx.tju.edu.cn/jztd/ys/201806/t20180602_307309.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-beiyangyuan-xue-2-dining",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-xue-2-dining",
+    "title": "学二食堂（兰园餐厅）",
+    "category": "dining",
+    "aliases": [
+      "学2食堂",
+      "兰园餐厅"
+    ],
+    "fact": "校方资料在北洋园校区列有学二食堂（兰园餐厅）。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-dining-2024",
+        "title": "学二食堂（兰园餐厅）",
+        "snippet": "校方资料在北洋园校区列有学二食堂（兰园餐厅）。资料为历史信息，当前用途待核验。",
+        "url": "https://yx.tju.edu.cn/jztd/ys/201806/t20180602_307309.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-beiyangyuan-xue-3-dining",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-xue-3-dining",
+    "title": "学三食堂（棠园餐厅）",
+    "category": "dining",
+    "aliases": [
+      "学3食堂",
+      "棠园餐厅"
+    ],
+    "fact": "校方资料在北洋园校区列有学三食堂（棠园餐厅）。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-dining-2024",
+        "title": "学三食堂（棠园餐厅）",
+        "snippet": "校方资料在北洋园校区列有学三食堂（棠园餐厅）。资料为历史信息，当前用途待核验。",
+        "url": "https://yx.tju.edu.cn/jztd/ys/201806/t20180602_307309.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-beiyangyuan-xue-4-dining",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-xue-4-dining",
+    "title": "学四食堂（竹园餐厅）",
+    "category": "dining",
+    "aliases": [
+      "学4食堂",
+      "竹园餐厅"
+    ],
+    "fact": "校方资料在北洋园校区列有学四食堂（竹园餐厅）。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-dining-2024",
+        "title": "学四食堂（竹园餐厅）",
+        "snippet": "校方资料在北洋园校区列有学四食堂（竹园餐厅）。资料为历史信息，当前用途待核验。",
+        "url": "https://yx.tju.edu.cn/jztd/ys/201806/t20180602_307309.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-beiyangyuan-xue-5-dining",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-xue-5-dining",
+    "title": "学五食堂（桃园餐厅）",
+    "category": "dining",
+    "aliases": [
+      "学5食堂",
+      "桃园餐厅"
+    ],
+    "fact": "校方资料在北洋园校区列有学五食堂（桃园餐厅）。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-dining-2024",
+        "title": "学五食堂（桃园餐厅）",
+        "snippet": "校方资料在北洋园校区列有学五食堂（桃园餐厅）。资料为历史信息，当前用途待核验。",
+        "url": "https://yx.tju.edu.cn/jztd/ys/201806/t20180602_307309.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-beiyangyuan-xue-6-dining",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-xue-6-dining",
+    "title": "学六食堂（菊园餐厅）",
+    "category": "dining",
+    "aliases": [
+      "学6食堂",
+      "菊园餐厅",
+      "清真食堂"
+    ],
+    "fact": "校方资料在北洋园校区列有学六食堂（菊园餐厅）。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-dining-2024",
+        "title": "学六食堂（菊园餐厅）",
+        "snippet": "校方资料在北洋园校区列有学六食堂（菊园餐厅）。资料为历史信息，当前用途待核验。",
+        "url": "https://yx.tju.edu.cn/jztd/ys/201806/t20180602_307309.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-beiyangyuan-international-dining",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-international-dining",
+    "title": "留学生食堂",
+    "category": "dining",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有留学生食堂。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-dining-2024",
+        "title": "留学生食堂",
+        "snippet": "校方资料在北洋园校区列有留学生食堂。资料为历史信息，当前用途待核验。",
+        "url": "https://yx.tju.edu.cn/jztd/ys/201806/t20180602_307309.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-beiyangyuan-zhengdong-library",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-zhengdong-library",
+    "title": "郑东图书馆",
+    "category": "library",
+    "aliases": [
+      "郑东馆",
+      "图书馆"
+    ],
+    "fact": "校方资料在北洋园校区列有郑东图书馆。",
+    "sources": [
+      {
+        "id": "src-library",
+        "title": "郑东图书馆",
+        "snippet": "校方资料在北洋园校区列有郑东图书馆。",
+        "url": "https://www.tju.edu.cn/info/1046/1302.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "poi-beiyangyuan-dorm-ge",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-dorm-ge",
+    "title": "格园",
+    "category": "dorm_area",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有格园。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "格园",
+        "snippet": "校方资料在北洋园校区列有格园。资料为历史信息，当前用途待核验。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-beiyangyuan-dorm-zhi",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-dorm-zhi",
+    "title": "知园",
+    "category": "dorm_area",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有知园。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "知园",
+        "snippet": "校方资料在北洋园校区列有知园。资料为历史信息，当前用途待核验。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-beiyangyuan-dorm-cheng",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-dorm-cheng",
+    "title": "诚园",
+    "category": "dorm_area",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有诚园。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "诚园",
+        "snippet": "校方资料在北洋园校区列有诚园。资料为历史信息，当前用途待核验。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-beiyangyuan-dorm-zheng",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-dorm-zheng",
+    "title": "正园",
+    "category": "dorm_area",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有正园。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "正园",
+        "snippet": "校方资料在北洋园校区列有正园。资料为历史信息，当前用途待核验。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-beiyangyuan-dorm-xiu",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-dorm-xiu",
+    "title": "修园",
+    "category": "dorm_area",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有修园。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "修园",
+        "snippet": "校方资料在北洋园校区列有修园。资料为历史信息，当前用途待核验。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-beiyangyuan-dorm-qi",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-dorm-qi",
+    "title": "齐园",
+    "category": "dorm_area",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有齐园。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "齐园",
+        "snippet": "校方资料在北洋园校区列有齐园。资料为历史信息，当前用途待核验。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-beiyangyuan-dorm-zhi-guo",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-dorm-zhi-guo",
+    "title": "治园",
+    "category": "dorm_area",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有治园。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "治园",
+        "snippet": "校方资料在北洋园校区列有治园。资料为历史信息，当前用途待核验。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-beiyangyuan-dorm-ping",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-dorm-ping",
+    "title": "平园",
+    "category": "dorm_area",
+    "aliases": [],
+    "fact": "校方资料在北洋园校区列有平园。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "平园",
+        "snippet": "校方资料在北洋园校区列有平园。资料为历史信息，当前用途待核验。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-weijinlu-dorm-yi",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-dorm-yi",
+    "title": "一斋",
+    "category": "dorm_area",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有一斋。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-maps-2017",
+        "title": "一斋",
+        "snippet": "校方资料在卫津路校区列有一斋。资料为历史信息，当前用途待核验。",
+        "url": "https://zs.tju.edu.cn/info/1091/1227.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-weijinlu-dorm-er",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-dorm-er",
+    "title": "二斋",
+    "category": "dorm_area",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有二斋。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-maps-2017",
+        "title": "二斋",
+        "snippet": "校方资料在卫津路校区列有二斋。资料为历史信息，当前用途待核验。",
+        "url": "https://zs.tju.edu.cn/info/1091/1227.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-weijinlu-dorm-san",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-dorm-san",
+    "title": "三斋",
+    "category": "dorm_area",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有三斋。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-maps-2017",
+        "title": "三斋",
+        "snippet": "校方资料在卫津路校区列有三斋。资料为历史信息，当前用途待核验。",
+        "url": "https://zs.tju.edu.cn/info/1091/1227.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-weijinlu-dorm-si",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-dorm-si",
+    "title": "四斋",
+    "category": "dorm_area",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有四斋。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-maps-2017",
+        "title": "四斋",
+        "snippet": "校方资料在卫津路校区列有四斋。资料为历史信息，当前用途待核验。",
+        "url": "https://zs.tju.edu.cn/info/1091/1227.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-weijinlu-dorm-wu",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-dorm-wu",
+    "title": "五斋",
+    "category": "dorm_area",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有五斋。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-maps-2017",
+        "title": "五斋",
+        "snippet": "校方资料在卫津路校区列有五斋。资料为历史信息，当前用途待核验。",
+        "url": "https://zs.tju.edu.cn/info/1091/1227.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "poi-weijinlu-dorm-liu",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-dorm-liu",
+    "title": "六斋",
+    "category": "dorm_area",
+    "aliases": [],
+    "fact": "校方资料在卫津路校区列有六斋。资料为历史信息，当前用途待核验。",
+    "sources": [
+      {
+        "id": "src-maps-2017",
+        "title": "六斋",
+        "snippet": "校方资料在卫津路校区列有六斋。资料为历史信息，当前用途待核验。",
+        "url": "https://zs.tju.edu.cn/info/1091/1227.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "chunshui-founded",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-chunshui-library",
+    "title": "春水图书馆（北馆） · 沿革",
+    "category": "library",
+    "aliases": [
+      "北馆",
+      "春水图书馆"
+    ],
+    "fact": "春水图书馆始建于1958年。",
+    "sources": [
+      {
+        "id": "src-library",
+        "title": "春水图书馆（北馆） · 沿革",
+        "snippet": "春水图书馆始建于1958年。",
+        "url": "https://www.tju.edu.cn/info/1046/1302.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "chunshui-designer",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-chunshui-library",
+    "title": "春水图书馆（北馆） · 沿革",
+    "category": "library",
+    "aliases": [
+      "北馆",
+      "春水图书馆"
+    ],
+    "fact": "春水图书馆由徐中教授设计。",
+    "sources": [
+      {
+        "id": "src-library",
+        "title": "春水图书馆（北馆） · 沿革",
+        "snippet": "春水图书馆由徐中教授设计。",
+        "url": "https://www.tju.edu.cn/info/1046/1302.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "chunshui-extension",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-chunshui-library",
+    "title": "春水图书馆（北馆） · 沿革",
+    "category": "library",
+    "aliases": [
+      "北馆",
+      "春水图书馆"
+    ],
+    "fact": "春水图书馆于1985年扩建八层书库。",
+    "sources": [
+      {
+        "id": "src-library",
+        "title": "春水图书馆（北馆） · 沿革",
+        "snippet": "春水图书馆于1985年扩建八层书库。",
+        "url": "https://www.tju.edu.cn/info/1046/1302.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "chunshui-reopened",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-chunshui-library",
+    "title": "春水图书馆（北馆） · 沿革",
+    "category": "library",
+    "aliases": [
+      "北馆",
+      "春水图书馆"
+    ],
+    "fact": "北馆改造后于2018年3月重新开放。",
+    "sources": [
+      {
+        "id": "src-library",
+        "title": "春水图书馆（北馆） · 沿革",
+        "snippet": "北馆改造后于2018年3月重新开放。",
+        "url": "https://www.tju.edu.cn/info/1046/1302.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "chunshui-name",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-chunshui-library",
+    "title": "春水图书馆（北馆） · 沿革",
+    "category": "library",
+    "aliases": [
+      "北馆",
+      "春水图书馆"
+    ],
+    "fact": "北馆于2024年定名春水图书馆。",
+    "sources": [
+      {
+        "id": "src-library",
+        "title": "春水图书馆（北馆） · 沿革",
+        "snippet": "北馆于2024年定名春水图书馆。",
+        "url": "https://www.tju.edu.cn/info/1046/1302.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "science-opened",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-science-library",
+    "title": "科学图书馆（南馆） · 沿革",
+    "category": "library",
+    "aliases": [
+      "南馆",
+      "科学图书馆"
+    ],
+    "fact": "科学图书馆于1990年建成开放。",
+    "sources": [
+      {
+        "id": "src-library",
+        "title": "科学图书馆（南馆） · 沿革",
+        "snippet": "科学图书馆于1990年建成开放。",
+        "url": "https://www.tju.edu.cn/info/1046/1302.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "science-donor",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-science-library",
+    "title": "科学图书馆（南馆） · 沿革",
+    "category": "library",
+    "aliases": [
+      "南馆",
+      "科学图书馆"
+    ],
+    "fact": "科学图书馆由邵逸夫先生捐资助建。",
+    "sources": [
+      {
+        "id": "src-library",
+        "title": "科学图书馆（南馆） · 沿革",
+        "snippet": "科学图书馆由邵逸夫先生捐资助建。",
+        "url": "https://www.tju.edu.cn/info/1046/1302.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "science-reopened",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-science-library",
+    "title": "科学图书馆（南馆） · 沿革",
+    "category": "library",
+    "aliases": [
+      "南馆",
+      "科学图书馆"
+    ],
+    "fact": "科学图书馆于2024年4月改造后重新开放。",
+    "sources": [
+      {
+        "id": "src-library",
+        "title": "科学图书馆（南馆） · 沿革",
+        "snippet": "科学图书馆于2024年4月改造后重新开放。",
+        "url": "https://www.tju.edu.cn/info/1046/1302.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "zhengdong-opened",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-zhengdong-library",
+    "title": "郑东图书馆 · 沿革",
+    "category": "library",
+    "aliases": [
+      "郑东馆",
+      "图书馆"
+    ],
+    "fact": "郑东图书馆于2015年9月投入使用。",
+    "sources": [
+      {
+        "id": "src-library",
+        "title": "郑东图书馆 · 沿革",
+        "snippet": "郑东图书馆于2015年9月投入使用。",
+        "url": "https://www.tju.edu.cn/info/1046/1302.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "zhengdong-designer",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-zhengdong-library",
+    "title": "郑东图书馆 · 沿革",
+    "category": "library",
+    "aliases": [
+      "郑东馆",
+      "图书馆"
+    ],
+    "fact": "郑东图书馆由周恺领衔设计。",
+    "sources": [
+      {
+        "id": "src-library",
+        "title": "郑东图书馆 · 沿革",
+        "snippet": "郑东图书馆由周恺领衔设计。",
+        "url": "https://www.tju.edu.cn/info/1046/1302.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "eastgate-designer",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-east-gate",
+    "title": "北洋园校区东门 · 文化",
+    "category": "gate",
+    "aliases": [
+      "北洋园东门",
+      "东门"
+    ],
+    "fact": "北洋园东门由彭一刚教授设计。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "北洋园校区东门 · 文化",
+        "snippet": "北洋园东门由彭一刚教授设计。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "eastgate-stones",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-east-gate",
+    "title": "北洋园校区东门 · 文化",
+    "category": "gate",
+    "aliases": [
+      "北洋园东门",
+      "东门"
+    ],
+    "fact": "东门的12块石碑记述校史的12个时期。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "北洋园校区东门 · 文化",
+        "snippet": "东门的12块石碑记述校史的12个时期。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "sanwen-origin",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-sanwen-bridge",
+    "title": "三问桥 · 文化",
+    "category": "culture",
+    "aliases": [],
+    "fact": "三问桥之名源于张含英校长的“三问”。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "三问桥 · 文化",
+        "snippet": "三问桥之名源于张含英校长的“三问”。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "sanwen-connection",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-sanwen-bridge",
+    "title": "三问桥 · 文化",
+    "category": "culture",
+    "aliases": [],
+    "fact": "三问桥连接中心岛东侧与校前区。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "三问桥 · 文化",
+        "snippet": "三问桥连接中心岛东侧与校前区。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "avenue-axis",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-qiushi-avenue",
+    "title": "求是大道 · 文化",
+    "category": "culture",
+    "aliases": [],
+    "fact": "求是大道是北洋园东西向中轴道。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "求是大道 · 文化",
+        "snippet": "求是大道是北洋园东西向中轴道。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "avenue-name",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-qiushi-avenue",
+    "title": "求是大道 · 文化",
+    "category": "culture",
+    "aliases": [],
+    "fact": "求是大道取名呼应实事求是校训。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "求是大道 · 文化",
+        "snippet": "求是大道取名呼应实事求是校训。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "xingxue-origin",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-xingxue-road",
+    "title": "兴学路 · 文化",
+    "category": "other",
+    "aliases": [],
+    "fact": "兴学路名称呼应兴学强国的办学使命。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "兴学路 · 文化",
+        "snippet": "兴学路名称呼应兴学强国的办学使命。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "zhengdong-courtyard",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-zhengdong-library",
+    "title": "郑东图书馆 · 文化",
+    "category": "library",
+    "aliases": [
+      "郑东馆",
+      "图书馆"
+    ],
+    "fact": "郑东图书馆采用四面围合的庭院式形态。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "郑东图书馆 · 文化",
+        "snippet": "郑东图书馆采用四面围合的庭院式形态。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "campus-beiyang-opened",
+    "campus_id": "beiyangyuan",
+    "entity_id": null,
+    "title": "北洋园启用时间",
+    "category": "campus",
+    "aliases": [],
+    "fact": "北洋园校区于2015年9月投入使用。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "北洋园启用时间",
+        "snippet": "北洋园校区于2015年9月投入使用。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "campus-weijin-move",
+    "campus_id": "weijinlu",
+    "entity_id": null,
+    "title": "卫津路校区沿革",
+    "category": "campus",
+    "aliases": [],
+    "fact": "1952年教育部决定天津大学由西沽迁往七里台。",
+    "sources": [
+      {
+        "id": "src-campus-overview",
+        "title": "卫津路校区沿革",
+        "snippet": "1952年教育部决定天津大学由西沽迁往七里台。",
+        "url": "https://www.tju.edu.cn/tdgk/tdxq.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "dorm-undergraduate",
+    "campus_id": "beiyangyuan",
+    "entity_id": null,
+    "title": "北洋园宿舍建设资料",
+    "category": "campus",
+    "aliases": [],
+    "fact": "历史宿舍建设标准为本科生每间4人。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "北洋园宿舍建设资料",
+        "snippet": "历史宿舍建设标准为本科生每间4人。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "dorm-master",
+    "campus_id": "beiyangyuan",
+    "entity_id": null,
+    "title": "北洋园宿舍建设资料",
+    "category": "campus",
+    "aliases": [],
+    "fact": "历史宿舍建设标准为硕士生每间2人。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "北洋园宿舍建设资料",
+        "snippet": "历史宿舍建设标准为硕士生每间2人。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  },
+  {
+    "id": "dorm-doctoral",
+    "campus_id": "beiyangyuan",
+    "entity_id": null,
+    "title": "北洋园宿舍建设资料",
+    "category": "campus",
+    "aliases": [],
+    "fact": "历史宿舍建设标准为博士生每间1人。",
+    "sources": [
+      {
+        "id": "src-welcome-beiyang",
+        "title": "北洋园宿舍建设资料",
+        "snippet": "历史宿舍建设标准为博士生每间1人。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgbyy/",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "historical"
+  }
+]
