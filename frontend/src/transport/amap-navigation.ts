@@ -6,11 +6,13 @@ type Pair=[number,number];
 type LngLat={getLng():number;getLat():number};
 type Callback=(status:string,result:unknown)=>void;
 interface Geo {getCurrentPosition(callback:Callback):void}
+interface CitySearch {getLocalCity(callback:Callback):void}
 interface Walking {search(origin:Pair,destination:Pair,callback:Callback):void;clear():void}
 export interface MapHandle {destroy():void}
 export interface AmapSdk {
  Map:new(host:HTMLElement,options:Record<string,unknown>)=>MapHandle;
  Geolocation:new(options:Record<string,unknown>)=>Geo;
+ CitySearch?:new()=>CitySearch;
  Walking:new(options:Record<string,unknown>)=>Walking;
 }
 type Loader=(config:MapPublicConfig)=>Promise<AmapSdk>;
@@ -18,7 +20,7 @@ const loadSdk:Loader=async config=>{
  if(!config.js_key||!config.status.security_key_configured)throw new MapCallError('map_not_configured');
  (window as Window&{_AMapSecurityConfig?:{serviceHost:string}})._AMapSecurityConfig={serviceHost:window.location.origin+config.service_host};
  const loader=await import('@amap/amap-jsapi-loader');
- return await loader.default.load({key:config.js_key,version:'2.0',plugins:['AMap.Geolocation','AMap.Walking']}) as AmapSdk;
+ return await loader.default.load({key:config.js_key,version:'2.0',plugins:['AMap.Geolocation','AMap.CitySearch','AMap.Walking']}) as AmapSdk;
 };
 function pair(value:unknown):Pair {
  const p=value as Partial<LngLat>&{lng?:number;lat?:number};
@@ -74,12 +76,30 @@ export class AmapNavigation {
   this.assertReady();
   return this.budget.run('geolocation',operationId,userConsented,signal,async()=>{
    const sdk=await this.getSdk();if(signal.aborted)throw new MapCallError('cancelled');
-   const geo=new sdk.Geolocation({enableHighAccuracy:true,timeout:10000,convert:true,showMarker:false,showCircle:false,panToLocation:false});
+   const geo=new sdk.Geolocation({enableHighAccuracy:true,timeout:10000,convert:true,noIpLocate:0,showMarker:false,showCircle:false,panToLocation:false});
    return callbackResult(signal,done=>geo.getCurrentPosition(done),value=>{
     const result=value as {position:LngLat;accuracy?:number;location_type?:string};const [lng,lat]=pair(result.position);
     // IP-level/unknown accuracy is not a verified current-position route origin.
-    if(result.location_type==='ip'||typeof result.accuracy!=='number'||!Number.isFinite(result.accuracy)||result.accuracy<0||result.accuracy>200)throw new MapCallError('location_accuracy_unverified');
-    return {lng,lat,crs:'GCJ02',source:'amap_geolocation',accuracy_m:result.accuracy,timestamp:new Date().toISOString()};
+    const accuracy=typeof result.accuracy==='number'&&Number.isFinite(result.accuracy)&&result.accuracy>=0&&result.location_type!=='ip'?result.accuracy:null;
+    return {lng,lat,crs:'GCJ02',source:'amap_geolocation',accuracy_m:accuracy,timestamp:new Date().toISOString()};
+   });
+  });
+ }
+ async locateCity(operationId:string,signal:AbortSignal,userConsented:boolean):Promise<UserPosition>{
+  this.assertReady();
+  return this.budget.run('geolocation',operationId,userConsented,signal,async()=>{
+   const sdk=await this.getSdk();if(signal.aborted)throw new MapCallError('cancelled');
+   if(!sdk.CitySearch)throw new MapCallError('city_location_unavailable');
+   return callbackResult(signal,done=>new sdk.CitySearch!().getLocalCity(done),value=>{
+    const result=value as {bounds?:{getCenter():unknown}|string};
+    let coordinates:Pair;
+    if(typeof result.bounds==='string'){
+     const corners=result.bounds.split(';').map(p=>p.split(',').map(Number));
+     if(corners.length!==2||corners.some(p=>p.length!==2))throw new MapCallError('city_location_unavailable');
+     coordinates=pair({lng:(corners[0][0]+corners[1][0])/2,lat:(corners[0][1]+corners[1][1])/2});
+    }else if(result.bounds?.getCenter)coordinates=pair(result.bounds.getCenter());
+    else throw new MapCallError('city_location_unavailable');
+    return {lng:coordinates[0],lat:coordinates[1],crs:'GCJ02',source:'amap_geolocation',accuracy_m:null,timestamp:new Date().toISOString()};
    });
   });
  }

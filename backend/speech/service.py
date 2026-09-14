@@ -27,6 +27,12 @@ MAX_AUDIO_FILES = 128
 MAX_AUDIO_BYTES = 100 * 1024 * 1024
 AUDIO_TTL_SECONDS = 10 * 60
 MAX_WAV_FRAMES = 30 * 16000
+VOICE_CHOICES = {
+    "zh-CN-XiaoxiaoNeural": ("原版女声 · 普通话", "zh-CN"),
+    "zh-CN-YunxiNeural": ("男声 · 普通话", "zh-CN"),
+    "zh-HK-HiuGaaiNeural": ("粤语", "zh-HK"),
+    "en-US-JennyNeural": ("English", "en-US"),
+}
 logger = logging.getLogger(__name__)
 
 
@@ -111,14 +117,14 @@ class CampusSpeechService:
                 (
                     Voice(
                         id=f"edge:{item['ShortName']}",
-                        name=item.get("FriendlyName") or item.get("LocalName") or item["ShortName"],
+                        name=VOICE_CHOICES[item["ShortName"]][0],
                         locale=item["Locale"],
                         provider="edge",
                     )
                     for item in raw_voices
-                    if str(item.get("Locale", "")).lower().startswith("zh")
+                    if item.get("ShortName") in VOICE_CHOICES
                 ),
-                key=lambda item: (item.locale, item.id),
+                key=lambda item: list(VOICE_CHOICES).index(item.id.removeprefix("edge:")),
             )
         except Exception:
             return []
@@ -167,8 +173,8 @@ class CampusSpeechService:
         if self.settings.tts_provider != "edge":
             raise DomainError("tts_not_configured", "TTS provider 未配置为 edge", 503, request.request_id)
         voice = request.voice_id.removeprefix("edge:")
-        if not voice.lower().startswith("zh-"):
-            raise DomainError("voice_unavailable", "首版仅允许中文 Edge 音色", 422, request.request_id)
+        if voice not in VOICE_CHOICES:
+            raise DomainError("voice_unavailable", "请选择原版女声、普通话男声、粤语或英语", 422, request.request_id)
         operation = self._begin(request.request_id, request.session_id)
         self._cleanup_audio()
         self.audio_root.mkdir(parents=True, exist_ok=True)

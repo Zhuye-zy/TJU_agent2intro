@@ -1,6 +1,8 @@
 $ErrorActionPreference='Continue'
 # Windows PowerShell maps native stderr to ErrorRecord; every native exit code is checked below.
 $root=Split-Path -Parent $PSScriptRoot
+$previousWebSearch=$env:CAMPUS_WEB_SEARCH_ENABLED
+$env:CAMPUS_WEB_SEARCH_ENABLED='false'
 Push-Location $root
 try {
  & npm.cmd run build
@@ -11,4 +13,4 @@ try {
  if ($LASTEXITCODE -ne 0) { throw 'Frontend isolated regressions failed' }
  & '.\.venv\Scripts\python.exe' -m pytest -p no:langsmith -q
  if ($LASTEXITCODE -ne 0) { throw 'Backend regressions failed' }
-} finally { Pop-Location }
+} finally { $env:CAMPUS_WEB_SEARCH_ENABLED=$previousWebSearch; Pop-Location }

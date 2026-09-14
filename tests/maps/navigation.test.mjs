@@ -81,9 +81,22 @@ test('cancelled SDK callback is ignored and counted only as cancelled',async()=>
  await new Promise(r=>setImmediate(r));c.abort();await assert.rejects(result,{code:'cancelled'});
  callback('complete',{routes:[]});assert.equal(cleared,1);assert.equal(budget.snapshot().counters.walking_route.cancelled,1);assert.equal(budget.snapshot().counters.walking_route.completed,0);
 });
-test('IP or inaccurate location is not accepted as a precise route origin',async()=>{
+test('IP location can be displayed but is not accepted as a precise route origin',async()=>{
  const f=fakeSdk();f.sdk.Geolocation=class{getCurrentPosition(cb){cb('complete',{position:{lng:1,lat:1},accuracy:10000,location_type:'ip'})}};
- await assert.rejects(new AmapNavigation(config,new MapBudget(),async()=>f.sdk).locate('g',sig(),true),{code:'location_accuracy_unverified'});
+ const nav=new AmapNavigation(config,new MapBudget(),async()=>f.sdk);
+ const location=await nav.locate('g',sig(),true);
+ assert.equal(location.accuracy_m,null);
+ await assert.rejects(nav.walk({...request(),origin:location},poi(),sig()),{code:'location_expired_or_inaccurate'});
+ assert.equal(f.calls.walk,0);
+});
+
+test('city IP lookup displays a coarse center and respects cancellation',async()=>{
+ const f=fakeSdk();f.sdk.CitySearch=class {getLocalCity(cb){cb('complete',{bounds:'116,38;118,40'});}};
+ const nav=new AmapNavigation(config,new MapBudget(),async()=>f.sdk);
+ const result=await nav.locateCity('city',sig(),true);
+ assert.equal(result.lng,117);assert.equal(result.lat,39);assert.equal(result.accuracy_m,null);
+ const controller=new AbortController();controller.abort();
+ await assert.rejects(nav.locateCity('cancel',controller.signal,true),{code:'cancelled'});
 });
 test('route narration delegates actual step text to the existing speech controller',async()=>{
  const route={distance_m:120,steps:[{instruction:'沿测试步道前行'}],campus_access:'unverified'};

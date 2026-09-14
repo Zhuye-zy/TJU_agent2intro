@@ -11,6 +11,23 @@ from backend.common.config import Settings
 from backend.common.errors import DomainError
 from backend.contracts import AsrRequest, SpeechContext, TtsRequest
 from backend.speech.service import CampusSpeechService, decode_pcm16_wav
+from backend.speech.service import VOICE_CHOICES
+
+
+def test_only_four_voices_are_listed_and_english_can_synthesize(monkeypatch, tmp_path):
+    async def inventory():
+        return [{"ShortName":name,"Locale":value[1]} for name,value in VOICE_CHOICES.items()]+[{"ShortName":"zh-CN-unwanted","Locale":"zh-CN"}]
+    monkeypatch.setattr("backend.speech.service.edge_tts.list_voices",inventory)
+    class Audio:
+        async def save(self, path): Path(path).write_bytes(b"ID3fixture")
+    monkeypatch.setattr("backend.speech.service.prepare_edge_tts",lambda text,voice:Audio())
+    async def run():
+        service=CampusSpeechService(Settings(),tmp_path)
+        voices=await service.list_voices()
+        assert [v.id for v in voices]==['edge:'+v for v in VOICE_CHOICES]
+        result=await service.synthesize(TtsRequest(request_id=uuid4(),session_id=uuid4(),utterance_id=uuid4(),text="Welcome",voice_id="edge:en-US-JennyNeural"))
+        assert result.mime_type=="audio/mpeg"
+    asyncio.run(run())
 
 
 def pcm16_wav(seconds: float = 0.1, sample_rate: int = 16000, channels: int = 1) -> bytes:

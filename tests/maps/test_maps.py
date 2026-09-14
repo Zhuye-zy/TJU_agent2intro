@@ -35,11 +35,12 @@ def test_proxy_is_fixed_allowlist_and_injects_server_credentials(monkeypatch):
  def handler(request):seen.append(request);return httpx.Response(200,json={"status":"1"})
  svc,client=configure(monkeypatch,Settings(amap_js_key="public-js",amap_security_key="server-security"),handler)
  with TestClient(app) as api:
-  ok=api.get("/api/maps/amap/_AMapService/v3/place/text",params={"keywords":"图书馆","page":"1"})
+  ok=api.get("/api/maps/amap/_AMapService/v3/place/text",params={"keywords":"图书馆","page":"1","s":"rsv3","platform":"JS","sdkversion":"2.0"})
   bad=api.get("/api/maps/amap/_AMapService/http://internal",params={"url":"http://127.0.0.1"})
   injected=api.get("/api/maps/amap/_AMapService/v3/place/text",params={"keywords":"x","key":"attacker"})
  assert ok.status_code==200 and bad.status_code==404 and injected.status_code==422
  assert seen[0].url.host=="restapi.amap.com" and seen[0].url.params["key"]=="public-js" and seen[0].url.params["jscode"]=="server-security"
+ assert seen[0].url.params["platform"]=="JS" and seen[0].url.params["s"]=="rsv3"
  asyncio.run(client.aclose())
 def test_external_navigation_uses_verified_entrance_or_name_search(monkeypatch):
  svc,client=configure(monkeypatch,Settings(),located=True)

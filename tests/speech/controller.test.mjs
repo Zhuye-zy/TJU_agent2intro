@@ -287,7 +287,7 @@ test('B04 brief counts actual sentences, bounds long first sentences, and contin
   }
 });
 
-test('B05 slow server discovery and delayed browser voices succeed; an explicit next call retries failure', async () => {
+test('server voice discovery retries explicitly without adding browser voices', async () => {
   const original = { window: globalThis.window, fetch: globalThis.fetch, SpeechSynthesisUtterance: globalThis.SpeechSynthesisUtterance };
   const listeners = new Set(), scheduled = new Set();
   let browserVoices = [], fail = true, calls = 0;
@@ -320,7 +320,7 @@ test('B05 slow server discovery and delayed browser voices succeed; an explicit 
       for (const cb of [...listeners]) cb();
     }, 2500);
     const first = await c.listVoices();
-    assert.ok(first.some((v) => v.id === 'browser:browser-voice'));
+    assert.equal(first.length, 0); // Only the four configured server voices are exposed.
     assert.ok(!first.some((v) => v.id === 'edge:voice'));
     fail = false;
     const second = await c.listVoices();

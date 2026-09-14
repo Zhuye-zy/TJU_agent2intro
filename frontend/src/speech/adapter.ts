@@ -351,16 +351,7 @@ export class CampusSpeechAdapter implements SpeechAdapter {
   }
 
   async listVoices(): Promise<Voice[]> {
-    const [server, browser] = await Promise.all([this.listServerVoices(), waitForBrowserVoices(), this.refreshAsrCapability()]);
-    const browserVoices = browser
-      .filter((voice) => voice.lang.toLowerCase().startsWith('zh'))
-      .map((voice): Voice => ({
-        id: `browser:${voice.voiceURI}`,
-        name: voice.name,
-        locale: voice.lang,
-        provider: 'browser-online-or-os',
-      }));
-    const voices = [...server, ...browserVoices];
+    const [voices] = await Promise.all([this.listServerVoices(), this.refreshAsrCapability()]);
     this.capabilities.tts = voices.length > 0;
     return voices;
   }
@@ -790,7 +781,7 @@ export class CampusSpeechAdapter implements SpeechAdapter {
       const response = await fetch('/api/speech/voices', { signal: controller.signal });
       if (!response.ok) return [];
       const body = await response.json() as { voices: Voice[]; status: 'ready' | 'not_implemented' };
-      return body.status === 'ready' ? body.voices.filter((voice) => voice.locale.toLowerCase().startsWith('zh')) : [];
+      return body.status === 'ready' ? body.voices : [];
     } catch {
       return [];
     } finally {

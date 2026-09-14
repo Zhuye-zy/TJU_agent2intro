@@ -274,7 +274,7 @@ def test_citations_use_only_cited_hit_and_fixed_action_waits_for_ack(monkeypatch
     _close(http_client)
 
 
-def test_fabricated_citation_rejects_answer(monkeypatch):
+def test_unmatched_citation_preserves_answer_with_review_notice(monkeypatch):
     service, http_client = _service(lambda request: httpx.Response(200, json=_completion("编造 [source:not-retrieved]")))
     fixture = _FixtureKnowledge()
     monkeypatch.setattr(service_module, "knowledge", fixture)
@@ -282,7 +282,10 @@ def test_fabricated_citation_rejects_answer(monkeypatch):
     _install(monkeypatch, service)
     with TestClient(app) as client:
         response = client.post("/api/chat", json=_body("校园事实", mode="campus_qa"))
-    assert response.status_code == 503 and response.json()["error"]["code"] == "UPSTREAM_PROTOCOL_ERROR"
+    assert response.status_code == 200
+    assert "source:not-retrieved" not in response.json()["answer"]
+    assert "来源待核验" in response.json()["answer"]
+    assert "资料提示" in response.json()["answer"]
     _close(http_client)
 
 

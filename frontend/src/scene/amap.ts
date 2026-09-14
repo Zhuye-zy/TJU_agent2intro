@@ -11,6 +11,7 @@ export interface OnlineMapHandle {
   clearRoute(): void;
   resize(): void;
   locate(operationId: string, signal: AbortSignal): Promise<UserPosition>;
+  locateCity(operationId: string, signal: AbortSignal): Promise<UserPosition>;
   walk(request: RouteRequest, poi: POI, signal: AbortSignal): Promise<RouteResponse>;
   destroy(): void;
 }
@@ -23,10 +24,10 @@ export async function createOnlineMap(host: HTMLElement, config: MapPublicConfig
     if (service.origin !== location.origin) throw new Error('service_host_not_same_origin');
     (window as Window & {_AMapSecurityConfig?: {serviceHost:string}})._AMapSecurityConfig = {serviceHost:service.href.replace(/\/$/, '')};
     const loader = await import('@amap/amap-jsapi-loader');
-    namespace = await loader.default.load({key:settings.js_key!,version:'2.0',plugins:['AMap.Geolocation','AMap.Walking','AMap.Scale']}) as AMapApi;
+    namespace = await loader.default.load({key:settings.js_key!,version:'2.0',plugins:['AMap.Geolocation','AMap.CitySearch','AMap.Walking','AMap.Scale']}) as AMapApi;
     return namespace;
   });
-  const map = await navigation.createMap(host, operationId, signal, true, {viewMode:'2D'}) as any;
+  const map = await navigation.createMap(host, operationId, signal, true, {viewMode:'2D',center:[117.17,39.11],zoom:15}) as any;
   const AMap = namespace! as AMapApi;
   if (AMap.Scale) map.addControl(new AMap.Scale());
   let markers:any[] = [], locationMarker:any = null, accuracyCircle:any = null, routeLines:any[] = [];
@@ -41,9 +42,11 @@ export async function createOnlineMap(host: HTMLElement, config: MapPublicConfig
   }
   function showPosition(position:UserPosition) {
     const point=[position.lng,position.lat];
-    if (!locationMarker) locationMarker=new AMap.Marker({position:point,title:position.source==='manual'?'手动起点':'授权定位',zIndex:200});
-    else {locationMarker.setPosition(point);locationMarker.setTitle(position.source==='manual'?'手动起点':'授权定位');}
+    const title=position.source==='manual'?'手动起点':position.accuracy_m===null?'IP 粗略位置（非精确起点）':'设备定位';
+    if (!locationMarker) locationMarker=new AMap.Marker({position:point,title,zIndex:200});
+    else {locationMarker.setPosition(point);locationMarker.setTitle(title);}
     map.add(locationMarker);
+    map.setCenter(point);
     if (accuracyCircle) {map.remove(accuracyCircle);accuracyCircle=null;}
     if (position.accuracy_m!==null) {
       accuracyCircle=new AMap.Circle({center:point,radius:position.accuracy_m,strokeColor:'#147da5',fillOpacity:.14});map.add(accuracyCircle);
@@ -54,5 +57,5 @@ export async function createOnlineMap(host: HTMLElement, config: MapPublicConfig
     routeLines=lines.filter(line=>line.length>1).map(path=>new AMap.Polyline({path,strokeColor:'#08779d',strokeWeight:7,showDir:true}));
     if(routeLines.length){map.add(routeLines);map.setFitView(routeLines);}
   }
-  return {setPois,showPosition,showRoute,clearRoute,resize(){map.resize?.();},locate:(id,abort)=>navigation.locate(id,abort,true),walk:(request,poi,abort)=>navigation.walk(request,poi,abort),destroy(){clearRoute();map.destroy();}};
+  return {setPois,showPosition,showRoute,clearRoute,resize(){map.resize?.();},locate:(id,abort)=>navigation.locate(id,abort,true),locateCity:(id,abort)=>navigation.locateCity(id,abort,true),walk:(request,poi,abort)=>navigation.walk(request,poi,abort),destroy(){clearRoute();map.destroy();}};
 }
