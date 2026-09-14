@@ -1,29 +1,26 @@
 // M-owned JS API operations. A owns map/UI lifecycle, C owns the security proxy.
-// No key literals, no REST calls, no position/route persistence, no automatic retry.
+// Map rendering/location use the SDK; search/walking use the fixed same-origin JS security proxy.
 import type {MapPublicConfig,POI,RouteRequest,RouteResponse,UserPosition,SpeechController,SpeechRun} from '../../../shared/r2';
 import {MapBudget,MapCallError} from './map-budget';
+import {api} from './api';
 type Pair=[number,number];
 type LngLat={getLng():number;getLat():number};
 type Callback=(status:string,result:unknown)=>void;
 interface Geo {getCurrentPosition(callback:Callback):void}
 interface CitySearch {getLocalCity(callback:Callback):void}
-interface PlaceSearch {search(keyword:string,callback:Callback):void}
 export interface MapDestination {poiId:string;providerId:string;name:string;address:string;lng:number;lat:number;matchedAt:number}
-interface Walking {search(origin:Pair,destination:Pair,callback:Callback):void;clear():void}
 export interface MapHandle {destroy():void}
 export interface AmapSdk {
  Map:new(host:HTMLElement,options:Record<string,unknown>)=>MapHandle;
  Geolocation:new(options:Record<string,unknown>)=>Geo;
  CitySearch?:new()=>CitySearch;
- PlaceSearch?:new(options:Record<string,unknown>)=>PlaceSearch;
- Walking:new(options:Record<string,unknown>)=>Walking;
 }
 type Loader=(config:MapPublicConfig)=>Promise<AmapSdk>;
 const loadSdk:Loader=async config=>{
  if(!config.js_key||!config.status.security_key_configured)throw new MapCallError('map_not_configured');
  (window as Window&{_AMapSecurityConfig?:{serviceHost:string}})._AMapSecurityConfig={serviceHost:window.location.origin+config.service_host};
  const loader=await import('@amap/amap-jsapi-loader');
- return await loader.default.load({key:config.js_key,version:'2.0',plugins:['AMap.Geolocation','AMap.CitySearch','AMap.PlaceSearch','AMap.Walking']}) as AmapSdk;
+ return await loader.default.load({key:config.js_key,version:'2.0',plugins:['AMap.Geolocation','AMap.CitySearch']}) as AmapSdk;
 };
 function pair(value:unknown):Pair {
  const p=value as Partial<LngLat>&{lng?:number;lat?:number};
@@ -32,6 +29,16 @@ function pair(value:unknown):Pair {
  if(typeof lng!=='number'||typeof lat!=='number'||!Number.isFinite(lng)||!Number.isFinite(lat)||Math.abs(lng)>180||Math.abs(lat)>90)throw new MapCallError('invalid_coordinates');
  return [lng,lat];
 }
+function providerPoint(value:unknown):Pair{
+ if(typeof value!=='string')throw new MapCallError('invalid_coordinates');
+ const parts=value.split(',');if(parts.length!==2||parts.some(p=>!p.trim()))throw new MapCallError('invalid_coordinates');
+ return pair({lng:Number(parts[0]),lat:Number(parts[1])});
+}
+function meters(value:unknown):number{
+ if(typeof value!=='number'&&(typeof value!=='string'||!/^\d+(?:\.\d+)?$/.test(value)))throw new MapCallError('invalid_route_result');
+ const result=Number(value);if(!Number.isFinite(result)||result<0)throw new MapCallError('invalid_route_result');return result;
+}
+const SERVICE_CODES=new Set(['NOT_CONFIGURED','VALIDATION_ERROR','RATE_LIMITED','UPSTREAM_TIMEOUT','TRANSPORT_TIMEOUT','NETWORK_ERROR','UPSTREAM_PROTOCOL_ERROR','INVALID_USER_KEY','USERKEY_PLAT_NOMATCH','INVALID_USER_SCODE','INVALID_USER_DOMAIN','DAILY_QUERY_OVER_LIMIT','INSUFFICIENT_PRIVILEGES','NO_ROADS_NEARBY','OVER_DIRECTION_RANGE','OUT_OF_SERVICE']);
 function callbackResult<T>(signal:AbortSignal,invoke:(done:Callback)=>void,parse:(value:unknown)=>T,cleanup:()=>void=()=>{},timeoutMs=15000):Promise<T>{
  return new Promise((resolve,reject)=>{
   let settled=false;
@@ -54,8 +61,24 @@ export class AmapNavigation {
  private config:MapPublicConfig;
  readonly budget:MapBudget;
  private loader:Loader;
+ private readJson:typeof api;
  private destinations=new Map<string,MapDestination>();
- constructor(config:MapPublicConfig,budget:MapBudget,loader:Loader=loadSdk){this.config=config;this.budget=budget;this.loader=loader;}
+ constructor(config:MapPublicConfig,budget:MapBudget,loader:Loader=loadSdk,readJson:typeof api=api){this.config=config;this.budget=budget;this.loader=loader;this.readJson=readJson;}
+ private async serviceGet<T>(path:'v3/place/text'|'v3/direction/walking',params:Record<string,string>,signal:AbortSignal):Promise<T>{
+  if(signal.aborted)throw new MapCallError('cancelled');
+  let abort:()=>void=()=>{};
+  const cancelled=new Promise<never>((_,reject)=>{abort=()=>reject(new MapCallError('cancelled'));signal.addEventListener('abort',abort,{once:true});});
+  try{
+   const body=await Promise.race([this.readJson<T&{status?:unknown}>('/maps/amap/_AMapService/'+path+'?'+new URLSearchParams({...params,output:'JSON'}),{signal,cache:'no-store'}),cancelled]);
+   if(!body||String(body.status)!=='1')throw new MapCallError('UPSTREAM_PROTOCOL_ERROR');
+   return body;
+  }catch(error){
+   if(signal.aborted)throw new MapCallError('cancelled');
+   if(error instanceof MapCallError)throw error;
+   const code=(error as {error?:{code?:unknown}})?.error?.code;
+   throw new MapCallError(typeof code==='string'&&SERVICE_CODES.has(code)?code:'NETWORK_ERROR');
+  }finally{signal.removeEventListener('abort',abort);}
+ }
  private assertReady(){
   if(!this.config.js_key||!this.config.status.security_key_configured)throw new MapCallError('map_not_configured');
   if(!['UNVERIFIED','VERIFIED'].includes(this.config.status.online_map))throw new MapCallError('map_proxy_not_ready');
@@ -110,22 +133,19 @@ export class AmapNavigation {
  async findDestination(poi:POI,operationId:string,signal:AbortSignal):Promise<MapDestination[]>{
   this.assertReady();
   return this.budget.run('poi_search',operationId,true,signal,async()=>{
-   const sdk=await this.getSdk();if(signal.aborted)throw new MapCallError('cancelled');
-   if(!sdk.PlaceSearch)throw new MapCallError('destination_search_unavailable');
    const campus=poi.campus_id==='weijinlu'?'天津大学卫津路校区':'天津大学北洋园校区';
-   const search=new sdk.PlaceSearch({city:'天津',citylimit:true,pageSize:5,pageIndex:1,extensions:'base'});
-   return callbackResult(signal,done=>search.search(campus+' '+poi.name,done),value=>{
-    const rows=(value as {poiList?:{pois?:Array<{id:string;name:string;address?:string;location:LngLat}>}}).poiList?.pois;
+   const value=await this.serviceGet<{pois?:Array<{id:string;name:string;address?:string;location:string}>}>('v3/place/text',{keywords:campus+' '+poi.name,city:'天津',citylimit:'true',offset:'5',page:'1',extensions:'base'},signal);
+    const rows=value.pois;
+    if(rows!==undefined&&!Array.isArray(rows))throw new MapCallError('UPSTREAM_PROTOCOL_ERROR');
     if(!rows?.length)throw new MapCallError('destination_not_found');
     const matches=rows.slice(0,5).filter(row=>typeof row.id==='string'&&typeof row.name==='string'&&row.location).map(row=>{
-     const [lng,lat]=pair(row.location);
-     const match={poiId:poi.id,providerId:row.id,name:row.name,address:typeof row.address==='string'?row.address:'地址未提供',lng,lat,matchedAt:Date.now()};
+     const [lng,lat]=providerPoint(row.location);
+     const match=Object.freeze({poiId:poi.id,providerId:row.id,name:row.name,address:typeof row.address==='string'?row.address:'地址未提供',lng,lat,matchedAt:Date.now()});
      this.destinations.set(poi.id+'/'+row.id,match);return match;
     });
     while(this.destinations.size>100)this.destinations.delete(this.destinations.keys().next().value!);
     if(!matches.length)throw new MapCallError('destination_not_found');
     return matches;
-   });
   });
  }
  async walk(request:RouteRequest,poi:POI,signal:AbortSignal,matched?:MapDestination):Promise<RouteResponse>{
@@ -147,16 +167,17 @@ export class AmapNavigation {
   if(origin.crs!=='GCJ02'||!['manual','amap_geolocation'].includes(origin.source)||(origin.source==='amap_geolocation'&&(origin.accuracy_m===null||!Number.isFinite(origin.accuracy_m)||origin.accuracy_m<0||origin.accuracy_m>200))||(origin.source==='manual'&&origin.accuracy_m!==null)||!Number.isFinite(age)||age< -5000||age>120000)throw new MapCallError('location_expired_or_inaccurate');
   this.assertReady();
   return this.budget.run('walking_route',request.route_id,request.user_initiated,signal,async()=>{
-   const sdk=await this.getSdk();if(signal.aborted)throw new MapCallError('cancelled');const walking=new sdk.Walking({});
-   return callbackResult(signal,done=>walking.search([origin.lng,origin.lat],[target.lng,target.lat],done),value=>{
-    const raw=(value as {routes?:Array<{distance:number;time?:number;steps?:Array<{instruction:string;distance:number;path:LngLat[]}>}>}).routes?.[0];
-    if(!raw||!Number.isFinite(raw.distance)||raw.distance<0||!raw.steps?.length)throw new MapCallError('invalid_route_result');
+   const point=(p:{lng:number;lat:number})=>p.lng.toFixed(6)+','+p.lat.toFixed(6);
+   const value=await this.serviceGet<{route?:{paths?:Array<{distance:string;duration?:string;steps?:Array<{instruction:string;distance:string;polyline:string}>}>}}>('v3/direction/walking',{origin:point(origin),destination:point(target)},signal);
+    const paths=value.route?.paths;
+    if(!Array.isArray(paths)||!paths.length)throw new MapCallError('route_no_data');
+    const raw=paths[0];
+    if(!raw||!Array.isArray(raw.steps)||!raw.steps.length)throw new MapCallError('invalid_route_result');
     const steps=raw.steps.map(step=>{
-     if(typeof step.instruction!=='string'||!step.instruction.trim()||!Number.isFinite(step.distance)||step.distance<0||!Array.isArray(step.path))throw new MapCallError('invalid_route_step');
-     return {instruction:step.instruction,distance_m:step.distance,polyline:step.path.map(pair)};
+     if(typeof step.instruction!=='string'||!step.instruction.trim()||typeof step.polyline!=='string'||!step.polyline)throw new MapCallError('invalid_route_step');
+     return {instruction:step.instruction,distance_m:meters(step.distance),polyline:step.polyline.split(';').map(providerPoint)};
     });
-    return {route_id:request.route_id,destination_poi_id:poi.id,provider:'amap',crs:'GCJ02',distance_m:raw.distance,duration_s:typeof raw.time==='number'&&Number.isFinite(raw.time)&&raw.time>=0?raw.time:null,steps,campus_access:'unverified',access_source_refs:[]};
-   },()=>walking.clear());
+    return {route_id:request.route_id,destination_poi_id:poi.id,provider:'amap',crs:'GCJ02',distance_m:meters(raw.distance),duration_s:raw.duration==null?null:meters(raw.duration),steps,campus_access:'unverified',access_source_refs:[]};
   });
  }
 }

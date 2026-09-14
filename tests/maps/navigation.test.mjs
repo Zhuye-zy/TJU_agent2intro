@@ -9,11 +9,17 @@ const position=()=>({lng:1,lat:1,crs:'GCJ02',source:'amap_geolocation',accuracy_
 const poi=()=>({id:'fixture-poi',campus_id:'weijinlu',verification_status:'verified',location:{lng:1.01,lat:1.01,crs:'GCJ02',coordinate_source:'isolated-fixture',verified_at:'2026-01-01',quality:'building_center'},entrances:[]});
 const request=()=>({route_id:'fixture-route',session_id:'fixture-session',campus_id:'weijinlu',destination_poi_id:'fixture-poi',entrance_id:null,origin:position(),user_initiated:true});
 function fakeSdk(){
- const calls={map:0,geo:0,walk:0,clear:0};
- return {calls,sdk:{
+ const calls={map:0,geo:0,walk:0};const requests=[];
+ return {calls,requests,readJson:async(path)=>{
+  const url=new URL(path,'http://local.test');requests.push(url);
+  assert.ok(url.pathname.startsWith('/maps/amap/_AMapService/'));
+  assert.equal(url.searchParams.has('key'),false);assert.equal(url.searchParams.has('jscode'),false);
+  if(url.pathname.endsWith('/place/text'))return {status:'1',pois:[{id:'amap-fixture',name:'Fixture Library',address:'Fixture campus',location:'1.02,1.03'}]};
+  calls.walk++;return {status:'1',route:{paths:[{distance:'120',duration:'90',steps:[{instruction:'沿测试步道前行',distance:'120',polyline:'1,1;1.01,1.01'}]}]}};
+ },sdk:{
   Map:class{constructor(){calls.map++}destroy(){}},
   Geolocation:class{getCurrentPosition(cb){calls.geo++;cb('complete',{position:{lng:1,lat:1},accuracy:10,location_type:'html5'});}},
-  Walking:class{search(_a,_b,cb){calls.walk++;cb('complete',{routes:[{distance:120,time:90,steps:[{instruction:'沿测试步道前行',distance:120,path:[{lng:1,lat:1},{lng:1.01,lat:1.01}]}]}]});}clear(){calls.clear++;}}
+
  }};
 }
 test('each operation has separate counters and no claimed vendor debit',async()=>{
@@ -59,31 +65,31 @@ test('refresh keeps test reservations; corrupt storage fails closed',async()=>{
  assert.ok(!JSON.stringify([...data]).includes('first'));
  assert.throws(()=>new MapBudget({storage:{getItem:()=>'{broken',setItem(){}}}),{code:'budget_storage_invalid'});
 });
-test('JS navigation uses injected SDK and exposes steps, distance and time',async()=>{
- const f=fakeSdk();const nav=new AmapNavigation(config,new MapBudget(),async()=>f.sdk);
+test('map and location use SDK while walking parses same-origin provider results',async()=>{
+ const f=fakeSdk();const nav=new AmapNavigation(config,new MapBudget(),async()=>f.sdk,f.readJson);
  await nav.createMap({},'m',sig(),true);
  const loc=await nav.locate('g',sig(),true);assert.equal(loc.accuracy_m,10);
  const route=await nav.walk(request(),poi(),sig());assert.equal(route.distance_m,120);assert.equal(route.duration_s,90);assert.equal(route.steps[0].instruction,'沿测试步道前行');
- assert.equal(route.campus_access,'unverified');assert.deepEqual(f.calls,{map:1,geo:1,walk:1,clear:1});
+ assert.equal(route.campus_access,'unverified');assert.deepEqual(f.calls,{map:1,geo:1,walk:1});
 });
 test('wrong campus, pending destination and stale origin spend zero route calls',async()=>{
- const f=fakeSdk();const nav=new AmapNavigation(config,new MapBudget(),async()=>f.sdk);
+ const f=fakeSdk();const nav=new AmapNavigation(config,new MapBudget(),async()=>f.sdk,f.readJson);
  await assert.rejects(nav.walk(request(),{...poi(),campus_id:'beiyangyuan'},sig()),{code:'poi_context_mismatch'});
  await assert.rejects(nav.walk(request(),{...poi(),location:null},sig()),{code:'destination_unverified'});
  await assert.rejects(nav.walk({...request(),origin:{...position(),timestamp:'2000-01-01'}},poi(),sig()),{code:'location_expired_or_inaccurate'});
  assert.equal(f.calls.walk,0);
 });
-test('cancelled SDK callback is ignored and counted only as cancelled',async()=>{
- let callback;let cleared=0;
- const f=fakeSdk();f.sdk.Walking=class{search(a,b,cb){callback=cb}clear(){cleared++}};
- const budget=new MapBudget();const nav=new AmapNavigation(config,budget,async()=>f.sdk);const c=new AbortController();
+test('cancelled HTTP route ignores a late response and counts only cancellation',async()=>{
+ let complete;const f=fakeSdk();f.readJson=()=>new Promise(resolve=>{complete=resolve});
+ const budget=new MapBudget();const nav=new AmapNavigation(config,budget,async()=>f.sdk,f.readJson);const c=new AbortController();
  const result=nav.walk(request(),poi(),c.signal);
  await new Promise(r=>setImmediate(r));c.abort();await assert.rejects(result,{code:'cancelled'});
- callback('complete',{routes:[]});assert.equal(cleared,1);assert.equal(budget.snapshot().counters.walking_route.cancelled,1);assert.equal(budget.snapshot().counters.walking_route.completed,0);
+ complete({status:'1',route:{paths:[]}});assert.equal(budget.snapshot().counters.walking_route.cancelled,1);assert.equal(budget.snapshot().counters.walking_route.completed,0);
 });
+
 test('IP location can be displayed but is not accepted as a precise route origin',async()=>{
  const f=fakeSdk();f.sdk.Geolocation=class{getCurrentPosition(cb){cb('complete',{position:{lng:1,lat:1},accuracy:10000,location_type:'ip'})}};
- const nav=new AmapNavigation(config,new MapBudget(),async()=>f.sdk);
+ const nav=new AmapNavigation(config,new MapBudget(),async()=>f.sdk,f.readJson);
  const location=await nav.locate('g',sig(),true);
  assert.equal(location.accuracy_m,null);
  await assert.rejects(nav.walk({...request(),origin:location},poi(),sig()),{code:'location_expired_or_inaccurate'});
@@ -92,7 +98,7 @@ test('IP location can be displayed but is not accepted as a precise route origin
 
 test('city IP lookup displays a coarse center and respects cancellation',async()=>{
  const f=fakeSdk();f.sdk.CitySearch=class {getLocalCity(cb){cb('complete',{bounds:'116,38;118,40'});}};
- const nav=new AmapNavigation(config,new MapBudget(),async()=>f.sdk);
+ const nav=new AmapNavigation(config,new MapBudget(),async()=>f.sdk,f.readJson);
  const result=await nav.locateCity('city',sig(),true);
  assert.equal(result.lng,117);assert.equal(result.lat,39);assert.equal(result.accuracy_m,null);
  const controller=new AbortController();controller.abort();
@@ -107,43 +113,63 @@ test('route narration delegates actual step text to the existing speech controll
 test('provider permission and timeout failures expose only safe codes',async()=>{
  for(const [message,code] of [['PERMISSION_DENIED secret fixture detail','permission_denied'],['TIME_OUT private fixture detail','location_timeout']]){
   const f=fakeSdk();f.sdk.Geolocation=class{getCurrentPosition(cb){cb('error',{message})}};
-  const budget=new MapBudget();const nav=new AmapNavigation(config,budget,async()=>f.sdk);
+  const budget=new MapBudget();const nav=new AmapNavigation(config,budget,async()=>f.sdk,f.readJson);
   await assert.rejects(nav.locate('g',sig(),true),error=>error.code===code&&!error.message.includes('fixture'));
   assert.equal(budget.snapshot().counters.geolocation.failed,1);
  }
 });
 test('manual origins remain explicit and do not invent GPS accuracy',async()=>{
- const f=fakeSdk();const nav=new AmapNavigation(config,new MapBudget(),async()=>f.sdk);
+ const f=fakeSdk();const nav=new AmapNavigation(config,new MapBudget(),async()=>f.sdk,f.readJson);
  const req={...request(),origin:{...position(),source:'manual',accuracy_m:null}};
  assert.equal((await nav.walk(req,poi(),sig())).destination_poi_id,poi().id);
- const another=new AmapNavigation(config,new MapBudget(),async()=>f.sdk);
+ const another=new AmapNavigation(config,new MapBudget(),async()=>f.sdk,f.readJson);
  await assert.rejects(another.walk({...req,origin:{...req.origin,accuracy_m:0}},poi(),sig()),{code:'location_expired_or_inaccurate'});
 });
 
 test('live place matches enable walking for a directory POI without coordinates',async()=>{
- const f=fakeSdk();let query,options,target;
- f.sdk.PlaceSearch=class{constructor(opts){options=opts}search(text,cb){query=text;cb('complete',{poiList:{pois:[{id:'amap-fixture',name:'Fixture Library',address:'Fixture campus',location:{lng:1.02,lat:1.03}}]}})}};
- const original=f.sdk.Walking;f.sdk.Walking=class extends original{search(origin,destination,cb){target=destination;super.search(origin,destination,cb)}};
- const nav=new AmapNavigation(config,new MapBudget({limits}),async()=>f.sdk);
+ const f=fakeSdk();
+ const nav=new AmapNavigation(config,new MapBudget({limits}),async()=>f.sdk,f.readJson);
  const local={...poi(),name:'Fixture Library',location:null,verification_status:'pending'};
  const [match]=await nav.findDestination(local,'search',sig());
- assert.ok(query.startsWith('天津大学卫津路校区 '));assert.equal(options.citylimit,true);
+ assert.ok(f.requests[0].searchParams.get('keywords').startsWith('天津大学卫津路校区 '));assert.equal(f.requests[0].searchParams.get('citylimit'),'true');
  await assert.rejects(nav.walk(request(),local,sig(),{...match}),{code:'destination_match_expired'});
  await assert.rejects(nav.walk({...request(),origin:{...position(),accuracy_m:null}},local,sig(),match),{code:'location_expired_or_inaccurate'});
  const route=await nav.walk({...request(),origin:{...position(),source:'manual',accuracy_m:null}},local,sig(),match);
- assert.equal(route.steps.length,1);assert.deepEqual(target,[1.02,1.03]);
+ assert.equal(route.steps.length,1);assert.equal(f.requests[1].searchParams.get('destination'),'1.020000,1.030000');
  assert.equal(local.location,null);assert.equal(local.verification_status,'pending');assert.equal(f.calls.walk,1);
 });
 
 test('cancelled or empty place searches do not fabricate destination coordinates',async()=>{
- const f=fakeSdk();let callback;
- f.sdk.PlaceSearch=class{search(text,cb){callback=cb}};
- const nav=new AmapNavigation(config,new MapBudget({limits}),async()=>f.sdk);
+ const f=fakeSdk();let complete;f.readJson=()=>new Promise(resolve=>{complete=resolve});
+ const nav=new AmapNavigation(config,new MapBudget({limits}),async()=>f.sdk,f.readJson);
  const controller=new AbortController();const pending=nav.findDestination({...poi(),name:'Fixture'},'search',controller.signal);
  await new Promise(resolve=>setImmediate(resolve));controller.abort();await assert.rejects(pending,{code:'cancelled'});
- callback('complete',{poiList:{pois:[]}});
- f.sdk.PlaceSearch=class{search(text,cb){cb('complete',{poiList:{pois:[]}})}};
- const empty=new AmapNavigation(config,new MapBudget({limits}),async()=>f.sdk);
+ complete({status:'1',pois:[]});
+ f.readJson=async()=>({status:'1',pois:[]});
+ const empty=new AmapNavigation(config,new MapBudget({limits}),async()=>f.sdk,f.readJson);
  await assert.rejects(empty.findDestination({...poi(),name:'Fixture'},'empty',sig()),{code:'destination_not_found'});
  assert.equal(f.calls.walk,0);
+});
+
+test('proxy failures preserve safe codes without leaking messages or credentials',async()=>{
+ for(const code of ['INVALID_USER_KEY','VALIDATION_ERROR','RATE_LIMITED','TRANSPORT_TIMEOUT']){
+  const nav=new AmapNavigation(config,new MapBudget(),async()=>{throw Error('SDK services must not be needed')},async()=>{throw {error:{code,message:'private fixture key=secret'}}});
+  await assert.rejects(nav.walk(request(),poi(),sig()),error=>error.code===code&&!error.message.includes('secret'));
+ }
+});
+
+test('manual start is rounded to six decimals and no SDK service plugins are required',async()=>{
+ const f=fakeSdk();const nav=new AmapNavigation(config,new MapBudget({limits}),async()=>{throw Error('SDK should not load for service calls')},f.readJson);
+ const local={...poi(),location:null,name:'Fixture Library'};
+ const [match]=await nav.findDestination(local,'match',sig());
+ const req={...request(),origin:{...position(),lng:1.123456789,lat:1.987654321,source:'manual',accuracy_m:null}};
+ const route=await nav.walk(req,local,sig(),match);
+ assert.equal(f.requests[1].searchParams.get('origin'),'1.123457,1.987654');assert.equal(route.steps[0].polyline.length,2);
+});
+
+test('malformed or empty route data never becomes a successful internal route',async()=>{
+ for(const paths of [[],[{distance:'',steps:[{instruction:'step',distance:'1',polyline:'1,1;2,2'}]}],[{distance:'1',steps:[{instruction:'step',distance:'1',polyline:'bad'}]}]]){
+  const nav=new AmapNavigation(config,new MapBudget(),undefined,async()=>({status:'1',route:{paths}}));
+  await assert.rejects(nav.walk(request(),poi(),sig()));
+ }
 });
