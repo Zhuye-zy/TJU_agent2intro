@@ -8,7 +8,7 @@ from pydantic import TypeAdapter
 from backend.common.errors import DomainError
 from backend.contracts import ChatResponse
 from backend.r2_contracts import R2ChatRequest, GenerationRendered, RenderReceipt, StreamEvent
-from .service import model, _citations
+from .service import model, _citations, GENERATION_PREFIX
 from .runtime import runtime
 router=APIRouter(prefix="/api",tags=["stream-generation"])
 _event_adapter=TypeAdapter(StreamEvent)
@@ -58,7 +58,7 @@ async def stream_chat(body:R2ChatRequest):
    else:
     if prepared.hits:yield emit("sources",{"sources":prepared.hits,"kind":"retrieved"})
     yield emit("status",{"stage":"model","status":"started"})
-    prefix="【创作内容】" if body.mode=="content_generation" else ""
+    prefix=GENERATION_PREFIX if body.mode=="content_generation" else ""
     async for item in model.provider.stream(body.request_id,prepared.messages()):
      if item["kind"]=="delta":
       text=prefix+item["text"];prefix="";answer+=text;yield emit("answer_delta",{"text":text})
