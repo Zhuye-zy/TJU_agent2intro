@@ -54,3 +54,6 @@ M审查后给独立COORD_COMMIT；窗口先提交自己的改动，暂停该接�
 - B：在E:\AI4TJU\.worktrees\avatar、work/avatar实现冻结SpeechController，复用现有适配，修复音色、跨chunk净化、串行自动短播/全文/选段、实际speaking及打断；只改B范围，不另调LLM。
 - C：在E:\AI4TJU\.worktrees\api、work/api优先查明生成model_mismatch和模式门控，复用原GLM/历史/runtime接真流及终态，做地图真实配置/安全代理/外链/按需路线限频取消；只改C范围，密钥仅显式后端.env。
 - D：在E:\AI4TJU\.worktrees\knowledge、work/knowledge沿用JSON存储扩充可追溯双校区原子事实/POI/检索评测/分页，自绘有依据本地图及独立图面标注，核验地理坐标/通行条件和真实照片使用依据；只改D范围，不造数补齐目标。
+
+## M0安装协调修正
+原PowerShell把uv正常stderr在全流重定向时提升为NativeCommandError，导致首树安装中断；改用隐藏独立安装进程分别重定向stdout/stderr并检查receipt，未改业务依赖。不可移动r2-baseline保持为契约基线；本协调提交作为launch_commit，Prepare-R2验证并把四个原树快进到同一launch_commit。实际两号均在.runtime/R2/parallel-state.json，窗口以launch_commit开始工作，BASE_COMMIT_R2仍记录原契约基线。不重置已快进的树。
