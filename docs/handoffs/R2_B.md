@@ -79,3 +79,30 @@ Chrome 是 headless 会话，虽有真实解码、`play()` resolved、AudioConte
 - 珂莱塔素材、哈希、许可、Core 署名与第一轮 handoff 一致；本轮未改人物资产或授权结论。
 
 交接提交完成后，B 停止写入，等待 M 评审返修。
+
+## M1-R2 返修交接（B01–B05，2026-09-14）
+
+审查基线：08ede98ea0471fb6331489a0956c9411cfa82240。本次只追加 B 授权实现、隔离测试和本交接，没有修改共享契约、入口、依赖或 M 的 REWORK。
+
+|编号|修复前独立复现|本次最小修复与证据|
+|---|---|---|
+|B01|Markdown 标签闭合的 ] 与链接的 ( 跨 chunk，标签含句号时先读出 [ 并漏后文字符|未确定的链接/图片标记缓冲；每次消费校验已发前缀不可变。测试遍历该 Markdown 字符串所有二段切点，增量拼接严格等于完整净化；权威正文改写前缀明确失败。|
+|B02|旧播放 Promise 返回失败把新 generation 从 speaking 改为 error；旧播放器 cleanup 可移除新回调|controller 在异步准备、播放和恢复后验证 state/item；begin 有转换代次；旧预取完成不清除新预取。adapter 的迟到 play Promise 不发回调、不清新播放器，解码后再验取消。恢复 speaking 来自实际 playing/onresume。停止端点等待最多 5 秒，上游未确认仍为 unconfirmed。|
+|B03|切校区/清空后 continueRemaining 或 replay 可以恢复旧校区音频|clear/new_request/cancel/campus_change 无论是否还有 activeRun 都清除回放缓存。仅 user 停止保留缓存供明确重播/继续。四原因逐项回归。|
+|B04|六个短句合并为一段后被误算一句，全部进入短播|先按实际句边界限制最多两句，再应用 220 字上限；超长首句尽量在标点/空白处封口，不追加伪造总结，未覆盖正文可继续播放。六短句、超长首句和继续后全文一致性回归通过。|
+|B05|音色前端 4 秒早于后端 10 秒截止，浏览器音色仅等 1.2 秒|服务端音色等待 15 秒，浏览器 voiceschanged 最多 5 秒；每次显式 listVoices 为一次新尝试，无自动轮询。缩放计时隔离测试验证等价 6 秒服务响应、2.5 秒 voiceschanged、失败后显式重试成功。不是实际外网性能测量。|
+
+同时将 probe.html 的虚构建筑营业时间/教室数量改成明确不陈述校园事实的声音测试句。时间、楼号净化输入仅保留在隔离 tests。选段超过 4,000 字时分成有界 FIFO 段；纯 URL/空净化结果明确 speech_empty。TTS 准备失败不会因为新正文增量自动重新请求，需显式恢复重试。
+
+本次实际命令与结果：
+
+- node scripts/check-adapters.mjs：PASS，当前 speech.js 重新构建（113 modules）。
+- node --test tests/speech/adapter.test.mjs tests/speech/controller.test.mjs：**21 tests / 21 pass / 0 fail**，其中 adapter 3、controller 18；全为隔离替身，不联网、不更新真实服务在线状态。
+- npm.cmd run build：PASS，TypeScript noEmit + Vite，132 modules transformed。
+- git diff --check：PASS，仅 Windows CRLF 正常转换提示。
+
+未重跑真实 Edge TTS、浏览器播放器和麦克风测试。先前 headless 媒体事件仍不等于人耳可听，正式 A 页面接线与真实听音由 M 在候选集成检查；S01/S06/S07/L03 的实测缺口没有因此自动关闭。没有 ASR 服务或地图凭据变更。
+
+供 A 装配：使用具体 CampusSpeechController 的 getAdapter()/replay()/continueRemaining()，播放启用和恢复必须由明确用户点击触发；ASR 开始前应调用 controller.stop('new_request')，避免只停止 adapter 音频而留下 controller 队列。读取音色失败后保留显式刷新按钮。全文/选段由同一个 controller 播放。
+
+新增提交完成后 B 已停止写入，可以由 M 按祖先关系合并及独立复验。本报告不自行关闭共享 REWORK，不以隔离测试替代真实可听验收。

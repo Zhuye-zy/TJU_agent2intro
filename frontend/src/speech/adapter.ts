@@ -148,7 +148,7 @@ async function waitForBrowserVoices(): Promise<SpeechSynthesisVoice[]> {
   const immediate = window.speechSynthesis.getVoices();
   if (immediate.length) return immediate;
   return new Promise((resolve) => {
-    const timeout = window.setTimeout(() => finish(), 1200);
+    const timeout = window.setTimeout(() => finish(), 5000);
     const finish = () => {
       window.clearTimeout(timeout);
       window.speechSynthesis.removeEventListener('voiceschanged', finish);
@@ -249,11 +249,14 @@ export class CampusSpeechAdapter implements SpeechAdapter {
       if (item.requestId === requestId) this.releasePrepared(item);
     }
 
+    const stopController = new AbortController();
+    const stopTimeout = setTimeout(() => stopController.abort(), 5000);
     try {
       const sessionId = this.lastSessionByRequest.get(requestId);
       if (!sessionId) return { local_stopped: true, upstream_stop: 'not_started' as const };
       const response = await fetch('/api/speech/stop', {
         method: 'POST',
+        signal: stopController.signal,
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ request_id: requestId, session_id: sessionId }),
       });
@@ -262,6 +265,8 @@ export class CampusSpeechAdapter implements SpeechAdapter {
       return { local_stopped: stoppedCapture || stoppedPlayback || body.local_stopped, upstream_stop: body.upstream_stop };
     } catch {
       return { local_stopped: true, upstream_stop: 'unconfirmed' as const };
+    } finally {
+      clearTimeout(stopTimeout);
     }
   }
 
@@ -312,6 +317,7 @@ export class CampusSpeechAdapter implements SpeechAdapter {
       return { status: 'failed', error_code: 'stopped' };
     }
     await this.stopCapture();
+    if (prepared.released || prepared.context.signal.aborted) return { status: 'failed', error_code: 'stopped' };
     this.cancelPlayback();
     if (prepared.kind === 'browser') {
       this.prepared.delete(prepared);
@@ -567,6 +573,7 @@ export class CampusSpeechAdapter implements SpeechAdapter {
         elapsed_ms: elapsed(decodeStartedAt), bytes: audioBytes.byteLength,
         audio_context_state: this.audioContext?.state ?? 'unavailable',
       });
+      if (context.signal.aborted || controller.signal.aborted) return { status: 'failed', error_code: 'stopped' };
       const blob = new Blob([audioBytes], { type: audioType });
       const item: PreparedSpeech = {
         requestId: context.request_id,
@@ -608,15 +615,16 @@ export class CampusSpeechAdapter implements SpeechAdapter {
     const audio = this.ensurePlayer();
     const generation = ++this.playbackGeneration;
     const startedAt = now();
-    let started = false;
     let blocked = false;
     const abort = () => { if (this.playback?.generation === generation) this.cancelPlayback(); };
     prepared.context.signal.addEventListener('abort', abort, { once: true });
     const cleanup = (release = true) => {
       prepared.context.signal.removeEventListener('abort', abort);
-      audio.onplaying = null;
-      audio.onended = null;
-      audio.onerror = null;
+      if (generation === this.playbackGeneration) {
+        audio.onplaying = null;
+        audio.onended = null;
+        audio.onerror = null;
+      }
       if (release) this.releasePrepared(prepared);
       if (this.playback?.generation === generation) this.playback = undefined;
     };
@@ -627,10 +635,12 @@ export class CampusSpeechAdapter implements SpeechAdapter {
           audio_context_state: this.audioContext?.state ?? 'unavailable',
         });
         await audio.play();
+        if (generation !== this.playbackGeneration || prepared.context.signal.aborted) return { status: 'failed', error_code: 'stopped' };
         blocked = false;
         this.trace('play_resolved', prepared.requestId, prepared.utteranceId, { elapsed_ms: elapsed(startedAt) });
         return { status: 'ready' };
       } catch (error) {
+        if (generation !== this.playbackGeneration || prepared.context.signal.aborted) return { status: 'failed', error_code: 'stopped' };
         const code = error instanceof DOMException && error.name === 'NotAllowedError'
           ? 'playback_permission_denied'
           : 'playback_failed';
@@ -647,8 +657,7 @@ export class CampusSpeechAdapter implements SpeechAdapter {
     audio.src = prepared.objectUrl;
     audio.load();
     audio.onplaying = () => {
-      if (generation !== this.playbackGeneration || started) return;
-      started = true;
+      if (generation !== this.playbackGeneration) return;
       this.trace('playing', prepared.requestId, prepared.utteranceId, {
         elapsed_ms: elapsed(startedAt), volume: audio.volume, muted: audio.muted,
         audio_context_state: this.audioContext?.state ?? 'unavailable',
@@ -740,6 +749,7 @@ export class CampusSpeechAdapter implements SpeechAdapter {
         callbacks.onStart(utteranceId);
       }
     };
+    utterance.onresume = () => { if (generation === this.playbackGeneration) callbacks.onStart(utteranceId); };
     utterance.onend = () => {
       if (generation !== this.playbackGeneration) return;
       this.playback?.removeAbort();
@@ -773,7 +783,9 @@ export class CampusSpeechAdapter implements SpeechAdapter {
 
   private async listServerVoices(): Promise<Voice[]> {
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 4000);
+    // Server voice discovery has a 10-second deadline; allow transport overhead.
+    // Each explicit listVoices call is a fresh retry, without background polling.
+    const timeout = window.setTimeout(() => controller.abort(), 15000);
     try {
       const response = await fetch('/api/speech/voices', { signal: controller.signal });
       if (!response.ok) return [];

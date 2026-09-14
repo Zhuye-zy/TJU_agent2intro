@@ -47,3 +47,40 @@ test('late provider failure after stop never triggers stale callback', async () 
     assert.deepEqual(events,[]);
   } finally {Object.assign(globalThis,originals);}
 });
+
+test('B02 old audio.play rejection leaves the new shared player callbacks intact', async () => {
+  const original = { Audio: globalThis.Audio, fetch: globalThis.fetch };
+  let rejectOld, player;
+  class FakeAudio {
+    constructor() { player = this; this.volume = 1; this.muted = false; this.plays = 0; }
+    play() {
+      this.plays += 1;
+      if (this.plays === 1) return new Promise((_, reject) => { rejectOld = reject; });
+      this.onplaying?.();
+      return Promise.resolve();
+    }
+    pause() {} removeAttribute() {} load() {}
+  }
+  globalThis.Audio = FakeAudio;
+  globalThis.fetch = async (url, options = {}) => {
+    if (url === '/api/speech/tts') {
+      const body = JSON.parse(options.body);
+      return new Response(JSON.stringify({ request_id: body.request_id, utterance_id: body.utterance_id, audio_url: '/api/speech/audio/fixture', mime_type: 'audio/mpeg', timestamps: 'none' }), { headers: { 'content-type': 'application/json' } });
+    }
+    if (url === '/api/speech/stop') return new Response(JSON.stringify({ local_stopped: true, upstream_stop: 'unconfirmed' }));
+    return new Response(new Uint8Array([73, 68, 51, 4]), { headers: { 'content-type': 'audio/mpeg' } });
+  };
+  try {
+    const a = new CampusSpeechAdapter(), old = context(), fresh = context(), events = [];
+    const pending = a.speak(old, 'old', '旧内容', 'edge:test', callbacks(events));
+    await new Promise((r) => setTimeout(r, 0));
+    await a.stop(old.request_id);
+    assert.equal((await a.speak(fresh, 'fresh', '新内容', 'edge:test', callbacks(events))).status, 'ready');
+    const currentEnd = player.onended;
+    rejectOld(new DOMException('old playback rejected', 'NotAllowedError'));
+    assert.equal((await pending).error_code, 'stopped');
+    assert.equal(player.onended, currentEnd);
+    currentEnd();
+    assert.deepEqual(events, [['start', 'fresh'], ['end', 'fresh']]);
+  } finally { Object.assign(globalThis, original); }
+});

@@ -220,3 +220,151 @@ test('stop invalidates late ended callbacks and a TTS failure remains retryable'
   assert.equal(failed.at(-1).code, 'tts_unavailable');
   assert.equal((await failing.resume()).status, 'ready');
 });
+
+test('B01 every Markdown link split preserves the exact spoken text without leaking delimiters', () => {
+  const full = '[这是一段具有完整句号且足够长的校园讲解标签需要保留标签内容。](https://example.edu/a)。后续导览内容。';
+  for (let cut = 0; cut <= full.length; cut += 1) {
+    const s = new IncrementalSpeechSanitizer();
+    const output = [...s.append(full.slice(0, cut)), ...s.append(full.slice(cut)), ...s.finish(full)].join('');
+    assert.equal(output, sanitizeSpeechText(full).text, `split ${cut}`);
+  }
+  const s = new IncrementalSpeechSanitizer();
+  const prefix = '这段完整文字足够长所以会在增量阶段真实排队并形成不可变的已读前缀。';
+  s.append(prefix);
+  assert.throws(() => s.finish('替换了全部正文。'), /speech_final_mismatch/);
+});
+
+test('B02 a delayed old play failure cannot clear or report failure for the fresh generation', async () => {
+  let failOld;
+  const adapter = new FakeAdapter();
+  adapter.playPreparedSpeech = async (item, callbacks) => {
+    if (item.context.request_id === 'old') return new Promise((resolve) => { failOld = resolve; });
+    callbacks.onStart(item.utteranceId);
+    return { status: 'ready' };
+  };
+  const c = new CampusSpeechController({ adapter }), events = [];
+  c.subscribe((e) => events.push(e));
+  await c.enable(true);
+  await c.playSegment({ ...ids(), request_id: 'old' }, '旧回答。', 'old');
+  await new Promise((r) => setTimeout(r, 0));
+  await c.stop('new_request');
+  await c.playSegment({ ...ids(), request_id: 'fresh' }, '新回答。', 'fresh');
+  await new Promise((r) => setTimeout(r, 0));
+  failOld({ status: 'failed', error_code: 'playback_failed' });
+  await new Promise((r) => setTimeout(r, 0));
+  assert.equal(events.at(-1).request_id, 'fresh');
+  assert.equal(events.at(-1).status, 'speaking');
+  assert.ok(!events.some((e) => e.request_id === 'fresh' && e.status === 'error'));
+  await c.stop('clear');
+});
+
+test('B03 clearing, changing campus, cancelling or starting a new request invalidates replay caches', async () => {
+  for (const reason of ['clear', 'campus_change', 'cancel', 'new_request']) {
+    const c = new CampusSpeechController({ adapter: new FakeAdapter() });
+    await c.enable(true);
+    const run = { ...ids(), mode: 'brief' };
+    const text = '第一句的校园介绍足够长用来独立排入播放队列并且避免和下一句合并。第二句的校园介绍也足够长用来独立排入播放队列并且保留后续内容。第三句是旧校区剩余内容。';
+    await c.begin(run); await c.finish(run.generation_id, text);
+    await c.stop(reason);
+    assert.equal((await c.continueRemaining()).error_code, 'nothing_to_continue', reason);
+    assert.equal((await c.replay()).error_code, 'nothing_to_replay', reason);
+  }
+});
+
+test('B04 brief counts actual sentences, bounds long first sentences, and continuation preserves the remainder', async () => {
+  for (const text of ['第一句。第二句。第三句。第四句。第五句。第六句。', '校园'.repeat(160) + '。后续句子。']) {
+    const adapter = new FakeAdapter(), c = new CampusSpeechController({ adapter });
+    await c.enable(true);
+    const run = { ...ids(), mode: 'brief' };
+    await c.begin(run); await c.finish(run.generation_id, text);
+    const brief = adapter.played.join('');
+    assert.ok([...brief].length <= 220);
+    assert.ok((brief.match(/[。！？!?；;]/gu) ?? []).length <= 2);
+    assert.ok(brief.length > 0);
+    assert.equal((await c.continueRemaining()).status, 'ready');
+    await new Promise((r) => setTimeout(r, 10));
+    assert.equal(adapter.played.join(''), sanitizeSpeechText(text).text);
+  }
+});
+
+test('B05 slow server discovery and delayed browser voices succeed; an explicit next call retries failure', async () => {
+  const original = { window: globalThis.window, fetch: globalThis.fetch, SpeechSynthesisUtterance: globalThis.SpeechSynthesisUtterance };
+  const listeners = new Set(), scheduled = new Set();
+  let browserVoices = [], fail = true, calls = 0;
+  const timer = (fn, ms) => { const id = setTimeout(fn, ms / 100); scheduled.add(id); return id; };
+  globalThis.window = {
+    setTimeout: timer, clearTimeout,
+    speechSynthesis: {
+      getVoices: () => browserVoices,
+      addEventListener: (_, cb) => listeners.add(cb),
+      removeEventListener: (_, cb) => listeners.delete(cb),
+    },
+  };
+  globalThis.SpeechSynthesisUtterance = class {};
+  globalThis.fetch = async (url, options = {}) => {
+    if (url === '/api/health') return new Response(JSON.stringify({ capabilities: { asr: false } }));
+    calls += 1;
+    await new Promise((resolve, reject) => {
+      const id = setTimeout(resolve, 60); // 6 seconds in the scaled clock, beyond the former 4-second deadline.
+      scheduled.add(id);
+      options.signal?.addEventListener('abort', () => { clearTimeout(id); reject(new DOMException('aborted', 'AbortError')); }, { once: true });
+    });
+    return fail
+      ? new Response('{}', { status: 503 })
+      : new Response(JSON.stringify({ status: 'ready', voices: [{ id: 'edge:voice', locale: 'zh-CN', name: '中文', provider: 'edge' }] }));
+  };
+  try {
+    const c = new CampusSpeechController();
+    timer(() => {
+      browserVoices = [{ voiceURI: 'browser-voice', lang: 'zh-CN', name: '中文浏览器音色' }];
+      for (const cb of [...listeners]) cb();
+    }, 2500);
+    const first = await c.listVoices();
+    assert.ok(first.some((v) => v.id === 'browser:browser-voice'));
+    assert.ok(!first.some((v) => v.id === 'edge:voice'));
+    fail = false;
+    const second = await c.listVoices();
+    assert.ok(second.some((v) => v.id === 'edge:voice'));
+    assert.equal(calls, 2);
+    assert.equal(listeners.size, 0);
+  } finally {
+    for (const id of scheduled) clearTimeout(id);
+    Object.assign(globalThis, original);
+  }
+});
+
+test('B02 concurrent begin cannot resurrect the older pending transition', async () => {
+  const adapter = new FakeAdapter(), c = new CampusSpeechController({ adapter });
+  await c.enable(true); await c.playSegment(ids(), '正在播放。', 'active');
+  let release;
+  adapter.stop = () => new Promise((r) => { release = r; });
+  const older = c.begin({ ...ids(), generation_id: 'older' });
+  const newer = await c.begin({ ...ids(), generation_id: 'newer' });
+  release({});
+  assert.equal(newer.status, 'ready');
+  assert.equal((await older).error_code, 'stopped');
+  const events = []; c.subscribe((e) => events.push(e));
+  c.append('newer', '新的完整段落足够长因而可以马上进入当前任务队列进行语音播放。');
+  await new Promise((r) => setTimeout(r, 5));
+  assert.ok(events.some((e) => e.generation_id === 'newer' && e.status === 'speaking'));
+});
+
+test('selected long text uses bounded FIFO segments; empty speech fails explicitly', async () => {
+  const adapter = new FakeAdapter(), c = new CampusSpeechController({ adapter });
+  await c.enable(true);
+  const full = '校园'.repeat(2200);
+  assert.equal((await c.playSegment(ids(), full, 'long')).status, 'ready');
+  await new Promise((r) => setTimeout(r, 15));
+  assert.equal(adapter.played.join(''), full);
+  assert.ok(adapter.played.every((s) => [...s].length <= 4000));
+  assert.equal((await c.playFull(ids(), 'https://example.edu')).error_code, 'speech_empty');
+});
+
+test('B04 long first sentence prefers the Chinese comma before the 220-character limit', async () => {
+  const adapter = new FakeAdapter(), c = new CampusSpeechController({ adapter });
+  await c.enable(true);
+  const run = { ...ids(), mode: 'brief' };
+  const text = '校'.repeat(150) + '，' + '园'.repeat(150) + '。末句。';
+  await c.begin(run); await c.finish(run.generation_id, text);
+  assert.equal(adapter.played.join(''), '校'.repeat(150) + '，');
+});
