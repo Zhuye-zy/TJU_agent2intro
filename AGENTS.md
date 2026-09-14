@@ -1,0 +1,11 @@
+# AI4TJU 协作规则
+
+先读项目提示词包第0—2节，以及 docs/OPEN_SOURCE_DECISION.md、CONTRACTS.md、OWNERSHIP.md、PARALLEL_RUN.md。
+产品是数字人校园导游；desktop-pet只提供首版kelaita素材。
+只执行当前窗口范围。M0已建立stub，不提前代做其他窗口业务。
+所有工作与产物在本项目下；素材源目录只读，不执行其中程序。
+A/B/C/D只改各自.worktrees中的授权路径；M独占契约、依赖、锁、应用入口和根脚本。发现阻塞立即提交docs/requests/<窗口>/，不要等待M1。
+依赖与venv/log必须隔离，无可写node_modules/venv链接。扫描、构建排除.worktrees。
+不提交.env、密钥、录音或完整提示词日志；不输出隐藏思维链。仅M/C显式读取根.env，不能复制到工作树。
+启动只绑定127.0.0.1，不云发布，不杀其他进程、不改全局Git身份/代理/执行策略。
+没有真实模型/知识/语音/场景执行时不得报告成功。契约1.0.0变更必须M协调提交。
