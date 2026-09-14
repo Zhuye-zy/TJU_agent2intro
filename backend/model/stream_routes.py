@@ -18,9 +18,11 @@ def _sse(request_id,seq,event_type,payload):
   "timestamp":datetime.now(timezone.utc).isoformat().replace("+00:00","Z"),"payload":payload})
  raw=event.model_dump_json()
  return f"id: {event.event_id}\nevent: {event.type}\ndata: {raw}\n\n".encode()
-def _reason(code):
+def _reason(error):
+ code=error.code
+ if hasattr(error,"reason"):return error.reason
  if code=="UPSTREAM_TIMEOUT":return "timeout"
- if code=="INCOMPLETE_OUTPUT":return "length"
+ if code=="INCOMPLETE_OUTPUT":return "disconnect"
  if code=="EMPTY_OUTPUT":return "empty"
  if code=="VALIDATION_ERROR":return "validation"
  return "upstream"
@@ -46,6 +48,7 @@ async def stream_chat(body:R2ChatRequest):
     runtime.emit(body.request_id,"generation","started")
     yield emit("status",{"stage":"generation","status":"started"})
    prepared=await model.prepare(body)
+   if prepared.needs_selection and body.mode=="content_generation":raise DomainError("VALIDATION_ERROR","请先选择讲解对象，或明确生成要求",422,body.request_id)
    if prepared.needs_selection:
     answer="请先选择具体点位，我才能确定“这里”指的是哪一处。"
    elif body.mode=="campus_qa" and not prepared.knowledge_ready:
@@ -67,6 +70,7 @@ async def stream_chat(body:R2ChatRequest):
    for action in actions:yield emit("poi_action",{"action":action})
    yield emit("usage",{"model":model_name,"usage":usage})
    response=ChatResponse(request_id=body.request_id,session_id=body.session_id,answer=cited_answer,sources=cited,model=model_name,usage=usage,elapsed_ms=(time.monotonic()-started)*1000,actions=actions)
+   if record.cancel_requested:raise asyncio.CancelledError
    model.commit(body,response)
    if runtime.finish(body.request_id,"completed",len(cited_answer)):
     terminal=True;runtime.emit(body.request_id,"generation" if body.mode=="content_generation" else "request","completed",duration_ms=response.elapsed_ms)
@@ -78,7 +82,7 @@ async def stream_chat(body:R2ChatRequest):
   except DomainError as error:
    if runtime.finish(body.request_id,"failed",len(answer)):
     terminal=True;runtime.emit(body.request_id,"generation" if body.mode=="content_generation" else "request","failed",{"code":error.code},(time.monotonic()-started)*1000)
-    yield emit("error",{"code":error.code,"message":error.message,"retryable":error.retryable,"partial":bool(answer),"answer":answer,"reason":_reason(error.code)})
+    yield emit("error",{"code":error.code,"message":error.message,"retryable":error.retryable,"partial":bool(answer),"answer":answer,"reason":_reason(error)})
   except Exception:
    if runtime.finish(body.request_id,"failed",len(answer)):
     terminal=True;runtime.emit(body.request_id,"generation" if body.mode=="content_generation" else "request","failed",{"code":"UPSTREAM_PROTOCOL_ERROR"},(time.monotonic()-started)*1000)

@@ -69,6 +69,8 @@ class RuntimeStore:
         record.status, record.answer_chars = status, answer_chars
         record.terminal_count += 1
         record.task = None
+        if record.mode == "content_generation":
+            self.trace(request_id,action="generation."+{"completed":"completed","failed":"error","cancelled":"cancelled"}.get(status,status),stage="generation",status=status,generation_type=record.generation_type,body_chars=answer_chars,elapsed_ms=(time.monotonic()-record.created)*1000)
         return True
     def trace(self, request_id: UUID, *, action: str, stage: str, status: str, attempt: int = 1,
               generation_type: str | None = None, elapsed_ms: float | None = None,
