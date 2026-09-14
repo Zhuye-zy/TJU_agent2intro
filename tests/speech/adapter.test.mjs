@@ -8,7 +8,7 @@ const callbacks = (events) => ({onText(){},onStart:id=>events.push(['start',id])
 test('context abort stops already-playing audio and suppresses late end', async () => {
   const originals={Audio:globalThis.Audio,fetch:globalThis.fetch}; const instances=[];
   class FakeAudio {
-    constructor(){instances.push(this);}
+    constructor(){this.volume=1;this.muted=false;this.paused=true;this.ended=false;instances.push(this);}
     async play(){this.onplaying?.();}
     pause(){this.paused=true;}
     removeAttribute(){}
@@ -16,7 +16,9 @@ test('context abort stops already-playing audio and suppresses late end', async 
   }
   const events=[]; const controller=new AbortController(); const ctx={...context(),signal:controller.signal}; const utterance=crypto.randomUUID();
   globalThis.Audio=FakeAudio;
-  globalThis.fetch=async () => new Response(JSON.stringify({request_id:ctx.request_id,utterance_id:utterance,audio_url:'/api/speech/audio/test'}),{status:200});
+  globalThis.fetch=async (url) => url==='/api/speech/tts'
+    ? new Response(JSON.stringify({request_id:ctx.request_id,utterance_id:utterance,audio_url:'/api/speech/audio/0123456789abcdef0123456789abcdef',mime_type:'audio/mpeg',timestamps:'none'}),{status:200,headers:{'content-type':'application/json'}})
+    : new Response(new Uint8Array([73,68,51,4,0,0,1]),{status:200,headers:{'content-type':'audio/mpeg'}});
   try {
     const adapter=new CampusSpeechAdapter();
     assert.equal((await adapter.speak(ctx,utterance,'fixture','edge:test',callbacks(events))).status,'ready');

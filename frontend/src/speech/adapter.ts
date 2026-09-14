@@ -21,7 +21,51 @@ type RecognitionMode = 'server' | 'browser';
 export interface SpeechAdapterOptions {
   /** Server uses VAD + /api/speech/asr. Browser is an explicit online browser-service fallback. */
   recognitionMode?: RecognitionMode;
+  /** Receives bounded metadata only. Text, audio bytes, URLs, and credentials are never included. */
+  onTrace?: (event: SpeechPlaybackTrace) => void;
+  volume?: number;
+  muted?: boolean;
 }
+
+export type SpeechPlaybackTraceStage =
+  | 'activation'
+  | 'text_received'
+  | 'tts_response'
+  | 'audio_response'
+  | 'decode'
+  | 'play_request'
+  | 'play_resolved'
+  | 'playing'
+  | 'paused'
+  | 'ended'
+  | 'error'
+  | 'stopped';
+
+export interface SpeechPlaybackTrace {
+  stage: SpeechPlaybackTraceStage;
+  request_id: string | null;
+  utterance_id: string | null;
+  elapsed_ms: number | null;
+  status: number | null;
+  content_type: string | null;
+  bytes: number | null;
+  chars: number | null;
+  volume: number | null;
+  muted: boolean | null;
+  audio_context_state: AudioContextState | 'unavailable' | null;
+  code: string | null;
+}
+
+export type PreparedSpeech = {
+  readonly requestId: string;
+  readonly utteranceId: string;
+  readonly context: SpeechContext;
+  readonly text: string;
+  readonly voiceId: string;
+  readonly kind: 'server' | 'browser';
+  readonly objectUrl?: string;
+  released: boolean;
+};
 
 type VadInstance = {
   pause(): Promise<void>;
@@ -58,6 +102,8 @@ type Playback = {
   generation: number;
   stop(): void;
   removeAbort(): void;
+  pause?(): boolean;
+  resume?(): Promise<AdapterResult>;
 };
 
 export async function loadVadModule() {
@@ -80,6 +126,14 @@ function browserTtsAvailable(): boolean {
   return typeof window !== 'undefined'
     && 'speechSynthesis' in window
     && typeof SpeechSynthesisUtterance !== 'undefined';
+}
+
+function now(): number {
+  return typeof performance === 'undefined' ? Date.now() : performance.now();
+}
+
+function elapsed(startedAt: number): number {
+  return Math.round((now() - startedAt) * 10) / 10;
 }
 
 function permissionCode(error: unknown): string {
@@ -112,13 +166,66 @@ export class CampusSpeechAdapter implements SpeechAdapter {
   };
 
   private readonly recognitionMode: RecognitionMode;
+  private readonly onTrace?: (event: SpeechPlaybackTrace) => void;
   private capture?: Capture;
   private playback?: Playback;
+  private player?: HTMLAudioElement;
+  private audioContext?: AudioContext;
+  private prepared = new Set<PreparedSpeech>();
+  private preparing = new Map<AbortController, string>();
   private captureGeneration = 0;
   private playbackGeneration = 0;
+  private volume: number;
+  private muted: boolean;
 
   constructor(options: SpeechAdapterOptions = {}) {
     this.recognitionMode = options.recognitionMode ?? 'server';
+    this.onTrace = options.onTrace;
+    this.volume = Math.max(0, Math.min(1, options.volume ?? 1));
+    this.muted = options.muted ?? false;
+  }
+
+  /** Must be called from the user's click/keyboard event for the current page session. */
+  async activatePlayback(): Promise<AdapterResult> {
+    if (typeof Audio === 'undefined') return { status: 'failed', error_code: 'playback_unsupported' };
+    this.ensurePlayer();
+    let state: AudioContextState | 'unavailable' = 'unavailable';
+    try {
+      const Context = typeof window !== 'undefined'
+        ? (window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)
+        : undefined;
+      if (Context) {
+        this.audioContext ??= new Context();
+        if (this.audioContext.state === 'suspended') await this.audioContext.resume();
+        state = this.audioContext.state;
+        if (state !== 'running') throw new Error('audio_context_not_running');
+      }
+      this.trace('activation', null, null, { audio_context_state: state });
+      return { status: 'ready' };
+    } catch {
+      this.trace('error', null, null, { audio_context_state: this.audioContext?.state ?? state, code: 'playback_activation_failed' });
+      return { status: 'failed', error_code: 'playback_activation_failed' };
+    }
+  }
+
+  setOutput(volume: number, muted: boolean): void {
+    this.volume = Math.max(0, Math.min(1, volume));
+    this.muted = muted;
+    if (this.player) {
+      this.player.volume = this.volume;
+      this.player.muted = this.muted;
+    }
+  }
+
+  dispose(): void {
+    void this.stopCapture();
+    this.cancelPlayback();
+    for (const controller of this.preparing.keys()) controller.abort();
+    this.preparing.clear();
+    for (const item of [...this.prepared]) this.releasePrepared(item);
+    if (this.audioContext && this.audioContext.state !== 'closed') void this.audioContext.close();
+    this.audioContext = undefined;
+    this.player = undefined;
   }
 
   async start(context: SpeechContext, callbacks: SpeechCallbacks): Promise<AdapterResult> {
@@ -135,6 +242,12 @@ export class CampusSpeechAdapter implements SpeechAdapter {
     const stoppedPlayback = !!this.playback && this.playback.requestId === requestId;
     if (stoppedCapture) await this.stopCapture();
     if (stoppedPlayback) this.cancelPlayback();
+    for (const [controller, preparingRequestId] of this.preparing) {
+      if (preparingRequestId === requestId) controller.abort();
+    }
+    for (const item of [...this.prepared]) {
+      if (item.requestId === requestId) this.releasePrepared(item);
+    }
 
     try {
       const sessionId = this.lastSessionByRequest.get(requestId);
@@ -160,13 +273,75 @@ export class CampusSpeechAdapter implements SpeechAdapter {
     callbacks: SpeechCallbacks,
   ): Promise<AdapterResult> {
     this.remember(context);
+    if (context.signal.aborted) return { status: 'failed', error_code: 'stopped' };
+    const prepared = await this.prepareSpeech(context, utteranceId, text, voiceId);
+    if ('status' in prepared) {
+      if (prepared.error_code !== 'stopped') callbacks.onFailure(utteranceId, prepared.error_code ?? 'tts_unavailable');
+      return prepared;
+    }
+    return this.playPreparedSpeech(prepared, callbacks);
+  }
+
+  async prepareSpeech(
+    context: SpeechContext,
+    utteranceId: string,
+    text: string,
+    voiceId: string,
+  ): Promise<PreparedSpeech | AdapterResult> {
+    this.remember(context);
+    if (context.signal.aborted) return { status: 'failed', error_code: 'stopped' };
+    this.trace('text_received', context.request_id, utteranceId, { chars: [...text].length });
+    if (voiceId.startsWith('browser:')) {
+      const item: PreparedSpeech = {
+        requestId: context.request_id,
+        utteranceId,
+        context,
+        text,
+        voiceId,
+        kind: 'browser',
+        released: false,
+      };
+      this.prepared.add(item);
+      return item;
+    }
+    return this.prepareServerSpeech(context, utteranceId, text, voiceId);
+  }
+
+  async playPreparedSpeech(prepared: PreparedSpeech, callbacks: SpeechCallbacks): Promise<AdapterResult> {
+    if (prepared.released || prepared.context.signal.aborted) {
+      return { status: 'failed', error_code: 'stopped' };
+    }
     await this.stopCapture();
     this.cancelPlayback();
-    if (context.signal.aborted) return { status: 'failed', error_code: 'stopped' };
-    if (voiceId.startsWith('browser:')) {
-      return this.speakWithBrowser(context, utteranceId, text, voiceId.slice('browser:'.length), callbacks);
+    if (prepared.kind === 'browser') {
+      this.prepared.delete(prepared);
+      prepared.released = true;
+      return this.speakWithBrowser(
+        prepared.context,
+        prepared.utteranceId,
+        prepared.text,
+        prepared.voiceId.slice('browser:'.length),
+        callbacks,
+      );
     }
-    return this.speakWithServer(context, utteranceId, text, voiceId, callbacks);
+    return this.playPreparedServerSpeech(prepared, callbacks);
+  }
+
+  pausePlayback(): AdapterResult {
+    const paused = this.playback?.pause?.() ?? false;
+    return paused ? { status: 'ready' } : { status: 'failed', error_code: 'nothing_playing' };
+  }
+
+  async resumePlayback(): Promise<AdapterResult> {
+    if (!this.playback?.resume) return { status: 'failed', error_code: 'nothing_to_resume' };
+    return this.playback.resume();
+  }
+
+  releasePrepared(prepared: PreparedSpeech): void {
+    if (prepared.released) return;
+    prepared.released = true;
+    this.prepared.delete(prepared);
+    if (prepared.objectUrl) URL.revokeObjectURL(prepared.objectUrl);
   }
 
   async listVoices(): Promise<Voice[]> {
@@ -275,6 +450,8 @@ export class CampusSpeechAdapter implements SpeechAdapter {
       if (generation === this.captureGeneration && !context.signal.aborted) {
         callbacks.onFailure(context.request_id, error instanceof TypeError ? 'asr_unavailable' : 'capture_failed');
       }
+    } finally {
+      if (generation === this.capture?.generation) await this.stopCapture();
     }
   }
 
@@ -328,27 +505,17 @@ export class CampusSpeechAdapter implements SpeechAdapter {
     }
   }
 
-  private async speakWithServer(
+  private async prepareServerSpeech(
     context: SpeechContext,
     utteranceId: string,
     text: string,
     voiceId: string,
-    callbacks: SpeechCallbacks,
-  ): Promise<AdapterResult> {
-    if (typeof Audio === 'undefined') {
-      callbacks.onFailure(utteranceId, 'playback_unsupported');
-      return { status: 'failed', error_code: 'playback_unsupported' };
-    }
-    const generation = ++this.playbackGeneration;
+  ): Promise<PreparedSpeech | AdapterResult> {
     const controller = new AbortController();
-    const abort = () => { controller.abort(); if (this.playback?.generation === generation) this.cancelPlayback(); };
+    this.preparing.set(controller, context.request_id);
+    const abort = () => controller.abort();
     context.signal.addEventListener('abort', abort, { once: true });
-    this.playback = {
-      requestId: context.request_id,
-      generation,
-      stop: () => controller.abort(),
-      removeAbort: () => context.signal.removeEventListener('abort', abort),
-    };
+    const startedAt = now();
     try {
       const response = await fetch('/api/speech/tts', {
         method: 'POST',
@@ -362,74 +529,163 @@ export class CampusSpeechAdapter implements SpeechAdapter {
           voice_id: voiceId,
         }),
       });
-      if (generation !== this.playbackGeneration || context.signal.aborted) return { status: 'failed', error_code: 'stopped' };
+      const responseType = response.headers.get('content-type')?.split(';', 1)[0]?.trim().toLowerCase() ?? '';
+      this.trace('tts_response', context.request_id, utteranceId, {
+        elapsed_ms: elapsed(startedAt), status: response.status, content_type: responseType || null,
+      });
+      if (context.signal.aborted || controller.signal.aborted) return { status: 'failed', error_code: 'stopped' };
       if (!response.ok) {
         const code = await safeErrorCode(response, 'tts_unavailable');
-        callbacks.onFailure(utteranceId, code);
-        context.signal.removeEventListener('abort', abort);
-        if (this.playback?.generation === generation) this.playback = undefined;
+        this.trace('error', context.request_id, utteranceId, { elapsed_ms: elapsed(startedAt), code });
         return { status: 'failed', error_code: code };
       }
+      if (responseType !== 'application/json') throw new Error('invalid_tts_content_type');
       const body = await response.json() as TtsResponse;
       if (body.request_id !== context.request_id || body.utterance_id !== utteranceId
-          || !body.audio_url.startsWith('/api/speech/audio/')) {
+          || !body.audio_url.startsWith('/api/speech/audio/') || !body.mime_type.startsWith('audio/')) {
         throw new Error('invalid_tts_response');
       }
-      if (generation !== this.playbackGeneration || context.signal.aborted) {
-        return { status: 'failed', error_code: 'stopped' };
+      const audioStartedAt = now();
+      const audioResponse = await fetch(body.audio_url, { signal: controller.signal, headers: { accept: 'audio/*' } });
+      const audioType = audioResponse.headers.get('content-type')?.split(';', 1)[0]?.trim().toLowerCase() ?? '';
+      if (!audioResponse.ok) {
+        this.trace('audio_response', context.request_id, utteranceId, {
+          elapsed_ms: elapsed(audioStartedAt), status: audioResponse.status, content_type: audioType || null,
+        });
+        return { status: 'failed', error_code: 'audio_fetch_failed' };
       }
-      const audio = new Audio(body.audio_url);
-      audio.preload = 'auto';
-      let started = false;
-      const cleanup = () => {
-        context.signal.removeEventListener('abort', abort);
-        audio.onplaying = null;
-        audio.onended = null;
-        audio.onerror = null;
-        if (this.playback?.generation === generation) this.playback = undefined;
-      };
-      audio.onplaying = () => {
-        if (generation !== this.playbackGeneration || started) return;
-        started = true;
-        callbacks.onStart(utteranceId);
-      };
-      audio.onended = () => {
-        if (generation !== this.playbackGeneration) return;
-        cleanup();
-        callbacks.onEnd(utteranceId);
-      };
-      audio.onerror = () => {
-        if (generation !== this.playbackGeneration) return;
-        cleanup();
-        callbacks.onFailure(utteranceId, 'playback_failed');
-      };
-      this.playback = {
+      if (!audioType.startsWith('audio/')) throw new Error('invalid_audio_content_type');
+      const audioBytes = await audioResponse.arrayBuffer();
+      this.trace('audio_response', context.request_id, utteranceId, {
+        elapsed_ms: elapsed(audioStartedAt), status: audioResponse.status, content_type: audioType, bytes: audioBytes.byteLength,
+      });
+      if (audioBytes.byteLength === 0) throw new Error('empty_audio');
+      if (context.signal.aborted || controller.signal.aborted) return { status: 'failed', error_code: 'stopped' };
+      const decodeStartedAt = now();
+      if (this.audioContext) await this.audioContext.decodeAudioData(audioBytes.slice(0));
+      this.trace('decode', context.request_id, utteranceId, {
+        elapsed_ms: elapsed(decodeStartedAt), bytes: audioBytes.byteLength,
+        audio_context_state: this.audioContext?.state ?? 'unavailable',
+      });
+      const blob = new Blob([audioBytes], { type: audioType });
+      const item: PreparedSpeech = {
         requestId: context.request_id,
-        generation,
-        stop: () => {
-          controller.abort();
-          audio.pause();
-          audio.removeAttribute('src');
-          audio.load();
-        },
-        removeAbort: () => context.signal.removeEventListener('abort', abort),
+        utteranceId,
+        context,
+        text,
+        voiceId,
+        kind: 'server',
+        objectUrl: URL.createObjectURL(blob),
+        released: false,
       };
-      await audio.play();
+      this.prepared.add(item);
       this.capabilities.tts = true;
-      return { status: 'ready' };
+      return item;
     } catch (error) {
+      const code = context.signal.aborted || controller.signal.aborted || (error instanceof DOMException && error.name === 'AbortError')
+        ? 'stopped'
+        : error instanceof Error && error.message === 'empty_audio'
+          ? 'tts_empty_audio'
+          : error instanceof Error && error.message.includes('content_type')
+            ? 'tts_invalid_content_type'
+            : error instanceof Error && error.message === 'invalid_tts_response'
+              ? 'invalid_tts_response'
+              : 'audio_decode_failed';
+      this.trace('error', context.request_id, utteranceId, { elapsed_ms: elapsed(startedAt), code });
+      return { status: 'failed', error_code: code };
+    } finally {
+      this.preparing.delete(controller);
       context.signal.removeEventListener('abort', abort);
-      if (generation === this.playbackGeneration && !context.signal.aborted) {
-        this.playback?.stop();
-        this.playback = undefined;
+    }
+  }
+
+  private async playPreparedServerSpeech(prepared: PreparedSpeech, callbacks: SpeechCallbacks): Promise<AdapterResult> {
+    if (typeof Audio === 'undefined' || !prepared.objectUrl) {
+      this.releasePrepared(prepared);
+      callbacks.onFailure(prepared.utteranceId, 'playback_unsupported');
+      return { status: 'failed', error_code: 'playback_unsupported' };
+    }
+    const audio = this.ensurePlayer();
+    const generation = ++this.playbackGeneration;
+    const startedAt = now();
+    let started = false;
+    let blocked = false;
+    const abort = () => { if (this.playback?.generation === generation) this.cancelPlayback(); };
+    prepared.context.signal.addEventListener('abort', abort, { once: true });
+    const cleanup = (release = true) => {
+      prepared.context.signal.removeEventListener('abort', abort);
+      audio.onplaying = null;
+      audio.onended = null;
+      audio.onerror = null;
+      if (release) this.releasePrepared(prepared);
+      if (this.playback?.generation === generation) this.playback = undefined;
+    };
+    const resume = async (): Promise<AdapterResult> => {
+      try {
+        this.trace('play_request', prepared.requestId, prepared.utteranceId, {
+          elapsed_ms: elapsed(startedAt), volume: audio.volume, muted: audio.muted,
+          audio_context_state: this.audioContext?.state ?? 'unavailable',
+        });
+        await audio.play();
+        blocked = false;
+        this.trace('play_resolved', prepared.requestId, prepared.utteranceId, { elapsed_ms: elapsed(startedAt) });
+        return { status: 'ready' };
+      } catch (error) {
         const code = error instanceof DOMException && error.name === 'NotAllowedError'
           ? 'playback_permission_denied'
           : 'playback_failed';
-        callbacks.onFailure(utteranceId, code);
+        blocked = code === 'playback_permission_denied';
+        this.trace('error', prepared.requestId, prepared.utteranceId, { elapsed_ms: elapsed(startedAt), code });
+        callbacks.onFailure(prepared.utteranceId, code);
+        if (!blocked) cleanup();
         return { status: 'failed', error_code: code };
       }
-      return { status: 'failed', error_code: 'stopped' };
-    }
+    };
+    audio.preload = 'auto';
+    audio.volume = this.volume;
+    audio.muted = this.muted;
+    audio.src = prepared.objectUrl;
+    audio.load();
+    audio.onplaying = () => {
+      if (generation !== this.playbackGeneration || started) return;
+      started = true;
+      this.trace('playing', prepared.requestId, prepared.utteranceId, {
+        elapsed_ms: elapsed(startedAt), volume: audio.volume, muted: audio.muted,
+        audio_context_state: this.audioContext?.state ?? 'unavailable',
+      });
+      callbacks.onStart(prepared.utteranceId);
+    };
+    audio.onended = () => {
+      if (generation !== this.playbackGeneration) return;
+      this.trace('ended', prepared.requestId, prepared.utteranceId, { elapsed_ms: elapsed(startedAt) });
+      cleanup();
+      callbacks.onEnd(prepared.utteranceId);
+    };
+    audio.onerror = () => {
+      if (generation !== this.playbackGeneration || blocked) return;
+      this.trace('error', prepared.requestId, prepared.utteranceId, { elapsed_ms: elapsed(startedAt), code: 'playback_failed' });
+      cleanup();
+      callbacks.onFailure(prepared.utteranceId, 'playback_failed');
+    };
+    this.playback = {
+      requestId: prepared.requestId,
+      generation,
+      stop: () => {
+        audio.pause();
+        audio.removeAttribute('src');
+        audio.load();
+        cleanup();
+      },
+      removeAbort: () => prepared.context.signal.removeEventListener('abort', abort),
+      pause: () => {
+        if (audio.paused || audio.ended) return false;
+        audio.pause();
+        this.trace('paused', prepared.requestId, prepared.utteranceId, { elapsed_ms: elapsed(startedAt) });
+        return true;
+      },
+      resume,
+    };
+    return resume();
   }
 
   private async speakWithBrowser(
@@ -444,6 +700,7 @@ export class CampusSpeechAdapter implements SpeechAdapter {
       return { status: 'failed', error_code: 'browser_tts_unsupported' };
     }
     const generation = ++this.playbackGeneration;
+    const startedAt = now();
     const abort = () => this.cancelPlayback();
     context.signal.addEventListener('abort', abort, { once: true });
     this.playback = {
@@ -451,6 +708,17 @@ export class CampusSpeechAdapter implements SpeechAdapter {
       generation,
       stop: () => window.speechSynthesis.cancel(),
       removeAbort: () => context.signal.removeEventListener('abort', abort),
+      pause: () => {
+        if (!window.speechSynthesis.speaking || window.speechSynthesis.paused) return false;
+        window.speechSynthesis.pause();
+        this.trace('paused', context.request_id, utteranceId, { elapsed_ms: elapsed(startedAt) });
+        return true;
+      },
+      resume: async () => {
+        if (!window.speechSynthesis.paused) return { status: 'failed', error_code: 'nothing_to_resume' };
+        window.speechSynthesis.resume();
+        return { status: 'ready' };
+      },
     };
     const voices = await waitForBrowserVoices();
     if (generation !== this.playbackGeneration || context.signal.aborted) {
@@ -467,20 +735,26 @@ export class CampusSpeechAdapter implements SpeechAdapter {
     utterance.lang = voice.lang;
     utterance.voice = voice;
     utterance.onstart = () => {
-      if (generation === this.playbackGeneration) callbacks.onStart(utteranceId);
+      if (generation === this.playbackGeneration) {
+        this.trace('playing', context.request_id, utteranceId, { elapsed_ms: elapsed(startedAt) });
+        callbacks.onStart(utteranceId);
+      }
     };
     utterance.onend = () => {
       if (generation !== this.playbackGeneration) return;
       this.playback?.removeAbort();
       this.playback = undefined;
+      this.trace('ended', context.request_id, utteranceId, { elapsed_ms: elapsed(startedAt) });
       callbacks.onEnd(utteranceId);
     };
     utterance.onerror = () => {
       if (generation !== this.playbackGeneration) return;
       this.playback?.removeAbort();
       this.playback = undefined;
+      this.trace('error', context.request_id, utteranceId, { elapsed_ms: elapsed(startedAt), code: 'playback_failed' });
       callbacks.onFailure(utteranceId, 'playback_failed');
     };
+    this.trace('play_request', context.request_id, utteranceId, { elapsed_ms: elapsed(startedAt) });
     window.speechSynthesis.speak(utterance);
     this.capabilities.tts = true;
     return { status: 'ready' };
@@ -525,6 +799,36 @@ export class CampusSpeechAdapter implements SpeechAdapter {
     }
   }
 
+  private ensurePlayer(): HTMLAudioElement {
+    this.player ??= new Audio();
+    this.player.preload = 'auto';
+    this.player.volume = this.volume;
+    this.player.muted = this.muted;
+    return this.player;
+  }
+
+  private trace(
+    stage: SpeechPlaybackTraceStage,
+    requestId: string | null,
+    utteranceId: string | null,
+    values: Partial<Omit<SpeechPlaybackTrace, 'stage' | 'request_id' | 'utterance_id'>> = {},
+  ): void {
+    this.onTrace?.({
+      stage,
+      request_id: requestId,
+      utterance_id: utteranceId,
+      elapsed_ms: values.elapsed_ms ?? null,
+      status: values.status ?? null,
+      content_type: values.content_type ?? null,
+      bytes: values.bytes ?? null,
+      chars: values.chars ?? null,
+      volume: values.volume ?? null,
+      muted: values.muted ?? null,
+      audio_context_state: values.audio_context_state ?? null,
+      code: values.code ?? null,
+    });
+  }
+
   private cancelPlayback(): void {
     const playback = this.playback;
     this.playback = undefined;
@@ -532,6 +836,7 @@ export class CampusSpeechAdapter implements SpeechAdapter {
     if (!playback) return;
     playback.removeAbort();
     playback.stop();
+    this.trace('stopped', playback.requestId, null, {});
   }
 }
 
