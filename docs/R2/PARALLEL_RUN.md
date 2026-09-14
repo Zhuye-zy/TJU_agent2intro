@@ -57,3 +57,6 @@ M审查后给独立COORD_COMMIT；窗口先提交自己的改动，暂停该接�
 
 ## M0安装协调修正
 原PowerShell把uv正常stderr在全流重定向时提升为NativeCommandError，导致首树安装中断；改用隐藏独立安装进程分别重定向stdout/stderr并检查receipt，未改业务依赖。不可移动r2-baseline保持为契约基线；本协调提交作为launch_commit，Prepare-R2验证并把四个原树快进到同一launch_commit。实际两号均在.runtime/R2/parallel-state.json，窗口以launch_commit开始工作，BASE_COMMIT_R2仍记录原契约基线。不重置已快进的树。
+
+## 导航用量协调
+TJU_比赛路线改为JS API首选；共享模块和测试见NAVIGATION_COORDINATION.md。地图初始化/定位/在线POI/步行规划分计，默认真实小样本预算1/1/0/1，四窗口先跑零配额fixture，不自动做SDK真实探针。

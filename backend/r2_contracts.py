@@ -134,6 +134,7 @@ class MapStatus(Strict):
     precise_location: Literal["not_implemented", "NOT_CONFIGURED", "UNVERIFIED", "VERIFIED", "FAILED"]
     in_app_routing: Literal["not_implemented", "NOT_CONFIGURED", "UNVERIFIED", "VERIFIED", "FAILED"]
 class MapPublicConfig(Strict):
+    route_backend: Literal["js_api"] = "js_api"
     js_key: str | None
     service_host: Literal["/api/maps/amap/_AMapService"]
     status: MapStatus
@@ -222,7 +223,7 @@ class UserPosition(Strict):
     lng: float = Field(ge=-180,le=180)
     lat: float = Field(ge=-90,le=90)
     crs: Literal["GCJ02"]
-    source: Literal["amap_geolocation"]
+    source: Literal["amap_geolocation", "manual"]
     accuracy_m: float | None = Field(ge=0)
     timestamp: str
 class RouteRequest(Strict):

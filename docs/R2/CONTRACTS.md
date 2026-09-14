@@ -78,7 +78,7 @@ ProviderCrosswalk只作独立实体与厂商ID匹配，记录验证/留存依据
 
 A 本地图和知识目录不依赖在线config请求完成；缺Key清晰显示在线NOT_CONFIGURED，不阻塞聊天/生成/语音。
 A 在可用且用户点击“开启定位”后加载 AMap.Geolocation，授权前不定位，拒绝/失败保留基础图与外链；停止定位清watch与事件。IP级结果不能标精确定位，展示来源、精度、时间；用户位置只存内存，不进入会话、LLM、导出或运行日志。
-在线路线选定Web服务步行接口，由C经现有httpx调用。只有用户点击“去这里”/明确导航动作时，A拿有效授权位置、已核验目标ID（可选entrance_id）发RouteRequest；精确坐标仅作为必要路线参数发给同源C并转高德。输入固定GCJ02，拒绝混系，未来其他来源需先由M扩展。
+在线路线优先JS API的AMap.Walking，由A通过M的AmapNavigation调用；安全代理归C。MapPublicConfig.route_backend=js_api。原POST /maps/routes仅为可选REST路线保留，只有另配Web服务Key且明确选择REST时调用，不自动降级重复调用。只有用户点击“去这里”/明确导航动作时，A拿有效授权位置、已核验目标ID（可选entrance_id）发RouteRequest；精确坐标仅作为必要路线参数发给同源C并转高德。输入固定GCJ02，拒绝混系，未来其他来源需先由M扩展。
 同route_id重复409；A禁用运行中按钮并防抖500ms；C每session最多1个规划、6次/分钟，全应用30次/分钟/最多2个规划并发，限频429携带Retry-After。计数表容量1000、TTL60秒。只记次数/状态，不记录位置。完成/取消释放当前坐标；未核验存储条款前不缓存厂商结果。
 定位更新只移动标记，不自动规划。未授权、无Key、无有效目标坐标、超限、服务错误都保留目标信息和外部导航入口；外链只用已核验坐标，或清晰标记“按名称搜索”，不把示意点当目的坐标。外链固定高德HTTPS白名单、URL编码名称，不能任意javascriptURL。
 RouteResponse只表示地图提供方方案，campus_access默认unverified；D有可追溯当前入口/门禁/道路依据才verified。路线取消是独立route_id生命周期，不污染LLM request日志。
@@ -86,3 +86,6 @@ A在加载SDK前将window._AMapSecurityConfig.serviceHost设置为location.origi
 安全代理仅转发实现所必需的官方固定路径/字段；剥离客户端key/jscode/任意目标URL，不跟随到其他host，不代理内网。来源限制/localhost要求见本机配置指南。高德安全密钥与Web服务Key只留后端root.env。
 
 参考官方已读文档：[安全代理](https://lbs.amap.com/api/javascript-api-v2/guide/abc/jscode)、[定位插件](https://lbs.amap.com/api/javascript-api-v2/guide/services/geolocation)、[步行路线](https://lbs.amap.com/api/webservice/guide/api/direction)、[外部单点入口](https://lbs.amap.com/api/uri-api/guide/mobile-web/point)。文档仅证明厂商接口，不证明校园通行。M1分别实测本地图、外链、在线底图、定位、规划及通行依据。
+
+## TJU_比赛定位/导航与用量协调
+最新实现映射、按类别计数、JS优先方案及零配额隔离测试详见[NAVIGATION_COORDINATION.md](NAVIGATION_COORDINATION.md)，覆盖上文曾选定的REST主路线；不另造RouteResponse。模块已实现，UI/安全代理/真实定位语音仍待联调。
