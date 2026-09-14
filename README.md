@@ -68,3 +68,5 @@ cd E:\AI4TJU
 - 当前 HTTP 成功与测试通过不等于浏览器端全流程通过。
 
 [统一验收报告](docs/FINAL_REPORT.md) · [实际开源复用](docs/OPEN_SOURCE_DECISION.md) · [接口契约](docs/CONTRACTS.md) · [协作目录](docs/PARALLEL_RUN.md) · [第三方许可](THIRD_PARTY_NOTICES.md) · [下一阶段](docs/NEXT_PHASE.md)
+
+协作提交请先推送功能分支并创建 PR，由 @xxwan320 审核并最终合并；具体保护范围及流程见 [推送与合并审核规则](docs/REVIEW_POLICY.md)。
