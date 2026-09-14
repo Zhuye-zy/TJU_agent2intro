@@ -69,6 +69,7 @@ export function sanitizeSpeechText(raw: string, final = true): Sanitized {
       index = end < 0 ? raw.length : end + 1;
       continue;
     }
+    if (!final && raw[index] === '!' && index === raw.length - 1) { pendingAt = index; break; }
     if (raw.startsWith('![', index)) {
       const labelEnd = raw.indexOf(']', index + 2);
       const urlStart = labelEnd >= 0 && raw[labelEnd + 1] === '(' ? labelEnd + 2 : -1;
@@ -80,6 +81,7 @@ export function sanitizeSpeechText(raw: string, final = true): Sanitized {
     if (raw[index] === '[') {
       const labelEnd = raw.indexOf(']', index + 1);
       if (labelEnd < 0) { if (!final) pendingAt = index; break; }
+      if (!final && labelEnd === raw.length - 1) { pendingAt = index; break; }
       const label = raw.slice(index + 1, labelEnd);
       if (raw[labelEnd + 1] === '(') {
         const urlEnd = raw.indexOf(')', labelEnd + 2);
@@ -180,7 +182,7 @@ export class IncrementalSpeechSanitizer {
   }
 
   private take(text: string, final: boolean): string[] {
-    if (this.consumed > text.length) throw new Error('speech_final_mismatch');
+    if (this.consumed > text.length || !text.startsWith(this.emittedPrefix)) throw new Error('speech_final_mismatch');
     const ends = sentenceEnds(text, this.consumed);
     const segments: string[] = [];
     let start = this.consumed;
@@ -235,6 +237,7 @@ export class CampusSpeechController implements SpeechController {
   private pumping = false;
   private blocked = false;
   private disposed = false;
+  private transition = 0;
   private lastPlayback: { run: SpeechRun; text: string; segmentId: string } | null = null;
   private lastResponse: { run: SpeechRun; remaining: string } | null = null;
 
@@ -262,8 +265,10 @@ export class CampusSpeechController implements SpeechController {
 
   async begin(run: SpeechRun): Promise<AdapterResult> {
     if (!this.enabled) { this.emitFor(run, 'error', 'speech_not_enabled'); return { status: 'failed', error_code: 'speech_not_enabled' }; }
-    await this.stop('new_request');
-    if (run.signal.aborted) return { status: 'failed', error_code: 'stopped' };
+    const stopping = this.stop('new_request');
+    const transition = this.transition;
+    await stopping;
+    if (transition !== this.transition || this.disposed || run.signal.aborted) return { status: 'failed', error_code: 'stopped' };
     const controller = new AbortController();
     const abort = () => void this.stop('cancel');
     run.signal.addEventListener('abort', abort, { once: true });
@@ -301,7 +306,8 @@ export class CampusSpeechController implements SpeechController {
     state.finished = true;
     const sanitized = sanitizeSpeechText(text, true).text;
     if (!sanitized) return this.fail('speech_empty');
-    this.enqueueItem(state, sanitized, segmentId);
+    try { splitBounded(sanitized).forEach((part, index) => this.enqueueItem(state, part, index === 0 ? segmentId : `${segmentId}-${index + 1}`)); }
+    catch (error) { return this.fail(errorCode(error)); }
     return { status: 'ready' };
   }
 
@@ -310,11 +316,14 @@ export class CampusSpeechController implements SpeechController {
     if (ready.status !== 'ready') return ready;
     const state = this.activeRun!;
     state.finished = true;
+    if (!sanitizeSpeechText(text, true).text) return this.fail('speech_empty');
     try { this.enqueue(state, state.sanitizer.finish(text)); } catch (error) { return this.fail(errorCode(error)); }
     return { status: 'ready' };
   }
 
   async stop(reason: 'user' | 'new_request' | 'clear' | 'campus_change' | 'cancel'): Promise<void> {
+    this.transition += 1;
+    if (reason !== 'user') { this.lastResponse = null; this.lastPlayback = null; }
     const state = this.activeRun;
     this.activeRun = null;
     this.activeItem = null;
@@ -326,9 +335,10 @@ export class CampusSpeechController implements SpeechController {
     state.removeAbort();
     state.controller.abort();
     if (prefetched) void prefetched.promise.then((item) => { if (!('status' in item)) this.adapter.releasePrepared(item); });
-    await this.adapter.stop(state.run.request_id);
+    const stopping = this.adapter.stop(state.run.request_id);
     for (const resolve of state.drainWaiters.splice(0)) resolve();
     this.emitFor(state.run, 'stopped', reason);
+    await stopping;
   }
 
   pause(): Promise<AdapterResult> {
@@ -340,7 +350,10 @@ export class CampusSpeechController implements SpeechController {
   async resume(): Promise<AdapterResult> {
     if (!this.enabled) return { status: 'failed', error_code: 'speech_not_enabled' };
     if (this.blocked && this.activeItem) {
+      const state = this.activeRun;
+      const item = this.activeItem;
       const result = await this.adapter.resumePlayback();
+      if (!state || !this.isCurrent(state, item, item.utteranceId)) return { status: 'failed', error_code: 'stopped' };
       if (result.status === 'ready') { this.blocked = false; return result; }
       this.emit('error', result.error_code ?? 'playback_failed');
       return result;
@@ -348,7 +361,6 @@ export class CampusSpeechController implements SpeechController {
     const state = this.activeRun;
     if (state?.failedItem) { state.queue.unshift(state.failedItem); state.failedItem = null; this.blocked = false; void this.pump(); return { status: 'ready' }; }
     const result = await this.adapter.resumePlayback();
-    if (result.status === 'ready') this.emit('speaking', null);
     return result;
   }
 
@@ -402,13 +414,27 @@ export class CampusSpeechController implements SpeechController {
 
   private enqueue(state: ActiveRun, segments: string[]): void {
     for (const segment of segments) {
+      let spoken = segment;
       if (state.run.mode === 'brief') {
-        if (state.briefSentences >= BRIEF_SENTENCES) continue;
-        if (state.briefSentences > 0 && [...segment].length + state.queuedChars > BRIEF_CHARS) continue;
-        if (state.briefSentences === 0 && [...segment].length > BRIEF_CHARS) throw new Error('brief_sentence_too_long');
-        state.briefSentences += 1;
+        if (state.briefSentences >= BRIEF_SENTENCES || state.queuedChars >= BRIEF_CHARS) continue;
+        const ends = sentenceEnds(segment, 0);
+        if (ends.at(-1) !== segment.length) ends.push(segment.length);
+        const allowed = ends.slice(0, BRIEF_SENTENCES - state.briefSentences);
+        spoken = segment.slice(0, allowed.at(-1) ?? 0);
+        const available = BRIEF_CHARS - state.queuedChars;
+        const chars = [...spoken];
+        if (chars.length > available) {
+          let cut = available;
+          for (let i = available - 1; i >= Math.floor(available / 2); i -= 1) {
+            if (/[???;?:\s]/u.test(chars[i])) { cut = i + 1; break; }
+          }
+          while (cut > 0 && /[A-Za-z0-9]/u.test(chars[cut - 1]) && /[A-Za-z0-9]/u.test(chars[cut] ?? '')) cut -= 1;
+          spoken = chars.slice(0, cut).join('').trim();
+          state.briefSentences = BRIEF_SENTENCES;
+        } else state.briefSentences += allowed.length;
+        if (!spoken) continue;
       }
-      this.enqueueItem(state, segment, `stream-${state.nextSeq}`);
+      this.enqueueItem(state, spoken, `stream-${state.nextSeq}`);
     }
   }
 
@@ -429,17 +455,20 @@ export class CampusSpeechController implements SpeechController {
 
   private async pump(): Promise<void> {
     const state = this.activeRun;
-    if (!state || this.pumping || this.activeItem || this.blocked) return;
-    const item = state.failedItem ?? state.queue.shift();
-    state.failedItem = null;
+    if (!state || this.pumping || this.activeItem || this.blocked || state.failedItem) return;
+    const item = state.queue.shift();
     if (!item) { this.checkDrained(); return; }
     this.pumping = true;
     this.activeItem = item;
     const context = { request_id: state.run.request_id, session_id: state.run.session_id, signal: state.controller.signal };
     let prepared: PreparedSpeech | AdapterResult;
-    if (this.prefetched?.item === item) { prepared = await this.prefetched.promise; this.prefetched = null; }
+    if (this.prefetched?.item === item) {
+      const prefetched = this.prefetched;
+      prepared = await prefetched.promise;
+      if (this.prefetched === prefetched) this.prefetched = null;
+    }
     else prepared = await this.adapter.prepareSpeech(context, item.utteranceId, item.text, state.run.voice_id);
-    if (this.activeRun !== state || state.controller.signal.aborted) { if (!('status' in prepared)) this.adapter.releasePrepared(prepared); this.pumping = false; return; }
+    if (this.activeRun !== state || state.controller.signal.aborted) { if (!('status' in prepared)) this.adapter.releasePrepared(prepared); return; }
     if ('status' in prepared) { this.pumping = false; this.activeItem = null; state.failedItem = item; this.fail(prepared.error_code ?? 'tts_unavailable', false); return; }
     this.ensurePrefetch();
     const result = await this.adapter.playPreparedSpeech(prepared, {
@@ -455,6 +484,7 @@ export class CampusSpeechController implements SpeechController {
         this.resolveDrain(state);
       },
     });
+    if (!this.isCurrent(state, item, item.utteranceId) || state.controller.signal.aborted) return;
     if (result.status !== 'ready' && this.pumping) { this.pumping = false; this.activeItem = null; state.failedItem = item; this.fail(result.error_code ?? 'playback_failed', false); }
   }
 
@@ -485,7 +515,7 @@ export class CampusSpeechController implements SpeechController {
   }
   private checkDrained(): void {
     const state = this.activeRun;
-    if (!state || !state.finished || this.activeItem || this.pumping || state.queue.length) return;
+    if (!state || !state.finished || state.failedItem || this.blocked || this.activeItem || this.pumping || state.queue.length) return;
     this.emit('idle', null);
     this.resolveDrain(state);
     state.removeAbort();
