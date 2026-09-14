@@ -61,7 +61,7 @@ def test_wrong_model_rejected_and_mock_does_not_verify_live_health(monkeypatch):
         before=client.get("/api/health").json()["model"]
         response=client.post("/api/chat",json=body())
         assert response.status_code==503
-        assert response.json()["error"]["code"]=="model_mismatch"
+        assert response.json()["error"]["code"]=="UPSTREAM_PROTOCOL_ERROR"
         assert not provider.state.verified
         payload["model"]="glm-5.1"
         assert client.post("/api/chat",json=body()).status_code==200

@@ -41,11 +41,13 @@ async def body_limit(request: Request, call_next):
     return await call_next(request)
 @app.exception_handler(DomainError)
 async def domain_error(request, error):
-    return error_response(error.code, error.message, error.status, error.request_id, error.retryable)
+    response = error_response(error.code, error.message, error.status, error.request_id, error.retryable)
+    if error.status == 429: response.headers["Retry-After"] = "60"
+    return response
 @app.exception_handler(RequestValidationError)
 async def validation_error(request, error):
     # Never echo input, headers, prompt or secret in validation errors.
-    return error_response("invalid_request", "请求字段、类型或长度不符合契约", 422)
+    return error_response("VALIDATION_ERROR", "请求字段、类型或长度不符合契约", 422)
 @app.exception_handler(HTTPException)
 async def http_error(request, error):
     return error_response("http_error", "端点不存在或请求方法不支持", error.status_code)

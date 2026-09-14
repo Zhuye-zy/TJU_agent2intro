@@ -17,11 +17,18 @@ def test_schematic_is_not_geography():
     with pytest.raises(ValidationError):SchematicPosition(map_id="map",x=117.3,y=39.1,source_ref="s",quality="schematic")
 def test_event_payload_discriminator():
     with pytest.raises(ValidationError):TypeAdapter(StreamEvent).validate_python(dict(event_id=uuid4(),request_id=uuid4(),seq=1,timestamp="now",type="answer_delta",payload={"reasoning":"hidden"}))
-def test_stubs_are_not_false_success():
+def test_real_endpoints_and_config_do_not_claim_missing_capabilities():
     with TestClient(app) as c:
-        r=c.post("/api/chat/stream",json=body());assert r.status_code==501
-        assert c.get("/api/knowledge/pois?campus_id=weijinlu").status_code==501
-        status=c.get("/api/maps/status").json()
-        assert status["online_map"] in ("NOT_CONFIGURED","NOT_IMPLEMENTED")
-        assert status["precise_location"]=="not_implemented"
-        assert "security_key" not in c.get("/api/maps/config").json()
+        invalid=body();invalid["mode"]="content_generation"
+        assert c.post("/api/chat/stream",json=invalid).status_code==422
+        page=c.get("/api/knowledge/pois?campus_id=weijinlu").json()
+        assert page["total"]>=30 and page["version"]
+        config=c.get("/api/maps/config").json()
+        assert "security_key" not in config and "securityJsCode" not in config
+        assert config["route_backend"]=="js_api"
+        if not config["status"]["js_key_configured"]:
+            assert config["status"]["online_map"]=="NOT_CONFIGURED"
+def test_manual_origin_stays_distinct_from_authorized_location():
+    from backend.r2_contracts import UserPosition
+    p=UserPosition(lng=117,lat=39,crs="GCJ02",source="manual",accuracy_m=None,timestamp="2026-09-14T00:00:00Z")
+    assert p.source=="manual" and p.accuracy_m is None
