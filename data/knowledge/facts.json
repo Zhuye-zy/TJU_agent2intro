@@ -3068,5 +3068,1718 @@
     "applicable_at": "2024-08-15",
     "retrieved_at": "2026-09-14",
     "verification_status": "historical"
+  },
+  {
+    "id": "detail-nine-1",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-09-teaching",
+    "title": "第九教学楼 · 设计者",
+    "category": "teaching",
+    "aliases": [
+      "9教"
+    ],
+    "fact": "第九教学楼由徐中教授设计。",
+    "sources": [
+      {
+        "id": "src-nine",
+        "title": "第九教学楼 · 设计者",
+        "snippet": "第九教学楼由徐中教授设计。",
+        "url": "https://www.tju.edu.cn/info/1110/1554.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-nine-2",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-09-teaching",
+    "title": "第九教学楼 · 初建年代",
+    "category": "teaching",
+    "aliases": [
+      "9教"
+    ],
+    "fact": "校方建筑专页记述第九教学楼于1953年初建；竣工年份须与设计院口径区分。",
+    "sources": [
+      {
+        "id": "src-nine",
+        "title": "第九教学楼 · 初建年代",
+        "snippet": "校方建筑专页记述第九教学楼于1953年初建；竣工年份须与设计院口径区分。",
+        "url": "https://www.tju.edu.cn/info/1110/1554.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-nine-3",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-09-teaching",
+    "title": "第九教学楼 · 大修",
+    "category": "teaching",
+    "aliases": [
+      "9教"
+    ],
+    "fact": "第九教学楼在2003年进行过大修。",
+    "sources": [
+      {
+        "id": "src-nine",
+        "title": "第九教学楼 · 大修",
+        "snippet": "第九教学楼在2003年进行过大修。",
+        "url": "https://www.tju.edu.cn/info/1110/1554.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-nine-4",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-09-teaching",
+    "title": "第九教学楼 · 外观",
+    "category": "teaching",
+    "aliases": [
+      "9教"
+    ],
+    "fact": "第九教学楼外观采用灰墙绿瓦。",
+    "sources": [
+      {
+        "id": "src-nine",
+        "title": "第九教学楼 · 外观",
+        "snippet": "第九教学楼外观采用灰墙绿瓦。",
+        "url": "https://www.tju.edu.cn/info/1110/1554.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-nine-5",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-09-teaching",
+    "title": "第九教学楼 · 相对位置",
+    "category": "teaching",
+    "aliases": [
+      "9教"
+    ],
+    "fact": "第九教学楼位于北洋广场北侧。",
+    "sources": [
+      {
+        "id": "src-nine",
+        "title": "第九教学楼 · 相对位置",
+        "snippet": "第九教学楼位于北洋广场北侧。",
+        "url": "https://www.tju.edu.cn/info/1110/1554.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-nine-6",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-09-teaching",
+    "title": "第九教学楼 · 地震经历",
+    "category": "teaching",
+    "aliases": [
+      "9教"
+    ],
+    "fact": "第九教学楼经历唐山大地震后仍保存。",
+    "sources": [
+      {
+        "id": "src-nine",
+        "title": "第九教学楼 · 地震经历",
+        "snippet": "第九教学楼经历唐山大地震后仍保存。",
+        "url": "https://www.tju.edu.cn/info/1110/1554.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-nine-7",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-09-teaching",
+    "title": "第九教学楼 · 视察",
+    "category": "teaching",
+    "aliases": [
+      "9教"
+    ],
+    "fact": "1958年8月13日毛泽东在第九教学楼前与师生见面。",
+    "sources": [
+      {
+        "id": "src-nine",
+        "title": "第九教学楼 · 视察",
+        "snippet": "1958年8月13日毛泽东在第九教学楼前与师生见面。",
+        "url": "https://www.tju.edu.cn/info/1110/1554.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-design-nine-1",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-09-teaching",
+    "title": "第九教学楼 · 竣工口径",
+    "category": "teaching",
+    "aliases": [
+      "9教"
+    ],
+    "fact": "天大设计院项目页列第九教学楼竣工时间为1954年；校方另有1953年初建记述。",
+    "sources": [
+      {
+        "id": "src-design-nine",
+        "title": "第九教学楼 · 竣工口径",
+        "snippet": "天大设计院项目页列第九教学楼竣工时间为1954年；校方另有1953年初建记述。",
+        "url": "https://www.aatu.com.cn/project/post/306/",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-design-nine-2",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-09-teaching",
+    "title": "第九教学楼 · 规模",
+    "category": "teaching",
+    "aliases": [
+      "9教"
+    ],
+    "fact": "天大设计院项目页列第九教学楼项目规模为6840平方米。",
+    "sources": [
+      {
+        "id": "src-design-nine",
+        "title": "第九教学楼 · 规模",
+        "snippet": "天大设计院项目页列第九教学楼项目规模为6840平方米。",
+        "url": "https://www.aatu.com.cn/project/post/306/",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-landscape-2016-1",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-east-gate",
+    "title": "卫津路校区东门 · 落成",
+    "category": "gate",
+    "aliases": [
+      "卫津路东门",
+      "东门"
+    ],
+    "fact": "卫津路东门在1995年百年校庆前夕落成。",
+    "sources": [
+      {
+        "id": "src-landscape-2016",
+        "title": "卫津路校区东门 · 落成",
+        "snippet": "卫津路东门在1995年百年校庆前夕落成。",
+        "url": "https://news.tju.edu.cn/info/1003/108399.htm",
+        "campus_id": "weijinlu",
+        "published_at": "2016-08-25",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2016-08-25",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-landscape-2016-2",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-east-gate",
+    "title": "卫津路校区东门 · 设计",
+    "category": "gate",
+    "aliases": [
+      "卫津路东门",
+      "东门"
+    ],
+    "fact": "卫津路东门设计者是布正伟。",
+    "sources": [
+      {
+        "id": "src-landscape-2016",
+        "title": "卫津路校区东门 · 设计",
+        "snippet": "卫津路东门设计者是布正伟。",
+        "url": "https://news.tju.edu.cn/info/1003/108399.htm",
+        "campus_id": "weijinlu",
+        "published_at": "2016-08-25",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2016-08-25",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-landscape-2016-3",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-east-gate",
+    "title": "卫津路校区东门 · 捐建",
+    "category": "gate",
+    "aliases": [
+      "卫津路东门",
+      "东门"
+    ],
+    "fact": "卫津路东门由天津大学北京校友会捐资建设。",
+    "sources": [
+      {
+        "id": "src-landscape-2016",
+        "title": "卫津路校区东门 · 捐建",
+        "snippet": "卫津路东门由天津大学北京校友会捐资建设。",
+        "url": "https://news.tju.edu.cn/info/1003/108399.htm",
+        "campus_id": "weijinlu",
+        "published_at": "2016-08-25",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2016-08-25",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-landscape-2016-4",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-east-gate",
+    "title": "卫津路校区东门 · 形态",
+    "category": "gate",
+    "aliases": [
+      "卫津路东门",
+      "东门"
+    ],
+    "fact": "卫津路东门总体为金字塔式造型。",
+    "sources": [
+      {
+        "id": "src-landscape-2016",
+        "title": "卫津路校区东门 · 形态",
+        "snippet": "卫津路东门总体为金字塔式造型。",
+        "url": "https://news.tju.edu.cn/info/1003/108399.htm",
+        "campus_id": "weijinlu",
+        "published_at": "2016-08-25",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2016-08-25",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-landscape-2016-5",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-beiyang-square",
+    "title": "北洋广场 · 建成",
+    "category": "culture",
+    "aliases": [],
+    "fact": "北洋广场于1985年8月建成。",
+    "sources": [
+      {
+        "id": "src-landscape-2016",
+        "title": "北洋广场 · 建成",
+        "snippet": "北洋广场于1985年8月建成。",
+        "url": "https://news.tju.edu.cn/info/1003/108399.htm",
+        "campus_id": "weijinlu",
+        "published_at": "2016-08-25",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2016-08-25",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-landscape-2016-6",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-beiyang-square",
+    "title": "北洋广场 · 原址",
+    "category": "culture",
+    "aliases": [],
+    "fact": "北洋广场原址曾是敬业湖的一部分。",
+    "sources": [
+      {
+        "id": "src-landscape-2016",
+        "title": "北洋广场 · 原址",
+        "snippet": "北洋广场原址曾是敬业湖的一部分。",
+        "url": "https://news.tju.edu.cn/info/1003/108399.htm",
+        "campus_id": "weijinlu",
+        "published_at": "2016-08-25",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2016-08-25",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-landscape-2016-7",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-beiyang-square",
+    "title": "北洋广场 · 面积",
+    "category": "culture",
+    "aliases": [],
+    "fact": "2016校报记载北洋广场占地约1公顷。",
+    "sources": [
+      {
+        "id": "src-landscape-2016",
+        "title": "北洋广场 · 面积",
+        "snippet": "2016校报记载北洋广场占地约1公顷。",
+        "url": "https://news.tju.edu.cn/info/1003/108399.htm",
+        "campus_id": "weijinlu",
+        "published_at": "2016-08-25",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2016-08-25",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-landscape-2016-8",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-beiyang-square",
+    "title": "北洋广场 · 水景",
+    "category": "culture",
+    "aliases": [],
+    "fact": "北洋广场中心水景为椭圆形喷水池。",
+    "sources": [
+      {
+        "id": "src-landscape-2016",
+        "title": "北洋广场 · 水景",
+        "snippet": "北洋广场中心水景为椭圆形喷水池。",
+        "url": "https://news.tju.edu.cn/info/1003/108399.htm",
+        "campus_id": "weijinlu",
+        "published_at": "2016-08-25",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2016-08-25",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-landscape-2016-9",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-beiyang-pavilion",
+    "title": "北洋大学堂纪念碑亭 · 设计",
+    "category": "culture",
+    "aliases": [],
+    "fact": "卫津路北洋纪念亭由彭一刚主持设计。",
+    "sources": [
+      {
+        "id": "src-landscape-2016",
+        "title": "北洋大学堂纪念碑亭 · 设计",
+        "snippet": "卫津路北洋纪念亭由彭一刚主持设计。",
+        "url": "https://news.tju.edu.cn/info/1003/108399.htm",
+        "campus_id": "weijinlu",
+        "published_at": "2016-08-25",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2016-08-25",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-landscape-2016-10",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-beiyang-pavilion",
+    "title": "北洋大学堂纪念碑亭 · 建成",
+    "category": "culture",
+    "aliases": [],
+    "fact": "卫津路北洋纪念亭于1995年由校友捐建。",
+    "sources": [
+      {
+        "id": "src-landscape-2016",
+        "title": "北洋大学堂纪念碑亭 · 建成",
+        "snippet": "卫津路北洋纪念亭于1995年由校友捐建。",
+        "url": "https://news.tju.edu.cn/info/1003/108399.htm",
+        "campus_id": "weijinlu",
+        "published_at": "2016-08-25",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2016-08-25",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-landscape-2016-11",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-beiyang-pavilion",
+    "title": "北洋大学堂纪念碑亭 · 材料",
+    "category": "culture",
+    "aliases": [],
+    "fact": "卫津路北洋纪念亭使用花岗岩砌筑。",
+    "sources": [
+      {
+        "id": "src-landscape-2016",
+        "title": "北洋大学堂纪念碑亭 · 材料",
+        "snippet": "卫津路北洋纪念亭使用花岗岩砌筑。",
+        "url": "https://news.tju.edu.cn/info/1003/108399.htm",
+        "campus_id": "weijinlu",
+        "published_at": "2016-08-25",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2016-08-25",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-landscape-2016-12",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-beiyang-pavilion",
+    "title": "北洋大学堂纪念碑亭 · 文凭",
+    "category": "culture",
+    "aliases": [],
+    "fact": "卫津路北洋纪念亭西南侧刻有钦字第一号考凭。",
+    "sources": [
+      {
+        "id": "src-landscape-2016",
+        "title": "北洋大学堂纪念碑亭 · 文凭",
+        "snippet": "卫津路北洋纪念亭西南侧刻有钦字第一号考凭。",
+        "url": "https://news.tju.edu.cn/info/1003/108399.htm",
+        "campus_id": "weijinlu",
+        "published_at": "2016-08-25",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2016-08-25",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-landscape-2016-13",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-qiushi-hall",
+    "title": "求实会堂 · 校庆",
+    "category": "culture",
+    "aliases": [],
+    "fact": "120年校庆大会在求实会堂举行。",
+    "sources": [
+      {
+        "id": "src-landscape-2016",
+        "title": "求实会堂 · 校庆",
+        "snippet": "120年校庆大会在求实会堂举行。",
+        "url": "https://news.tju.edu.cn/info/1003/108399.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": "2016-08-25",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2016-08-25",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-landscape-2016-14",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-qiushi-hall",
+    "title": "求实会堂 · 楼内位置",
+    "category": "culture",
+    "aliases": [],
+    "fact": "求实会堂位于北洋园主楼内。",
+    "sources": [
+      {
+        "id": "src-landscape-2016",
+        "title": "求实会堂 · 楼内位置",
+        "snippet": "求实会堂位于北洋园主楼内。",
+        "url": "https://news.tju.edu.cn/info/1003/108399.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": "2016-08-25",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2016-08-25",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-landscape-2016-15",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-datong-center",
+    "title": "大通学生中心 · 轴线位置",
+    "category": "service",
+    "aliases": [
+      "学生中心"
+    ],
+    "fact": "大通学生中心位于北洋园主轴线尽端的临水半岛。",
+    "sources": [
+      {
+        "id": "src-landscape-2016",
+        "title": "大通学生中心 · 轴线位置",
+        "snippet": "大通学生中心位于北洋园主轴线尽端的临水半岛。",
+        "url": "https://news.tju.edu.cn/info/1003/108399.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": "2016-08-25",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2016-08-25",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-landscape-2016-16",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-datong-center",
+    "title": "大通学生中心 · 体块",
+    "category": "service",
+    "aliases": [
+      "学生中心"
+    ],
+    "fact": "大通学生中心由三个依次排列的矩形体块构成。",
+    "sources": [
+      {
+        "id": "src-landscape-2016",
+        "title": "大通学生中心 · 体块",
+        "snippet": "大通学生中心由三个依次排列的矩形体块构成。",
+        "url": "https://news.tju.edu.cn/info/1003/108399.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": "2016-08-25",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2016-08-25",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-landscape-2016-17",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-datong-center",
+    "title": "大通学生中心 · 设计",
+    "category": "service",
+    "aliases": [
+      "学生中心"
+    ],
+    "fact": "大通学生中心设计团队包括齐欣、刘阳、戴博军和于向东。",
+    "sources": [
+      {
+        "id": "src-landscape-2016",
+        "title": "大通学生中心 · 设计",
+        "snippet": "大通学生中心设计团队包括齐欣、刘阳、戴博军和于向东。",
+        "url": "https://news.tju.edu.cn/info/1003/108399.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": "2016-08-25",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2016-08-25",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-landscape-2016-18",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-zhengdong-library",
+    "title": "郑东图书馆 · 庭院尺寸",
+    "category": "library",
+    "aliases": [
+      "郑东馆",
+      "图书馆"
+    ],
+    "fact": "2016设计介绍记述郑东图书馆中心庭院为72米见方。",
+    "sources": [
+      {
+        "id": "src-landscape-2016",
+        "title": "郑东图书馆 · 庭院尺寸",
+        "snippet": "2016设计介绍记述郑东图书馆中心庭院为72米见方。",
+        "url": "https://news.tju.edu.cn/info/1003/108399.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": "2016-08-25",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2016-08-25",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-welcome-weijin-1",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-jingye-lake",
+    "title": "敬业湖 · 相对位置",
+    "category": "culture",
+    "aliases": [],
+    "fact": "敬业湖位于卫津路主楼西南面。",
+    "sources": [
+      {
+        "id": "src-welcome-weijin",
+        "title": "敬业湖 · 相对位置",
+        "snippet": "敬业湖位于卫津路主楼西南面。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgwjl/",
+        "campus_id": "weijinlu",
+        "published_at": "2024-08-15",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-welcome-weijin-2",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-youth-lake",
+    "title": "青年湖 · 规模",
+    "category": "culture",
+    "aliases": [],
+    "fact": "迎新资料将青年湖称为卫津路校区最大的湖。",
+    "sources": [
+      {
+        "id": "src-welcome-weijin",
+        "title": "青年湖 · 规模",
+        "snippet": "迎新资料将青年湖称为卫津路校区最大的湖。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgwjl/",
+        "campus_id": "weijinlu",
+        "published_at": "2024-08-15",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-welcome-weijin-3",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-youth-lake",
+    "title": "青年湖 · 分隔位置",
+    "category": "culture",
+    "aliases": [],
+    "fact": "青年湖位于主要教学楼与学生宿舍之间。",
+    "sources": [
+      {
+        "id": "src-welcome-weijin",
+        "title": "青年湖 · 分隔位置",
+        "snippet": "青年湖位于主要教学楼与学生宿舍之间。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgwjl/",
+        "campus_id": "weijinlu",
+        "published_at": "2024-08-15",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-welcome-weijin-4",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-youyi-lake",
+    "title": "友谊湖 · 相对位置",
+    "category": "culture",
+    "aliases": [],
+    "fact": "迎新资料描述友谊湖位于留学生宿舍前。",
+    "sources": [
+      {
+        "id": "src-welcome-weijin",
+        "title": "友谊湖 · 相对位置",
+        "snippet": "迎新资料描述友谊湖位于留学生宿舍前。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgwjl/",
+        "campus_id": "weijinlu",
+        "published_at": "2024-08-15",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-welcome-weijin-5",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-student-center",
+    "title": "大学生活动中心 · 相对位置",
+    "category": "service",
+    "aliases": [
+      "大活"
+    ],
+    "fact": "大学生活动中心坐落在卫津路青年湖西面。",
+    "sources": [
+      {
+        "id": "src-welcome-weijin",
+        "title": "大学生活动中心 · 相对位置",
+        "snippet": "大学生活动中心坐落在卫津路青年湖西面。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgwjl/",
+        "campus_id": "weijinlu",
+        "published_at": "2024-08-15",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-welcome-weijin-6",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-student-center",
+    "title": "大学生活动中心 · 外观寓意",
+    "category": "service",
+    "aliases": [
+      "大活"
+    ],
+    "fact": "卫津路大学生活动中心的外形被比作将要启航的邮轮。",
+    "sources": [
+      {
+        "id": "src-welcome-weijin",
+        "title": "大学生活动中心 · 外观寓意",
+        "snippet": "卫津路大学生活动中心的外形被比作将要启航的邮轮。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgwjl/",
+        "campus_id": "weijinlu",
+        "published_at": "2024-08-15",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-welcome-weijin-7",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-dream-stone",
+    "title": "梦成真石 · 捐赠",
+    "category": "culture",
+    "aliases": [],
+    "fact": "梦成真石由袁国林代表三峡总公司捐献。",
+    "sources": [
+      {
+        "id": "src-welcome-weijin",
+        "title": "梦成真石 · 捐赠",
+        "snippet": "梦成真石由袁国林代表三峡总公司捐献。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgwjl/",
+        "campus_id": "weijinlu",
+        "published_at": "2024-08-15",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-welcome-weijin-8",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-dream-stone",
+    "title": "梦成真石 · 材料来源",
+    "category": "culture",
+    "aliases": [],
+    "fact": "梦成真石是三峡工程钻探所得的花岗岩芯。",
+    "sources": [
+      {
+        "id": "src-welcome-weijin",
+        "title": "梦成真石 · 材料来源",
+        "snippet": "梦成真石是三峡工程钻探所得的花岗岩芯。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgwjl/",
+        "campus_id": "weijinlu",
+        "published_at": "2024-08-15",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-welcome-weijin-9",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-ma-yinchu",
+    "title": "马寅初像 · 位置",
+    "category": "culture",
+    "aliases": [],
+    "fact": "马寅初像位于卫津路北洋纪念亭北边。",
+    "sources": [
+      {
+        "id": "src-welcome-weijin",
+        "title": "马寅初像 · 位置",
+        "snippet": "马寅初像位于卫津路北洋纪念亭北边。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgwjl/",
+        "campus_id": "weijinlu",
+        "published_at": "2024-08-15",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-welcome-weijin-10",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-zhang-tailei",
+    "title": "张太雷像 · 人物经历",
+    "category": "culture",
+    "aliases": [],
+    "fact": "张太雷于1915年进入北洋大学法科学习。",
+    "sources": [
+      {
+        "id": "src-welcome-weijin",
+        "title": "张太雷像 · 人物经历",
+        "snippet": "张太雷于1915年进入北洋大学法科学习。",
+        "url": "https://yx.tju.edu.cn/tdfc/xyfgwjl/",
+        "campus_id": "weijinlu",
+        "published_at": "2024-08-15",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2024-08-15",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-culture-2025-1",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-motto-stone",
+    "title": "实事求是校训石 · 重量",
+    "category": "culture",
+    "aliases": [
+      "校训石"
+    ],
+    "fact": "2025校报记述北洋园校训石重260吨。",
+    "sources": [
+      {
+        "id": "src-culture-2025",
+        "title": "实事求是校训石 · 重量",
+        "snippet": "2025校报记述北洋园校训石重260吨。",
+        "url": "https://news.tju.edu.cn/info/1003/561319.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": "2025-09-06",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2025-09-06",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-culture-2025-2",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-motto-stone",
+    "title": "实事求是校训石 · 朝向对象",
+    "category": "culture",
+    "aliases": [
+      "校训石"
+    ],
+    "fact": "校训石刻字面朝向1895行政大楼。",
+    "sources": [
+      {
+        "id": "src-culture-2025",
+        "title": "实事求是校训石 · 朝向对象",
+        "snippet": "校训石刻字面朝向1895行政大楼。",
+        "url": "https://news.tju.edu.cn/info/1003/561319.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": "2025-09-06",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2025-09-06",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-culture-2025-3",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-motto-stone",
+    "title": "实事求是校训石 · 纹理",
+    "category": "culture",
+    "aliases": [
+      "校训石"
+    ],
+    "fact": "校训石一侧天然纹理被描述为树木形态。",
+    "sources": [
+      {
+        "id": "src-culture-2025",
+        "title": "实事求是校训石 · 纹理",
+        "snippet": "校训石一侧天然纹理被描述为树木形态。",
+        "url": "https://news.tju.edu.cn/info/1003/561319.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": "2025-09-06",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2025-09-06",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-culture-2025-4",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-motto-stone",
+    "title": "实事求是校训石 · 前方设施",
+    "category": "culture",
+    "aliases": [
+      "校训石"
+    ],
+    "fact": "校训石前方设有带团龙图案的封土台。",
+    "sources": [
+      {
+        "id": "src-culture-2025",
+        "title": "实事求是校训石 · 前方设施",
+        "snippet": "校训石前方设有带团龙图案的封土台。",
+        "url": "https://news.tju.edu.cn/info/1003/561319.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": "2025-09-06",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2025-09-06",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-culture-2025-5",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-motto-stone",
+    "title": "实事求是校训石 · 传承仪式",
+    "category": "culture",
+    "aliases": [
+      "校训石"
+    ],
+    "fact": "新校区启用时，历代校址土壤封存于校训石前。",
+    "sources": [
+      {
+        "id": "src-culture-2025",
+        "title": "实事求是校训石 · 传承仪式",
+        "snippet": "新校区启用时，历代校址土壤封存于校训石前。",
+        "url": "https://news.tju.edu.cn/info/1003/561319.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": "2025-09-06",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2025-09-06",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-culture-2025-6",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-main-building",
+    "title": "北洋园校区主楼 · 形态",
+    "category": "teaching",
+    "aliases": [
+      "主楼"
+    ],
+    "fact": "北洋园主楼采用环抱广场的圆形建筑形态。",
+    "sources": [
+      {
+        "id": "src-culture-2025",
+        "title": "北洋园校区主楼 · 形态",
+        "snippet": "北洋园主楼采用环抱广场的圆形建筑形态。",
+        "url": "https://news.tju.edu.cn/info/1003/561319.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": "2025-09-06",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2025-09-06",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-culture-2025-7",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-main-building",
+    "title": "北洋园校区主楼 · 楼号",
+    "category": "teaching",
+    "aliases": [
+      "主楼"
+    ],
+    "fact": "2025校报将北洋园圆形主楼称为32教学楼。",
+    "sources": [
+      {
+        "id": "src-culture-2025",
+        "title": "北洋园校区主楼 · 楼号",
+        "snippet": "2025校报将北洋园圆形主楼称为32教学楼。",
+        "url": "https://news.tju.edu.cn/info/1003/561319.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": "2025-09-06",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2025-09-06",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-culture-2025-8",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-xuanhuai-square",
+    "title": "宣怀广场 · 命名",
+    "category": "culture",
+    "aliases": [],
+    "fact": "宣怀广场以盛宣怀的名字命名。",
+    "sources": [
+      {
+        "id": "src-culture-2025",
+        "title": "宣怀广场 · 命名",
+        "snippet": "宣怀广场以盛宣怀的名字命名。",
+        "url": "https://news.tju.edu.cn/info/1003/561319.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": "2025-09-06",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2025-09-06",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-culture-2025-9",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-xuanhuai-square",
+    "title": "宣怀广场 · 围合",
+    "category": "culture",
+    "aliases": [],
+    "fact": "宣怀广场由北洋园主楼环抱形成。",
+    "sources": [
+      {
+        "id": "src-culture-2025",
+        "title": "宣怀广场 · 围合",
+        "snippet": "宣怀广场由北洋园主楼环抱形成。",
+        "url": "https://news.tju.edu.cn/info/1003/561319.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": "2025-09-06",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2025-09-06",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-culture-2025-10",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-xuanhuai-square",
+    "title": "宣怀广场 · 构图",
+    "category": "culture",
+    "aliases": [],
+    "fact": "宣怀广场地面以北洋亭为中心采用年轮式图案。",
+    "sources": [
+      {
+        "id": "src-culture-2025",
+        "title": "宣怀广场 · 构图",
+        "snippet": "宣怀广场地面以北洋亭为中心采用年轮式图案。",
+        "url": "https://news.tju.edu.cn/info/1003/561319.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": "2025-09-06",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2025-09-06",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-culture-2025-11",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-xuanhuai-square",
+    "title": "宣怀广场 · 灯光",
+    "category": "culture",
+    "aliases": [],
+    "fact": "宣怀广场地面灯光从空中俯瞰构成十二星座图。",
+    "sources": [
+      {
+        "id": "src-culture-2025",
+        "title": "宣怀广场 · 灯光",
+        "snippet": "宣怀广场地面灯光从空中俯瞰构成十二星座图。",
+        "url": "https://news.tju.edu.cn/info/1003/561319.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": "2025-09-06",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2025-09-06",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-culture-2025-12",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-xuanhuai-square",
+    "title": "宣怀广场 · 设计作用",
+    "category": "culture",
+    "aliases": [],
+    "fact": "圆形宣怀广场用于缓和校门方向与校园中轴线的转折。",
+    "sources": [
+      {
+        "id": "src-culture-2025",
+        "title": "宣怀广场 · 设计作用",
+        "snippet": "圆形宣怀广场用于缓和校门方向与校园中轴线的转折。",
+        "url": "https://news.tju.edu.cn/info/1003/561319.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": "2025-09-06",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2025-09-06",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-culture-2025-13",
+    "campus_id": "beiyangyuan",
+    "entity_id": "beiyangyuan-sanwen-bridge",
+    "title": "三问桥 · 三问内容",
+    "category": "culture",
+    "aliases": [],
+    "fact": "天大三问是懂么、会么、敢么。",
+    "sources": [
+      {
+        "id": "src-culture-2025",
+        "title": "三问桥 · 三问内容",
+        "snippet": "天大三问是懂么、会么、敢么。",
+        "url": "https://news.tju.edu.cn/info/1003/561319.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": "2025-09-06",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2025-09-06",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-culture-2025-14",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-school-song",
+    "title": "校歌 · 创作年代",
+    "category": "culture",
+    "aliases": [],
+    "fact": "天津大学现行校歌创作于1935年。",
+    "sources": [
+      {
+        "id": "src-culture-2025",
+        "title": "校歌 · 创作年代",
+        "snippet": "天津大学现行校歌创作于1935年。",
+        "url": "https://news.tju.edu.cn/info/1003/561319.htm",
+        "campus_id": "weijinlu",
+        "published_at": "2025-09-06",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2025-09-06",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-wang-institute-1",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-wang-xuezhong",
+    "title": "王学仲艺术研究所 · 成立",
+    "category": "culture",
+    "aliases": [],
+    "fact": "王学仲艺术研究所始建于1986年。",
+    "sources": [
+      {
+        "id": "src-wang-institute",
+        "title": "王学仲艺术研究所 · 成立",
+        "snippet": "王学仲艺术研究所始建于1986年。",
+        "url": "https://www.tju.edu.cn/info/1118/1351.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-wang-institute-2",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-wang-xuezhong",
+    "title": "王学仲艺术研究所 · 首任所长",
+    "category": "culture",
+    "aliases": [],
+    "fact": "王学仲担任研究所首任所长。",
+    "sources": [
+      {
+        "id": "src-wang-institute",
+        "title": "王学仲艺术研究所 · 首任所长",
+        "snippet": "王学仲担任研究所首任所长。",
+        "url": "https://www.tju.edu.cn/info/1118/1351.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-wang-institute-3",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-wang-xuezhong",
+    "title": "王学仲艺术研究所 · 学位授权",
+    "category": "culture",
+    "aliases": [],
+    "fact": "研究所在1986年取得美术学硕士学位授予权。",
+    "sources": [
+      {
+        "id": "src-wang-institute",
+        "title": "王学仲艺术研究所 · 学位授权",
+        "snippet": "研究所在1986年取得美术学硕士学位授予权。",
+        "url": "https://www.tju.edu.cn/info/1118/1351.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-wang-institute-4",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-wang-xuezhong",
+    "title": "王学仲艺术研究所 · 建筑落成",
+    "category": "culture",
+    "aliases": [],
+    "fact": "校方专页记载黾园于1987年10月落成。",
+    "sources": [
+      {
+        "id": "src-wang-institute",
+        "title": "王学仲艺术研究所 · 建筑落成",
+        "snippet": "校方专页记载黾园于1987年10月落成。",
+        "url": "https://www.tju.edu.cn/info/1118/1351.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-wang-institute-5",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-wang-xuezhong",
+    "title": "王学仲艺术研究所 · 建筑设计",
+    "category": "culture",
+    "aliases": [],
+    "fact": "黾园由彭一刚主持设计。",
+    "sources": [
+      {
+        "id": "src-wang-institute",
+        "title": "王学仲艺术研究所 · 建筑设计",
+        "snippet": "黾园由彭一刚主持设计。",
+        "url": "https://www.tju.edu.cn/info/1118/1351.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-wang-institute-6",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-wang-xuezhong",
+    "title": "王学仲艺术研究所 · 捐建",
+    "category": "culture",
+    "aliases": [],
+    "fact": "安田薰、关好夫等日本友人捐资兴建黾园。",
+    "sources": [
+      {
+        "id": "src-wang-institute",
+        "title": "王学仲艺术研究所 · 捐建",
+        "snippet": "安田薰、关好夫等日本友人捐资兴建黾园。",
+        "url": "https://www.tju.edu.cn/info/1118/1351.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-wang-institute-7",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-wang-xuezhong",
+    "title": "王学仲艺术研究所 · 保护名录",
+    "category": "culture",
+    "aliases": [],
+    "fact": "2016年研究所入选天津市第二批保护性建筑名录。",
+    "sources": [
+      {
+        "id": "src-wang-institute",
+        "title": "王学仲艺术研究所 · 保护名录",
+        "snippet": "2016年研究所入选天津市第二批保护性建筑名录。",
+        "url": "https://www.tju.edu.cn/info/1118/1351.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-wang-institute-8",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-wang-xuezhong",
+    "title": "王学仲艺术研究所 · 空间",
+    "category": "culture",
+    "aliases": [],
+    "fact": "黾园内设教研室和展览馆。",
+    "sources": [
+      {
+        "id": "src-wang-institute",
+        "title": "王学仲艺术研究所 · 空间",
+        "snippet": "黾园内设教研室和展览馆。",
+        "url": "https://www.tju.edu.cn/info/1118/1351.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-wang-institute-9",
+    "campus_id": "weijinlu",
+    "entity_id": "weijinlu-wang-xuezhong",
+    "title": "王学仲艺术研究所 · 学术方向",
+    "category": "culture",
+    "aliases": [],
+    "fact": "研究所以黾学体系为重要学术基础。",
+    "sources": [
+      {
+        "id": "src-wang-institute",
+        "title": "王学仲艺术研究所 · 学术方向",
+        "snippet": "研究所以黾学体系为重要学术基础。",
+        "url": "https://www.tju.edu.cn/info/1118/1351.htm",
+        "campus_id": "weijinlu",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-venues-1",
+    "campus_id": "beiyangyuan",
+    "entity_id": null,
+    "title": "场馆中心成立",
+    "category": "campus",
+    "aliases": [],
+    "fact": "场馆中心成立于2002年。",
+    "sources": [
+      {
+        "id": "src-venues",
+        "title": "场馆中心成立",
+        "snippet": "场馆中心成立于2002年。",
+        "url": "https://www.tju.edu.cn/info/1046/1285.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-venues-2",
+    "campus_id": "beiyangyuan",
+    "entity_id": null,
+    "title": "场馆中心旧称",
+    "category": "campus",
+    "aliases": [],
+    "fact": "场馆中心原名体育设施管理中心。",
+    "sources": [
+      {
+        "id": "src-venues",
+        "title": "场馆中心旧称",
+        "snippet": "场馆中心原名体育设施管理中心。",
+        "url": "https://www.tju.edu.cn/info/1046/1285.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-venues-3",
+    "campus_id": "beiyangyuan",
+    "entity_id": null,
+    "title": "报告厅职能",
+    "category": "campus",
+    "aliases": [],
+    "fact": "场馆中心管理的公共报告厅承担活动、演出和会议场地保障。",
+    "sources": [
+      {
+        "id": "src-venues",
+        "title": "报告厅职能",
+        "snippet": "场馆中心管理的公共报告厅承担活动、演出和会议场地保障。",
+        "url": "https://www.tju.edu.cn/info/1046/1285.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-venues-4",
+    "campus_id": "beiyangyuan",
+    "entity_id": null,
+    "title": "体育教学保障",
+    "category": "campus",
+    "aliases": [],
+    "fact": "学校体育类场馆承担体育课程的场地保障。",
+    "sources": [
+      {
+        "id": "src-venues",
+        "title": "体育教学保障",
+        "snippet": "学校体育类场馆承担体育课程的场地保障。",
+        "url": "https://www.tju.edu.cn/info/1046/1285.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-venues-5",
+    "campus_id": "beiyangyuan",
+    "entity_id": null,
+    "title": "运动队保障",
+    "category": "campus",
+    "aliases": [],
+    "fact": "体育类场馆为高水平和普通运动队训练提供场地。",
+    "sources": [
+      {
+        "id": "src-venues",
+        "title": "运动队保障",
+        "snippet": "体育类场馆为高水平和普通运动队训练提供场地。",
+        "url": "https://www.tju.edu.cn/info/1046/1285.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-venues-6",
+    "campus_id": "beiyangyuan",
+    "entity_id": null,
+    "title": "课余体育服务",
+    "category": "campus",
+    "aliases": [],
+    "fact": "体育类场馆也服务社团与师生课余锻炼。",
+    "sources": [
+      {
+        "id": "src-venues",
+        "title": "课余体育服务",
+        "snippet": "体育类场馆也服务社团与师生课余锻炼。",
+        "url": "https://www.tju.edu.cn/info/1046/1285.htm",
+        "campus_id": "beiyangyuan",
+        "published_at": null,
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": null,
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-xuzhong-oaa-1",
+    "campus_id": "weijinlu",
+    "entity_id": null,
+    "title": "徐中设计五六七楼",
+    "category": "campus",
+    "aliases": [],
+    "fact": "徐中于1952年设计天津大学第五、第六和第七教学楼。",
+    "sources": [
+      {
+        "id": "src-xuzhong-oaa",
+        "title": "徐中设计五六七楼",
+        "snippet": "徐中于1952年设计天津大学第五、第六和第七教学楼。",
+        "url": "https://oaa.tju.edu.cn/info/1081/2477.htm",
+        "campus_id": "weijinlu",
+        "published_at": "2019-04-09",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2019-04-09",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-xuzhong-oaa-2",
+    "campus_id": "weijinlu",
+    "entity_id": null,
+    "title": "徐中设计第八楼",
+    "category": "campus",
+    "aliases": [],
+    "fact": "徐中于1953年设计天津大学第八教学楼。",
+    "sources": [
+      {
+        "id": "src-xuzhong-oaa",
+        "title": "徐中设计第八楼",
+        "snippet": "徐中于1953年设计天津大学第八教学楼。",
+        "url": "https://oaa.tju.edu.cn/info/1081/2477.htm",
+        "campus_id": "weijinlu",
+        "published_at": "2019-04-09",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2019-04-09",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-xuzhong-oaa-3",
+    "campus_id": "weijinlu",
+    "entity_id": null,
+    "title": "徐中任建筑系主任",
+    "category": "campus",
+    "aliases": [],
+    "fact": "徐中于1954年起任天津大学建筑系主任。",
+    "sources": [
+      {
+        "id": "src-xuzhong-oaa",
+        "title": "徐中任建筑系主任",
+        "snippet": "徐中于1954年起任天津大学建筑系主任。",
+        "url": "https://oaa.tju.edu.cn/info/1081/2477.htm",
+        "campus_id": "weijinlu",
+        "published_at": "2019-04-09",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2019-04-09",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-xuzhong-oaa-4",
+    "campus_id": "weijinlu",
+    "entity_id": null,
+    "title": "建筑系教学重组",
+    "category": "campus",
+    "aliases": [],
+    "fact": "徐中在1979年重组建筑系教学组织。",
+    "sources": [
+      {
+        "id": "src-xuzhong-oaa",
+        "title": "建筑系教学重组",
+        "snippet": "徐中在1979年重组建筑系教学组织。",
+        "url": "https://oaa.tju.edu.cn/info/1081/2477.htm",
+        "campus_id": "weijinlu",
+        "published_at": "2019-04-09",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2019-04-09",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-xuzhong-oaa-5",
+    "campus_id": "weijinlu",
+    "entity_id": null,
+    "title": "建筑系教研室",
+    "category": "campus",
+    "aliases": [],
+    "fact": "1979年重组后的建筑系设七个教研室。",
+    "sources": [
+      {
+        "id": "src-xuzhong-oaa",
+        "title": "建筑系教研室",
+        "snippet": "1979年重组后的建筑系设七个教研室。",
+        "url": "https://oaa.tju.edu.cn/info/1081/2477.htm",
+        "campus_id": "weijinlu",
+        "published_at": "2019-04-09",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2019-04-09",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
+  },
+  {
+    "id": "detail-xuzhong-oaa-6",
+    "campus_id": "weijinlu",
+    "entity_id": null,
+    "title": "建筑学院成立",
+    "category": "campus",
+    "aliases": [],
+    "fact": "天津大学建筑学院于1997年成立。",
+    "sources": [
+      {
+        "id": "src-xuzhong-oaa",
+        "title": "建筑学院成立",
+        "snippet": "天津大学建筑学院于1997年成立。",
+        "url": "https://oaa.tju.edu.cn/info/1081/2477.htm",
+        "campus_id": "weijinlu",
+        "published_at": "2019-04-09",
+        "retrieved_at": "2026-09-14"
+      }
+    ],
+    "applicable_at": "2019-04-09",
+    "retrieved_at": "2026-09-14",
+    "verification_status": "verified"
   }
 ]

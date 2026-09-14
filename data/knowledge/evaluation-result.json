@@ -1,5 +1,5 @@
 {
-  "data_version": "sha256:d46f033aac9d",
+  "data_version": "sha256:d75f2e7e8ac0",
   "scope": "retrieval only; not model truth or browser QA",
   "evidence_questions": 40,
   "recall_at_5": 0.875,
@@ -40,10 +40,10 @@
       ],
       "retrieved_ids": [
         "poi-weijinlu-09-teaching",
-        "campus-maps-2017",
-        "poi-weijinlu-history-museum",
-        "poi-weijinlu-chunshui-library",
-        "poi-weijinlu-science-library"
+        "detail-nine-1",
+        "detail-nine-2",
+        "detail-nine-3",
+        "detail-nine-4"
       ],
       "recall_at_5": 1.0,
       "pass": true
@@ -83,7 +83,9 @@
         "poi-weijinlu-student-center"
       ],
       "retrieved_ids": [
-        "poi-weijinlu-student-center"
+        "poi-weijinlu-student-center",
+        "detail-welcome-weijin-5",
+        "detail-welcome-weijin-6"
       ],
       "recall_at_5": 1.0,
       "pass": true
@@ -112,10 +114,10 @@
       ],
       "retrieved_ids": [
         "poi-weijinlu-east-gate",
-        "poi-weijinlu-east-gate-square",
-        "weijinlu-campus-history",
-        "campus-maps-2017",
-        "poi-weijinlu-09-teaching"
+        "detail-landscape-2016-1",
+        "detail-landscape-2016-2",
+        "detail-landscape-2016-3",
+        "detail-landscape-2016-4"
       ],
       "recall_at_5": 1.0,
       "pass": true
@@ -130,7 +132,10 @@
       ],
       "retrieved_ids": [
         "poi-weijinlu-feng-jicai",
-        "poi-weijinlu-wang-xuezhong"
+        "poi-weijinlu-wang-xuezhong",
+        "detail-wang-institute-1",
+        "detail-wang-institute-2",
+        "detail-wang-institute-3"
       ],
       "recall_at_5": 1.0,
       "pass": true
@@ -160,9 +165,9 @@
       "retrieved_ids": [
         "poi-weijinlu-youth-lake",
         "poi-weijinlu-double-pavilions",
-        "poi-weijinlu-09-teaching",
-        "poi-weijinlu-history-museum",
-        "poi-weijinlu-chunshui-library"
+        "detail-welcome-weijin-5",
+        "detail-welcome-weijin-2",
+        "poi-weijinlu-09-teaching"
       ],
       "recall_at_5": 1.0,
       "pass": true
@@ -176,7 +181,8 @@
         "poi-weijinlu-youyi-lake"
       ],
       "retrieved_ids": [
-        "poi-weijinlu-youyi-lake"
+        "poi-weijinlu-youyi-lake",
+        "detail-welcome-weijin-4"
       ],
       "recall_at_5": 1.0,
       "pass": true
@@ -190,7 +196,9 @@
         "poi-weijinlu-jingye-lake"
       ],
       "retrieved_ids": [
-        "poi-weijinlu-jingye-lake"
+        "detail-landscape-2016-6",
+        "poi-weijinlu-jingye-lake",
+        "detail-welcome-weijin-1"
       ],
       "recall_at_5": 1.0,
       "pass": true
@@ -338,7 +346,8 @@
       "retrieved_ids": [
         "poi-beiyangyuan-sanwen-bridge",
         "sanwen-origin",
-        "sanwen-connection"
+        "sanwen-connection",
+        "detail-culture-2025-13"
       ],
       "recall_at_5": 1.0,
       "pass": true
@@ -352,7 +361,9 @@
         "poi-beiyangyuan-qiushi-hall"
       ],
       "retrieved_ids": [
-        "poi-beiyangyuan-qiushi-hall"
+        "poi-beiyangyuan-qiushi-hall",
+        "detail-landscape-2016-13",
+        "detail-landscape-2016-14"
       ],
       "recall_at_5": 1.0,
       "pass": true
@@ -366,7 +377,10 @@
         "poi-beiyangyuan-datong-center"
       ],
       "retrieved_ids": [
-        "poi-beiyangyuan-datong-center"
+        "poi-beiyangyuan-datong-center",
+        "detail-landscape-2016-15",
+        "detail-landscape-2016-16",
+        "detail-landscape-2016-17"
       ],
       "recall_at_5": 1.0,
       "pass": true
@@ -450,11 +464,11 @@
         "poi-beiyangyuan-main-building"
       ],
       "retrieved_ids": [
+        "detail-landscape-2016-14",
+        "detail-culture-2025-6",
+        "detail-culture-2025-9",
         "beiyangyuan-roads",
-        "poi-beiyangyuan-main-building",
-        "beiyangyuan-opened-2015",
-        "beiyangyuan-location",
-        "beiyangyuan-east-gate-history"
+        "poi-beiyangyuan-main-building"
       ],
       "recall_at_5": 1.0,
       "pass": true
@@ -501,10 +515,10 @@
       ],
       "retrieved_ids": [
         "zhengdong-designer",
+        "detail-landscape-2016-18",
         "beiyangyuan-zhengdong-library",
         "poi-beiyangyuan-zhengdong-library",
-        "zhengdong-opened",
-        "zhengdong-courtyard"
+        "zhengdong-opened"
       ],
       "recall_at_5": 1.0,
       "pass": true
@@ -553,7 +567,8 @@
       "retrieved_ids": [
         "poi-beiyangyuan-sanwen-bridge",
         "sanwen-origin",
-        "sanwen-connection"
+        "sanwen-connection",
+        "detail-culture-2025-13"
       ],
       "recall_at_5": 1.0,
       "pass": true
@@ -569,7 +584,8 @@
       "retrieved_ids": [
         "sanwen-connection",
         "poi-beiyangyuan-sanwen-bridge",
-        "sanwen-origin"
+        "sanwen-origin",
+        "detail-culture-2025-13"
       ],
       "recall_at_5": 1.0,
       "pass": true

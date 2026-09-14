@@ -4,7 +4,8 @@
     "campus_id": "weijinlu",
     "name": "第九教学楼",
     "aliases": [
-      "9教"
+      "9教",
+      "九楼"
     ],
     "category": "teaching",
     "description": "官方卫津路校区导览将其列为楼宇场馆。",
@@ -215,7 +216,10 @@
     "id": "weijinlu-wang-xuezhong",
     "campus_id": "weijinlu",
     "name": "王学仲艺术研究所",
-    "aliases": [],
+    "aliases": [
+      "黾园",
+      "王研所"
+    ],
     "category": "culture",
     "description": "官方卫津路校区导览将其列为楼宇场馆。",
     "source_refs": [
@@ -783,7 +787,9 @@
     "campus_id": "beiyangyuan",
     "name": "北洋园校区主楼",
     "aliases": [
-      "主楼"
+      "主楼",
+      "32教学楼",
+      "32教"
     ],
     "category": "teaching",
     "description": "官方北洋园校区导览将其列为楼宇场馆。",
@@ -839,9 +845,10 @@
       "学生中心"
     ],
     "category": "service",
-    "description": "官方场馆中心页面列为北洋园校区管理场馆。",
+    "description": "大通学生中心位于北洋园主轴线尽端的临水半岛；2016校方设计介绍与2017图面“学生活动中心”位置相互印证，图面仅为历史相对示意。",
     "source_refs": [
-      "src-venues"
+      "src-venues",
+      "src-landscape-2016"
     ],
     "location": null,
     "schematic_position": {
