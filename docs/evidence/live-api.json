@@ -289,6 +289,16 @@
         "knowledge": true,
         "scene_3d": false
       }
+    },
+    "tts-cancel": {
+      "tts_http": 499,
+      "stop_http": 200,
+      "stop": {
+        "local_stopped": true,
+        "upstream_stop": "unconfirmed"
+      },
+      "error_code": "stopped",
+      "browser_audio_interrupt": "BROWSER_QA_PENDING"
     }
   }
 }

@@ -2,6 +2,19 @@
 
 生效于M0 bootstrap共同基线。TypeScript：shared/contracts.ts；Python：backend/contracts.py；HTTP机器契约：shared/openapi.json。仅M修改，其他窗口走协调提交。当前选择组件组合，没有继承应用传输协议；统一HTTP JSON，不同时维护另一套WebSocket聊天协议。
 
+## M1 实现补充（线协议仍为 1.0.0）
+
+A/B/C/D 已停止修改并由 M 合并；未新增第二套传输协议，字段与端点保持冻结定义。下文明确写 M0 的 stub 描述属于历史阶段，当前实现以本节及 FINAL_REPORT 为准。
+
+- health：model.configured 为指定模型配置存在；verified 为本后端进程取得模型名严格匹配的非空真实回复。它不表示持续探测在线，重启归零。测试注入的独立 provider 不改变正常进程状态。
+- capabilities.chat 表示已配置聊天能力；asr 表示独立 ASR 必要配置存在；tts 仅在本进程实际合成有效音频后置 true；knowledge 来自真实数据状态；scene_3d 保持 false。配置可用、音频合成与浏览器播放分别验收。
+- AvatarAdapter 已实现 Live2D renderer；动作/表情为空、lip_sync=none、is_3d=false、face_morph=false；customization=['scale'] 仅展示缩放。M1 素材 HTTP/哈希已验证，现场画面待补。
+- 固定 LangGraph 工作流与后端受限历史已实现。无检索命中时返回明确不足、model=local-workflow、usage=null，不记作模型成功；真实调用必须返回 glm-5.1，否则 model_mismatch。
+- 取消登记在适配器吞掉 CancelledError 时仍禁止提交迟到回复/历史；本地停止与上游确认分开。场景回执在前端完成卡片 DOM 更新检查后发送，API 测试不伪造成功执行回执。
+- 前端播放从实际 onplaying 回调驱动 speaking；停止清理音频、请求代次与旧回调。日志在结束前轮询，浏览器回传事件也加入展示；导出移除原始 request/event/action 标识，保留数据白名单。
+- 当前知识版本 sha256:e7d1329b9b4c，7 条摘要、2 个北洋园建筑。模型和语音实际验证见 docs/evidence/live-api.json。
+- ASR 缺少独立服务；HTTP 503/asr_not_configured。Edge TTS 返回真实一次性同源音频 URL，timestamps=none；浏览器权限、可听播放和中文转录不因接口存在而判为通过。
+
 ## 通用
 
 仅127.0.0.1/localhost。浏览器只请求同源/api，Vite代理到本机后端；任何公网模型/ASR密钥只在后端。所有标识request_id/session_id/action_id/event_id/utterance_id使用UUID字符串，建筑ID为[a-z0-9][a-z0-9_-]{0,63}。校区枚举weijinlu（卫津路）、beiyangyuan（北洋园），这只是索引命名，不是已有知识数据。

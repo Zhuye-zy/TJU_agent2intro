@@ -1,6 +1,6 @@
-# 开源选型决策 · M0 / 2026-09-14
+# 开源选型决策 · M0 选型 / M1 实现核对
 
-## 冻结结论
+## M1 实现状态\n\n继续沿用成熟组件组合，未更换原路线。31 项 Python 测试、9 项前端/语音隔离测试及构建通过；GLM、知识、Edge TTS 与后端取消有真实证据。浏览器工具无法可靠确认 URL 而停止，故合并后可视与播放验收待补。自己的装配修改及证据见 FINAL_REPORT.md；下文成本对照保留 M0 选型时判断，不把当时的 stub 状态当作 M1 当前状态。\n\n## 冻结结论
 
 **主路线：成熟组件组合。** React/Vite + FastAPI，直接依赖PixiJS/pixi-live2d-display、vad-web/ONNX、OpenAI Python SDK、edge-tts、LangGraph。不是OLV/AIRI完整fork，没有将任何既有Vue项目迁移React，也没有继承现存应用协议；按任务要求使用统一POST /api/chat + GET /api/runtime/events轮询。用户提示词包0—2节已保存并核对；首版kelaita已确定。M0仅建立可运行stub，业务留给A/B/C/D。
 
@@ -16,7 +16,7 @@
 |[OLV-Web源码](https://github.com/Open-LLM-VTuber/Open-LLM-VTuber-Web/tree/d176e7df2366952e3bacbf12cf9a8b18a4315932)|1.2.1 / d176e7df2366952e3bacbf12cf9a8b18a4315932|React18/Vite5/Chakra；use-live2d-model、use-audio-task、use-interrupt、websocket-service；LICENSE|UI/hooks未采用；仅其单独许可的第三方Cubism Core二进制运行库本机复用|
 |OLV所钉frontend build|06a659b114fff788cf0daaa86e484576db4975bf|gitlink已核对，不能声称与源码main同版本产物|未采用|
 |[AIRI](https://github.com/moeru-ai/airi/tree/9f30a1977e09b3d68759492c5f8f775eb4502184)|0.12.0-beta.5 / 9f30a1977e09b3d68759492c5f8f775eb4502184|README/LICENSE/package/pnpm-workspace，stage-web/server API清单与compose，provider-inference、speech-pipeline/playback-manager、live2d composable|仅设计参考|
-|[LangGraph](https://github.com/langchain-ai/langgraph/tree/e539ac122f4126f6dd850581c1494948cf620e31)|1.2.11 / e539ac122f4126f6dd850581c1494948cf620e31|README/LICENSE、libs/langgraph/pyproject.toml、libs/langgraph/langgraph/graph/state.py|直接依赖，backend/model/service.py实际编译StateGraph stub|
+|[LangGraph](https://github.com/langchain-ai/langgraph/tree/e539ac122f4126f6dd850581c1494948cf620e31)|1.2.11 / e539ac122f4126f6dd850581c1494948cf620e31|README/LICENSE、libs/langgraph/pyproject.toml、libs/langgraph/langgraph/graph/state.py|直接依赖，backend/model/service.py 实际编译并执行固定 StateGraph 工作流|
 |[FastAPI模板](https://github.com/fastapi/full-stack-fastapi-template/tree/cb740b656d7a0a6c5e12c7bf8e50343ec94ee9c7)|backend app0.1.0 / cb740b656d7a0a6c5e12c7bf8e50343ec94ee9c7|README/LICENSE，backend/pyproject、frontend/package，backend/app/main.py与api/main.py|仅设计参考分目录/路由装配；不复制认证/PG/邮件/Sentry|
 |[TalkingHead](https://github.com/met4citizen/TalkingHead/tree/eed58d198076a7e1e825f804802921c4d3804d46)|1.7.0 / eed58d198076a7e1e825f804802921c4d3804d46|README/LICENSE/package；GLB、Mixamo兼容骨架、ARKit/Oculus viseme要求|未采用；kelaita非此模型路径，不深入|
 |[three-vrm](https://github.com/pixiv/three-vrm/tree/1b4fc0cc7ef39a49d62bb7a66dcfeca8f65316f7)|3.5.5 / 1b4fc0cc7ef39a49d62bb7a66dcfeca8f65316f7|README/LICENSE、packages/three-vrm/package.json；GLTFLoader+VRMLoaderPlugin|未采用，无VRM资产，不自带对话或捏脸|
@@ -43,12 +43,12 @@ FastAPI模板当前清单要求Python>=3.14；完整模板不适合本次Python3
 |成熟部分|安装版本|项目中的实际入口|
 |---|---|---|
 |React/React DOM、Vite、TS|19.3.0 / 8.3.0 / 5.9.3|frontend/src/main.tsx、vite.config.ts；真实页面构建|
-|PixiJS + pixi-live2d-display/cubism4|6.5.10 + 0.4.0|frontend/src/avatar/adapter.ts loadRendererModules；scripts/check-adapters.mjs实际打包通过|
+|PixiJS + pixi-live2d-display/cubism4|6.5.10 + 0.4.0|frontend/src/avatar/adapter.ts loadRendererModules；KelaitaAvatarAdapter 实际使用 Pixi Application、Live2DModel.from、Ticker、ResizeObserver；scripts/check-adapters.mjs 打包通过|
 |vad-web（ISC，Silero模型MIT）|0.0.31，npm gitHead de9b3ff83fd44cd7a2b3e07e9454e6b6f0bc249d|frontend/src/speech/adapter.ts loadVadModule；独立适配器构建通过；不是ASR|
 |FastAPI/Pydantic/Uvicorn|精确版本见锁|backend/app.py、backend/contracts.py，真实HTTP路由与验证|
-|OpenAI Python SDK|3.13.0|backend/model/service.py create_client、backend/speech/service.py prepare_asr_client，构造入口；尚未联网|
-|edge-tts|7.2.8|backend/speech/service.py prepare_edge_tts，未修改成熟provider；尚未调用服务|
-|LangGraph|1.2.11|backend/model/service.py workflow，实际compile和not_implemented节点执行|
+|OpenAI Python SDK|3.13.0|backend/model/service.py create_client、backend/speech/service.py prepare_asr_client，模型 complete 已对指定 GLM 真实一问一追问；ASR 单独配置尚缺|
+|edge-tts|7.2.8|backend/speech/service.py prepare_edge_tts / synthesize / list_voices，未修改成熟 provider；M1 已真实生成中文 MP3|
+|LangGraph|1.2.11|backend/model/service.py workflow，实际 compile 与 intent/retrieval/answer/scene_action 节点执行|
 
 pixi-live2d-display0.4.0清单peer @pixi/* ^6，故没有盲装Pixi最新主版本。Cubism4可用于model3但具体资源兼容性需B实测。插件MIT：[固定标签许可证](https://github.com/guansss/pixi-live2d-display/blob/v0.4.0/LICENSE)。所有安装精确解析见锁文件，声明范围不冒充安装结果。
 

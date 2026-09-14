@@ -1,6 +1,6 @@
 # 四窗口启动与共同基线
 
-M0主目录：E:\AI4TJU，集成分支integration/m0。没有云远程，不发布。
+主目录：E:\AI4TJU，集成分支 integration/m0。用户已授权并推送 GitHub origin：https://github.com/xxwan320/TJU_agent2intro.git；未部署云应用。
 
 BASE_COMMIT为轻量标签 **m0-bootstrap** 所指的完整提交。标签只创建一次、禁止移动。每个工作树的.runtime/BASE_COMMIT保存实际40位哈希；运行 `git rev-parse refs/tags/m0-bootstrap` 可核验。Git提交不能在自身跟踪文件内包含自己的最终哈希，故用不可移动标签及本机生成记录精确定位；四个工作树均从该提交创建；若M0出现协调修复，必须全体一致同步，不能从不同HEAD启动。实际launch_commit及coord_commit见.runtime/parallel-state.json和M0_COORDINATION.md。
 
@@ -12,7 +12,7 @@ BASE_COMMIT为轻量标签 **m0-bootstrap** 所指的完整提交。标签只创
 |C|E:\AI4TJU\.worktrees\api|work/api|5176 / 8003|
 |D|E:\AI4TJU\.worktrees\knowledge|work/knowledge|5177 / 8004|
 
-M0实际创建与安装记录位于主目录.runtime/parallel-state.json。端口是各工作树专用分配，M0只保持主应用运行，其他窗口启动前仍须查占用；有冲突通知M，不能杀别的进程。
+M0实际创建与安装记录位于主目录.runtime/parallel-state.json。端口是各工作树专用分配，M1 当前仅保持主目录构建版在 8000 运行；开发模式使用 5173/8000，其他窗口启动前仍须查占用；有冲突通知M，不能杀别的进程。
 
 ## 安装与运行
 
@@ -21,7 +21,7 @@ M0实际创建与安装记录位于主目录.runtime/parallel-state.json。端�
 .\scripts\Install.ps1
 .\scripts\Copy-LocalAssets.ps1
 ```
-Install使用Python3.11.9默认路径、项目.tools下uv0.12.13、uv sync --frozen --link-mode copy和npm ci。仅复用正常下载缓存。不能各自npm install加包或uv lock改锁；正常npm ci/uv sync --frozen不改锁。
+M1 重装并验证仍使用原锁文件。Install使用Python3.11.9默认路径、项目.tools下uv0.12.13、uv sync --frozen --link-mode copy和npm ci。仅复用正常下载缓存。不能各自npm install加包或uv lock改锁；正常npm ci/uv sync --frozen不改锁。
 
 在自己工作树两个终端按表启动，例如A：
 ```powershell

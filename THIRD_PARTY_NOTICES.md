@@ -9,7 +9,7 @@
 - @ricky0123/vad-web 0.0.31：ISC；Silero ONNX模型另为MIT，onnxruntime-web另按其许可证。仅活动检测，不能声称这是ASR。
 - FastAPI、Uvicorn、Pydantic/Pydantic Settings、HTTPX、OpenAI Python SDK、LangGraph按安装包许可证；SDK只用于指定GLM/独立ASR服务适配，不改变供应商。
 - edge-tts 7.2.8：LGPL-3.0，作为未修改的独立Python依赖保留原许可与源码链接：https://github.com/rany2/edge-tts 。M0未打包独立可执行文件或修改该库；后续分发应保留适用材料。
-- LangGraph 1.2.11：MIT；编译固定stub，未开启LangSmith追踪。测试/dev依赖也列入清单。
+- LangGraph 1.2.11：MIT；直接运行固定 intent→retrieval→answer→scene_action 工作流，未开启 LangSmith 追踪。测试/dev依赖也列入清单。
 
 ## 独立运行时与素材（本机复制，不进入Git）
 
@@ -17,13 +17,13 @@ Cubism Core取自已审查的上游固定提交，未复制该仓库UI代码：
 https://github.com/Open-LLM-VTuber/Open-LLM-VTuber-Web/blob/d176e7df2366952e3bacbf12cf9a8b18a4315932/src/renderer/WebSDK/Core/live2dcubismcore.min.js
 
 SHA256：942783587666a3a1bddea93afd349e26f798ed19dcd7a52449d0ae3322fcff7c。
-独立原文docs/research/olv-web-src_renderer_WebSDK_Core_LICENSE.md；Framework原文也保留在research中。Core保留原版权头，属于Live2D专有条款，不能统一标MIT。只准备本机运行资源，实际兼容性未验证。
+独立原文docs/research/olv-web-src_renderer_WebSDK_Core_LICENSE.md；Framework原文也保留在research中。Core保留原版权头，属于Live2D专有条款，不能统一标MIT。只准备本机运行资源，B 已验证 Live2D 兼容性；M1 的 HTTP/哈希验证通过，合并后现场画面仍待浏览器验收。
 
 kelaita源目录：
 C:\Users\ASUS\Desktop\desktop-pet\Open-LLM-VTuber\live2d-models\kelaita
-由用户选定，仅复制这9个素材文件及README。原角色为鸣潮珂莱塔/BongoCat风格，作为第一版“珂莱塔”产品展示角色；不冒称原创素材。保留README、水印、文件相对引用；不复制整个桌宠，不运行其程序。未核验人物再分发/商用权利，不导入本地克隆音色。详细清单docs/ASSET_INVENTORY.md。
+由用户选定，仅复制这9个素材文件及README。原角色为鸣潮珂莱塔/BongoCat风格，作为本产品首版珂莱塔展示角色；不冒称原创素材。保留README、水印、文件相对引用；不复制整个桌宠，不运行其程序。未核验人物再分发/商用权利，不导入本地克隆音色。详细清单docs/ASSET_INVENTORY.md。
 
-本机归档在.runtime/asset-source，工作树各复制到frontend/public/assets/kelaita及frontend/public/vendor，均被Git忽略。素材可替换，不成为LLM或知识模块依赖。未建立远程、未发布应用。
+本机归档在.runtime/asset-source，工作树各复制到frontend/public/assets/kelaita及frontend/public/vendor，均被Git忽略。素材可替换，不成为LLM或知识模块依赖。源码依用户授权推送 GitHub；人物/Core 原文件保持忽略，未部署云应用。
 
 ## 审查但未采用源码
 

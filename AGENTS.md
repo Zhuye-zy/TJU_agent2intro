@@ -2,7 +2,7 @@
 
 先读项目提示词包第0—2节，以及 docs/OPEN_SOURCE_DECISION.md、CONTRACTS.md、OWNERSHIP.md、PARALLEL_RUN.md。
 产品是数字人校园导游；desktop-pet只提供首版kelaita素材。
-只执行当前窗口范围。M0已建立stub，不提前代做其他窗口业务。
+M1 已经用户确认停写后合并四窗口；M 可在集成分支修复装配。后续窗口仍按 OWNERSHIP 限定路径，不能直接修改集成目录。
 所有工作与产物在本项目下；素材源目录只读，不执行其中程序。
 A/B/C/D只改各自.worktrees中的授权路径；M独占契约、依赖、锁、应用入口和根脚本。发现阻塞立即提交docs/requests/<窗口>/，不要等待M1。
 依赖与venv/log必须隔离，无可写node_modules/venv链接。扫描、构建排除.worktrees。
