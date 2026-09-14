@@ -1,6 +1,8 @@
-# 海小棠数字人校园导游
+# 珂莱塔数字人校园导游
 
-M0：可运行工程骨架，首版形象kelaita（Live2D）。这是校园导游应用，不是桌宠。真实对话、知识、语音及renderer实现由A/B/C/D并行完成。
+基于 React/Vite、FastAPI、Live2D 与 LangGraph 的天津大学数字人导游工作台。第一版使用用户指定的 kelaita（珂莱塔）素材；应用形态是网页校园导游。
+
+当前正在执行 M1：四个窗口已提交前端、人物语音、模型编排与校园知识，总控逐项审计、合并、联调并推送。合并后的真实能力以最终验收报告为准，分支测试不能代替集成验收。
 
 安装（每个工作树独立）：
 
@@ -9,26 +11,17 @@ M0：可运行工程骨架，首版形象kelaita（Live2D）。这是校园导�
 .\scripts\Copy-LocalAssets.ps1
 ```
 
-主目录两个终端启动：
+开发启动（两个终端）：
 
 ```powershell
-.\scripts\Start-Backend.ps1 -Port 8000
+.\scripts\Start-Backend.ps1 -Port 8000 -EnvFile E:\AI4TJU\.env
 .\scripts\Start-Frontend.ps1 -Port 5173 -ApiPort 8000
 ```
 
-访问 http://127.0.0.1:5173 。模型未实现时“检查接口”返回501并展示真实request日志，这不是模型成功。所有模型请求经本机后端；不在前端配置密钥。
+访问 http://127.0.0.1:5173 。模型请求全部经本机后端。密钥仅存在未跟踪的主目录 .env 或进程环境，不复制到工作树，不写入前端。
 
-只由M/C在主目录执行一次隐藏输入：
-`powershell -NoProfile -File E:\AI4TJU\scripts\Configure-Local.ps1`。
-之后显式 `.\scripts\Start-Backend.ps1 -EnvFile E:\AI4TJU\.env`。A/B/D无需密钥；不复制.env。现有进程CAMPUS_*配置优先。首次真实GLM验证由C实施。
+首次缺少配置时运行 `powershell -NoProfile -File E:\AI4TJU\scripts\Configure-Local.ps1`，在本机隐藏输入密钥。已有配置直接复用。
 
-验证：
-```powershell
-npm run build
-node scripts/check-adapters.mjs
-.\.venv\Scripts\python.exe -m pytest -q
-```
+素材和 Cubism Core 依其独立许可本机准备，不随 GitHub 源码发布；克隆仓库后需提供有权使用的素材。保留原水印，Live2D 不等于三维模型；当前不承诺捏脸和准确中文口型。
 
-M0基线测试包括stub诚实性；C接入模型后如需改变共享测试，由M协调，不擅改契约。当前LangGraph节点仅返回not_implemented，未配置云追踪或检查点；SDK构造不发请求。
-
-阅读 [选型](docs/OPEN_SOURCE_DECISION.md)、[契约](docs/CONTRACTS.md)、[所有权](docs/OWNERSHIP.md)、[并行启动](docs/PARALLEL_RUN.md)、[许可证](THIRD_PARTY_NOTICES.md)、[未验证项](docs/M0_VERIFICATION.md)。
+阅读 [选型](docs/OPEN_SOURCE_DECISION.md)、[契约](docs/CONTRACTS.md)、[所有权](docs/OWNERSHIP.md)、[并行目录](docs/PARALLEL_RUN.md)、[许可证](THIRD_PARTY_NOTICES.md)、[集成记录](docs/M1_INTEGRATION.md)。
