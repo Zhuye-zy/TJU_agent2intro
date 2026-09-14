@@ -37,7 +37,7 @@ OLV 的 `model_dict.json` 还列出 mao_pro、shizuku；它们不是用户指定
 |`runtime/kelaita.model3.json`|621|`b5ef75441c557a65771ecb8cfc0892f3ee049816ad5067c023d063ae395290bd`|
 |`runtime/kelaita.moc3`|659,264|`95e607f1487a07f869666f8959c62605cdc1d2414fe69e2295d24924f2c11d7c`|
 |`runtime/kelaita.physics3.json`|3,633|`a3a3e6c1ce8757c477ec63e4b63f1f98cfef90e12501b22653c762aaeb336d12`|
-|`runtime/kelaita.cdi3.json`|4,000|`5538efcca74f23912213197dcbeb1e34215079c5cb38c8820ef363ef0f08d8d`|
+|`runtime/kelaita.cdi3.json`|4,000|`5538efcca74f23912213197dcdbeb1e34215079c5cb38c8820ef363ef0f08d8d`|
 |`runtime/Live2d_expression0.exp3.json`|114|`31779a3ebb86e5e2b9d71a56cdfd583b52a94abe4b11d8e2599526c2a0108b13`|
 |`runtime/kelaita.2048/texture_00.png`|868,542|`f504ee7329123e56d8ab5c5919d86a125a673e9dc861b5faaa1f50dfa53f4eb0`|
 |`runtime/kelaita.2048/texture_01.png`|1,214,338|`4fd6d8b9ced585c1213b0cbad1cbe1188fd8a6f4a44a0738891774562987fbb9`|
