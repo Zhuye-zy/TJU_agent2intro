@@ -1,0 +1,26 @@
+{
+  "source_root": "C:\\Users\\ASUS\\Desktop\\desktop-pet\\Open-LLM-VTuber\\live2d-models\\kelaita",
+  "copied_to_runtime": "/assets/kelaita",
+  "source_character": "珂莱塔 / 鸣潮 BongoCat 风格",
+  "redistribution": "unverified; local runtime asset, intentionally gitignored",
+  "runtime_dependencies": [
+    {
+      "path": "/vendor/live2dcubismcore.min.js",
+      "source": "Open-LLM-VTuber-Web d176e7df2366952e3bacbf12cf9a8b18a4315932 src/renderer/WebSDK/Core/live2dcubismcore.min.js",
+      "bytes": 206492,
+      "sha256": "942783587666a3a1bddea93afd349e26f798ed19dcd7a52449d0ae3322fcff7c",
+      "license": "Live2D Proprietary Software License"
+    }
+  ],
+  "files": [
+    {"path":"ReadMe.txt","bytes":1408,"sha256":"f43cf6ea44971664c31413ae45a74900701902f1d74bf7bb583af50b5e443b1a"},
+    {"path":"runtime/kelaita.model3.json","bytes":621,"sha256":"b5ef75441c557a65771ecb8cfc0892f3ee049816ad5067c023d063ae395290bd"},
+    {"path":"runtime/kelaita.moc3","bytes":659264,"sha256":"95e607f1487a07f869666f8959c62605cdc1d2414fe69e2295d24924f2c11d7c"},
+    {"path":"runtime/kelaita.physics3.json","bytes":3633,"sha256":"a3a3e6c1ce8757c477ec63e4b63f1f98cfef90e12501b22653c762aaeb336d12"},
+    {"path":"runtime/kelaita.cdi3.json","bytes":4000,"sha256":"5538efcca74f23912213197dcbeb1e34215079c5cb38c8820ef363ef0f08d8d"},
+    {"path":"runtime/Live2d_expression0.exp3.json","bytes":114,"sha256":"31779a3ebb86e5e2b9d71a56cdfd583b52a94abe4b11d8e2599526c2a0108b13"},
+    {"path":"runtime/kelaita.2048/texture_00.png","bytes":868542,"sha256":"f504ee7329123e56d8ab5c5919d86a125a673e9dc861b5faaa1f50dfa53f4eb0"},
+    {"path":"runtime/kelaita.2048/texture_01.png","bytes":1214338,"sha256":"4fd6d8b9ced585c1213b0cbad1cbe1188fd8a6f4a44a0738891774562987fbb9"},
+    {"path":"runtime/kelaita.2048/texture_02.png","bytes":719266,"sha256":"f566c1a0a271c13abd471a4b755b42554d6c756b38e6b7f6c4832815ed2dcbdd"}
+  ]
+}
