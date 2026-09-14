@@ -111,7 +111,9 @@ def test_nonstream_generation_all_types_shared_history_and_runtime(monkeypatch):
  def handler(request):
   payload=json.loads(request.content);captured.append(payload)
   assert payload["stream"] is False
-  return httpx.Response(200,json={"id":"test","object":"chat.completion","created":1,"model":"glm-5.1","choices":[{"index":0,"message":{"role":"assistant","content":"欢迎来到天津大学，这是创作欢迎词。"},"finish_reason":"stop"}]})
+  context=json.loads(payload["messages"][-1]["content"])["retrieved_context_untrusted"]
+  citation=" [source:"+context[0]["id"]+"]" if context else ""
+  return httpx.Response(200,json={"id":"test","object":"chat.completion","created":1,"model":"glm-5.1","choices":[{"index":0,"message":{"role":"assistant","content":"欢迎来到天津大学，这是创作欢迎词。"+citation},"finish_reason":"stop"}]})
  store,client=install(monkeypatch,handler)
  monkeypatch.setattr(routes,"runtime",store);monkeypatch.setattr(routes,"model",stream_routes.model)
  with TestClient(app) as api:
@@ -125,3 +127,73 @@ def test_nonstream_generation_all_types_shared_history_and_runtime(monkeypatch):
    assert api.post("/api/runtime/generation-rendered",json=receipt).status_code==200
  assert len(captured)==3
  asyncio.run(client.aclose())
+
+# C04: real local corpus retrieval tests; no network provider calls.
+def test_generic_visit_plan_uses_multiple_real_entities_and_selected_entity_first(monkeypatch):
+ from backend.r2_contracts import R2ChatRequest
+ from backend.knowledge.service import knowledge
+ import backend.model.service as services
+ store=runtime_module.RuntimeStore()
+ monkeypatch.setattr(runtime_module,"runtime",store)
+ async def verify():
+  service=CampusModelService()
+  for campus in ("weijinlu","beiyangyuan"):
+   request=R2ChatRequest.model_validate(dict(body("visit_plan"),campus_id=campus,message="根据已知校园点位写一份简短游览建议。"))
+   store.begin(request.request_id,request.session_id)
+   prepared=await service.prepare(request)
+   assert 2<=len(prepared.hits)<=5 and len({h.id for h in prepared.hits})==len(prepared.hits)
+   assert all(h.campus_id==campus and h.url and h.snippet for h in prepared.hits)
+   entities=[p for p in knowledge.list_pois(campus,None,"",100,None).items if p.verification_status=="verified"]
+   assert sum(any(p.name in h.title+" "+h.snippet for h in prepared.hits) for p in entities)>=2
+   context=json.loads(services._user_payload(prepared))["retrieved_context_untrusted"]
+   assert sum(len(h["snippet"]) for h in context)<=12000
+   selected=next(p for p in entities if p.category=="culture")
+   next_request=R2ChatRequest.model_validate(dict(body("visit_plan"),campus_id=campus,selected_poi_id=selected.id,message="以这里为起点给出游览建议。"))
+   store.begin(next_request.request_id,next_request.session_id)
+   selected_prepared=await service.prepare(next_request)
+   assert selected.name in selected_prepared.hits[0].title+" "+selected_prepared.hits[0].snippet
+ asyncio.run(verify())
+
+def test_visit_plan_fallback_does_not_change_campus_qa(monkeypatch):
+ from backend.r2_contracts import R2ChatRequest
+ import backend.model.service as services
+ from backend.knowledge.service import knowledge
+ store=runtime_module.RuntimeStore();monkeypatch.setattr(runtime_module,"runtime",store)
+ def forbidden(*args,**kwargs):raise AssertionError("campus_qa cannot use visit directory fallback")
+ monkeypatch.setattr(knowledge,"list_pois",forbidden)
+ async def verify():
+  request=R2ChatRequest.model_validate(dict(body(),mode="campus_qa",generation=None,message="虚构红宝石教学楼在哪里"))
+  store.begin(request.request_id,request.session_id)
+  prepared=await CampusModelService().prepare(request)
+  expected=knowledge.search(request.message,request.campus_id,5)
+  assert [h.id for h in prepared.hits]==[h.id for h in expected]
+ asyncio.run(verify())
+
+def test_generation_prefix_counts_towards_limit_for_stream_and_nonstream(monkeypatch):
+ import backend.model.routes as routes
+ from backend.model.service import GENERATION_PREFIX
+ for stream in (False,True):
+  for over in (0,1):
+   content="字"*(23000-len(GENERATION_PREFIX)+over)
+   def handler(request):
+    choice={"index":0,"finish_reason":"stop"}
+    if stream:
+     choice["delta"]={"content":content}
+     raw=("data: "+json.dumps({"id":"x","object":"chat.completion.chunk","created":1,"model":"glm-5.1","choices":[choice]},ensure_ascii=False)+"\n\ndata: [DONE]\n\n").encode()
+     return httpx.Response(200,headers={"content-type":"text/event-stream"},stream=Chunks([raw]))
+    choice["message"]={"role":"assistant","content":content}
+    return httpx.Response(200,json={"id":"x","object":"chat.completion","created":1,"model":"glm-5.1","choices":[choice]})
+   store,client=install(monkeypatch,handler)
+   monkeypatch.setattr(routes,"runtime",store);monkeypatch.setattr(routes,"model",stream_routes.model)
+   with TestClient(app) as api:response=api.post("/api/chat/stream" if stream else "/api/chat",json=body("social_post"))
+   if stream:
+    ev=events(response);terminal=ev[-1]
+    visible="".join(e["payload"]["text"] for e in ev if e["type"]=="answer_delta")
+    assert len(visible)==23000
+    if over:
+     assert terminal["type"]=="error" and terminal["payload"]["code"]=="INCOMPLETE_OUTPUT"
+     assert terminal["payload"]["reason"]=="length" and terminal["payload"]["partial"]
+    else:assert terminal["type"]=="completed" and len(terminal["payload"]["response"]["answer"])==23000
+   elif over:assert response.status_code==503 and response.json()["error"]["code"]=="INCOMPLETE_OUTPUT"
+   else:assert response.status_code==200 and len(response.json()["answer"])==23000
+   asyncio.run(client.aclose())
