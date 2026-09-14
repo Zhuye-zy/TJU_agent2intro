@@ -48,6 +48,7 @@ async def stream_chat(body:R2ChatRequest):
     runtime.emit(body.request_id,"generation","started")
     yield emit("status",{"stage":"generation","status":"started"})
    prepared=await model.prepare(body)
+   if prepared.needs_selection and body.mode=="content_generation":raise DomainError("VALIDATION_ERROR","请先选择讲解对象，或明确生成要求",422,body.request_id)
    if prepared.needs_selection:
     answer="请先选择具体点位，我才能确定“这里”指的是哪一处。"
    elif body.mode=="campus_qa" and not prepared.knowledge_ready:

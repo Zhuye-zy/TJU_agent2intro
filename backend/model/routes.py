@@ -15,12 +15,13 @@ async def chat(request: R2ChatRequest | ChatRequest):
     started = time.monotonic()
     runtime.emit(request.request_id, "request", "started")
     try:
+        if request.mode == "content_generation" and not isinstance(request, R2ChatRequest):
+            raise DomainError("VALIDATION_ERROR", "内容生成须提供 message_id 和 generation 参数", 422, request.request_id)
+        if isinstance(request, R2ChatRequest):
+            runtime.configure_generation(request.request_id,request.message_id,request.campus_id,request.mode,getattr(request.generation,"type",None))
         if request.mode == "content_generation":
-            raise DomainError("VALIDATION_ERROR", "内容生成必须使用 R2 流式入口并提供 generation 参数", 422, request.request_id)
-        if request.selected_building_id:
-            building = knowledge.get_building(request.selected_building_id)
-            if not building or building.campus_id != request.campus_id:
-                raise DomainError("building_not_found", "建筑不存在或不属于所选校区", 422, request.request_id)
+            runtime.emit(request.request_id,"generation","started")
+        runtime.trace(request.request_id,action="route",stage="request",status="started",generation_type=getattr(getattr(request,"generation",None),"type",None))
         response = await model.generate(request)
         if record.cancel_requested:
             raise asyncio.CancelledError

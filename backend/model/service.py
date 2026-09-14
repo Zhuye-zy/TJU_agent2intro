@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from typing import Protocol,TypedDict
 from uuid import UUID, uuid4
 import openai
+import httpx
 from openai import AsyncOpenAI
 from langgraph.graph import START,END,StateGraph
 from backend.common.config import get_settings
@@ -73,8 +74,8 @@ def _usage(raw):
 def map_provider_error(e,rid):
  if isinstance(e,(openai.AuthenticationError,openai.PermissionDeniedError)):return DomainError("UPSTREAM_AUTH_ERROR","模型网关认证失败",503,rid)
  if isinstance(e,openai.RateLimitError):return DomainError("RATE_LIMITED","模型网关限流，请稍后以新请求重试",429,rid,True)
- if isinstance(e,openai.APITimeoutError):return DomainError("UPSTREAM_TIMEOUT","模型网关请求超时",503,rid,True)
- if isinstance(e,openai.APIConnectionError):return DomainError("NETWORK_ERROR","无法连接模型网关",503,rid,True)
+ if isinstance(e,(openai.APITimeoutError,httpx.TimeoutException)):return DomainError("UPSTREAM_TIMEOUT","模型网关请求超时",503,rid,True)
+ if isinstance(e,(openai.APIConnectionError,httpx.NetworkError)):return DomainError("NETWORK_ERROR","无法连接模型网关",503,rid,True)
  if isinstance(e,openai.APIStatusError):
   if e.status_code in (401,403):return DomainError("UPSTREAM_AUTH_ERROR","模型网关认证失败",503,rid)
   if e.status_code==429:return DomainError("RATE_LIMITED","模型网关限流，请稍后以新请求重试",429,rid,True)
@@ -105,15 +106,16 @@ class OpenAICompatibleProvider:
   from .runtime import runtime
   start=time.monotonic()
   try:
-   record=runtime.get(rid);client=self._get_client()
-   runtime.emit(rid,"model","started",{"model":self.settings.llm_model});runtime.trace(rid,action="upstream",stage="model",status="started");record.upstream_stop="unconfirmed"
+   record=runtime.get(rid)
+   runtime.emit(rid,"model","started",{"model":self.settings.llm_model})
+   client=self._get_client();runtime.trace(rid,action="upstream",stage="model",status="started");record.upstream_stop="unconfirmed"
    c=await asyncio.wait_for(client.chat.completions.create(model=self.settings.llm_model,messages=messages,stream=False),self.total_timeout)
    choice=c.choices[0] if c.choices else None;msg=getattr(choice,"message",None);content=getattr(msg,"content",None);finish=getattr(choice,"finish_reason",None)
    if getattr(msg,"tool_calls",None):raise DomainError("UPSTREAM_PROTOCOL_ERROR","模型返回了未执行的工具调用",503,rid)
    if not isinstance(content,str) or not content.strip():raise DomainError("EMPTY_OUTPUT","模型未返回可见正文",503,rid)
    answer=content.strip()
    if finish=="length" or len(answer)>_MAX_ANSWER_CHARS:raise DomainError("INCOMPLETE_OUTPUT","模型正文因长度限制而不完整",503,rid)
-   if finish not in (None,"stop"):raise DomainError("UPSTREAM_PROTOCOL_ERROR","模型未正常结束回答",503,rid)
+   if finish != "stop":raise DomainError("UPSTREAM_PROTOCOL_ERROR","模型未正常结束回答",503,rid)
    if not _model_ok(self.settings.llm_model,c.model):raise DomainError("UPSTREAM_PROTOCOL_ERROR","网关返回了未验证的模型标识",503,rid)
    u=_usage(c.usage)
    if record.cancel_requested:raise asyncio.CancelledError
@@ -133,8 +135,9 @@ class OpenAICompatibleProvider:
   start=time.monotonic();last_visible=start;body=0;finish=None;returned=None;usage=None
   stream=None
   try:
-   record=runtime.get(rid);client=self._get_client()
-   runtime.emit(rid,"model","started",{"model":self.settings.llm_model});runtime.trace(rid,action="stream",stage="model",status="started");record.upstream_stop="unconfirmed"
+   record=runtime.get(rid)
+   runtime.emit(rid,"model","started",{"model":self.settings.llm_model})
+   client=self._get_client();runtime.trace(rid,action="stream",stage="model",status="started");record.upstream_stop="unconfirmed"
    stream=await asyncio.wait_for(client.chat.completions.create(model=self.settings.llm_model,messages=messages,stream=True,stream_options={"include_usage":True}),self.total_timeout)
    content_type=getattr(getattr(stream,"response",None),"headers",{}).get("content-type","").split(";")[0].strip().lower()
    runtime.trace(rid,action="stream",stage="upstream_connected",status="completed",elapsed_ms=(time.monotonic()-start)*1000,upstream_http_status=200,content_type=content_type)
@@ -143,30 +146,31 @@ class OpenAICompatibleProvider:
    first_event=True;first_content=True
    while True:
     now=time.monotonic();remaining=min(self.total_timeout-(now-start),self.idle_timeout-(now-last_visible))
-    if remaining<=0:raise DomainError("UPSTREAM_TIMEOUT" if body==0 else "INCOMPLETE_OUTPUT","模型流超过截止时间",503,rid,body==0)
+    if remaining<=0:raise StreamFailure("UPSTREAM_TIMEOUT" if body==0 else "INCOMPLETE_OUTPUT","模型流超过截止时间",rid,"timeout",body==0)
     try:chunk=await asyncio.wait_for(iterator.__anext__(),remaining)
     except StopAsyncIteration:break
     if first_event:runtime.trace(rid,action="stream",stage="first_event",status="completed",elapsed_ms=(time.monotonic()-start)*1000);first_event=False
     chunk_model=getattr(chunk,"model",None)
     if chunk_model:
-     if not _model_ok(self.settings.llm_model,chunk_model):raise StreamFailure("UPSTREAM_PROTOCOL_ERROR","?????????????",rid,"upstream")
+     if not _model_ok(self.settings.llm_model,chunk_model):raise StreamFailure("UPSTREAM_PROTOCOL_ERROR","网关返回了未验证的模型标识",rid,"upstream")
      returned=chunk_model
     usage=_usage(getattr(chunk,"usage",None)) or usage
     for choice in getattr(chunk,"choices",[]) or []:
-     if getattr(choice,"index",0) != 0:raise StreamFailure("UPSTREAM_PROTOCOL_ERROR","????????????",rid,"upstream")
+     if getattr(choice,"index",0) != 0:raise StreamFailure("UPSTREAM_PROTOCOL_ERROR","模型返回了非预期候选答案",rid,"upstream")
      choice_delta=getattr(choice,"delta",None)
-     if getattr(choice_delta,"tool_calls",None) or getattr(choice_delta,"function_call",None):raise StreamFailure("UPSTREAM_PROTOCOL_ERROR","?????????????",rid,"upstream")
+     if getattr(choice_delta,"tool_calls",None) or getattr(choice_delta,"function_call",None):raise StreamFailure("UPSTREAM_PROTOCOL_ERROR","模型返回了未执行的工具调用",rid,"upstream")
      delta=getattr(choice_delta,"content",None)
-     if finish is not None and delta:raise StreamFailure("UPSTREAM_PROTOCOL_ERROR","??????????",rid,"upstream")
+     if finish is not None and delta:raise StreamFailure("UPSTREAM_PROTOCOL_ERROR","模型结束后仍返回正文",rid,"upstream")
      if getattr(choice,"finish_reason",None) is not None:finish=choice.finish_reason
      if isinstance(delta,str) and delta:
       if first_content:runtime.trace(rid,action="stream",stage="first_content",status="completed",elapsed_ms=(time.monotonic()-start)*1000);first_content=False
       body+=len(delta);last_visible=time.monotonic()
-      if body>_MAX_ANSWER_CHARS:raise DomainError("INCOMPLETE_OUTPUT","模型正文超过长度限制",503,rid)
+      if body>_MAX_ANSWER_CHARS:raise StreamFailure("INCOMPLETE_OUTPUT","模型正文超过长度限制",rid,"length")
       yield {"kind":"delta","text":delta}
    if body==0:raise DomainError("EMPTY_OUTPUT","模型未返回可见正文",503,rid)
-   if finish=="length":raise DomainError("INCOMPLETE_OUTPUT","模型正文因长度限制而不完整",503,rid)
-   if finish not in (None,"stop"):raise DomainError("UPSTREAM_PROTOCOL_ERROR","模型流未正常结束",503,rid)
+   if finish=="length":raise StreamFailure("INCOMPLETE_OUTPUT","模型正文因长度限制而不完整",rid,"length")
+   if finish is None:raise StreamFailure("INCOMPLETE_OUTPUT","模型流在确认结束前断开",rid,"disconnect")
+   if finish != "stop":raise StreamFailure("UPSTREAM_PROTOCOL_ERROR","模型流未正常结束",rid,"upstream")
    if not _model_ok(self.settings.llm_model,returned):raise DomainError("UPSTREAM_PROTOCOL_ERROR","网关返回了未验证的模型标识",503,rid)
    if record.cancel_requested:raise asyncio.CancelledError
    self.state.verified=True;self.state.last_model=returned;self.state.last_usage=usage
@@ -174,14 +178,14 @@ class OpenAICompatibleProvider:
    yield {"kind":"done","model":returned,"usage":usage,"finish_reason":finish}
   except asyncio.TimeoutError:
    code="UPSTREAM_TIMEOUT" if body==0 else "INCOMPLETE_OUTPUT";runtime.emit(rid,"model","failed",{"code":code,"model":self.settings.llm_model},(time.monotonic()-start)*1000)
-   raise DomainError(code,"模型流超过截止时间",503,rid,body==0) from None
+   raise StreamFailure(code,"模型流超过截止时间",rid,"timeout",body==0) from None
   except asyncio.CancelledError:runtime.emit(rid,"model","cancelled",{"code":"CANCELLED","model":self.settings.llm_model},(time.monotonic()-start)*1000);raise
   except DomainError as e:e.request_id=e.request_id or rid;runtime.emit(rid,"model","failed",{"code":e.code,"model":self.settings.llm_model},(time.monotonic()-start)*1000);raise
   except Exception as e:
    mapped=map_provider_error(e,rid)
    if body:
     reason="timeout" if mapped.code=="UPSTREAM_TIMEOUT" else "disconnect"
-    mapped=StreamFailure("INCOMPLETE_OUTPUT","????????",rid,reason)
+    mapped=StreamFailure("INCOMPLETE_OUTPUT","模型流未完整返回",rid,reason)
    runtime.emit(rid,"model","failed",{"code":mapped.code,"model":self.settings.llm_model},(time.monotonic()-start)*1000);raise mapped from None
   finally:
    if stream is not None:
@@ -227,6 +231,7 @@ class CampusModelService:
   state.update(await self._intent_stage(state));state.update(await self._retrieval_stage(state));return self._prepared(state)
  async def _answer_stage(self,state):
   request=state["request"];p=self._prepared(state)
+  if p.needs_selection and request.mode=="content_generation":raise DomainError("VALIDATION_ERROR","请先选择讲解对象，或明确生成要求",422,request.request_id)
   if p.needs_selection:return {"answer":"请先选择具体点位，我才能确定“这里”指的是哪一处。","sources":[],"usage":None,"model_name":"local-workflow"}
   if request.mode=="campus_qa" and not p.knowledge_ready:raise DomainError("UPSTREAM_PROTOCOL_ERROR","校园资料库尚不可用",503,request.request_id)
   if request.mode=="campus_qa" and not p.hits:return {"answer":"当前检索没有找到足够资料，我不能在缺少事实依据时猜测。","sources":[],"usage":None,"model_name":"local-workflow"}

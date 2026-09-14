@@ -56,3 +56,19 @@
 - C 隔离测试：22 passed，覆盖无 usage、空正文、401、429、超时、网络、非 JSON、reasoning-only、length、任意 SSE 字节切块/中文拆分/CRLF/心跳/usage-only、唯一终态、受控历史、重复路线、缺 key、代理白名单、入口与名称导航。
 - 全仓测试：除 3 个 M-owned 旧占位断言外通过。失败项仍期待第一轮小写错误码或 /api/chat/stream 返回 501；R2 实现按新契约返回统一大写错误码和真实 SSE，需由 M 更新共享测试。
 - 未修改人物设定、A 页面、B 队列/语音、D 采集/检索、公共契约、入口装配、依赖清单或锁文件。Web 端 POST SSE 解码、客户端总超时/断网兜底、TTS/实际播放延迟仍需 A/B/M 集成验证。
+
+## M1-R2 返修交接（C01–C03，2026-09-14）
+
+状态：PARTIAL；下述隔离用例通过，真实 API 与浏览器须由 M 在候选集成复验。已同步 M 协调提交 a9cfc7e。本文前述“生成仅走 SSE”“代理成功即可验证在线地图”说明由本节替代。
+
+- C01：backend/model/service.py 只接受真实 finish_reason=stop；EOF 无结束原因、正文后超时/读断流、length 统一 INCOMPLETE_OUTPUT，并保留准确 timeout/disconnect/length reason。缺模型标识、未知模型标识、未执行 tool_calls/function_call、非预期候选和 stop 后正文明确失败。清理连接不覆盖既定终态。适配阶段 started 与实际上游连接 trace 分离；未配置时 upstream_stop 仍 not_started。
+- C02：backend/model/routes.py 的 /api/chat 接收 R2ChatRequest | ChatRequest，保留旧普通聊天；完整 R2 generation 三类型均调用现有非流式 provider、LangGraph、HistoryStore 和 RuntimeStore。缺 generation/message_id 明确 422；依赖“这里”却没有实体的生成明确校验错误，不再把本地澄清当作生成成功。生成终态记录 generation.completed / generation.error / generation.cancelled trace，rendered 仍须独立前端回执验证。
+- C03：backend/maps/routes.py 按 D 的 get_campus_assets/get_assets 读取双校区地图，并确认项目 frontend/public/assets 下真实文件存在；不以知识 ready 冒充地图。route_backend=js_api，JS 配置决定主路配置状态；可选 Web REST 路线不改变 JS 验证状态。名称导航含天津大学与对应校区；未经验证的入口日期/来源不能发布为精准目的地。
+- 高德固定代理允许 Walking、有限检索、IP/坐标转换等明确路径；校验公开 JS Key 与配置一致，拒绝客户端 jscode、任意 URL、未知/重复参数、非法 JSONP callback、异常坐标和超范围分页。固定服务端注入安全密钥，HTTP 200 的业务失败明确报错。代理有分类计数/限流，日志不含 query、位置或凭据，platform_quota_debit=null。代理成功不宣称浏览器已渲染、定位或行走路线已执行。
+- 可选 REST 路线验证起点时间、定位精度、GCJ02 和可信入口，返回真实距离/步骤后才成功。请求取消回执只有已终止才 local_stopped=true；调用 task.cancel 仅代表已发取消，不声称上游确认停止。
+
+验证命令：在 C 工作树执行 .venv/Scripts/python.exe -m pytest tests/model tests/maps -q，29 passed（1 个依赖弃用警告）。git diff --check 通过。用例涵盖 SSE 任意 UTF-8 切块、reasoning-only、缺结束、timeout/disconnect/length、工具与迟到正文、三类非流式生成和 rendered、缺地图配置、参数/业务失败、JSONP、名称消歧、入口可信和取消回执。隔离用例不计入真实运行验收。
+
+技术依据：[高德 JS API 安全密钥官方文档](https://lbs.amap.com/api/javascript-api-v2/guide/abc/jscode)，本轮实际阅读。固定 _AMapService 前缀保留，密钥服务端注入；实际 SDK/权限/网络兼容待少量在线验证。未新增依赖、未读取用户粘贴地图凭据、未执行任何真实高德请求，未重复批量调用模型。M 需导出合并后 OpenAPI、补正常页面的浏览器端到端证据。
+
+已停止修改，可以合并：是。

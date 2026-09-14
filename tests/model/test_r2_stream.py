@@ -62,3 +62,66 @@ def test_old_generation_entry_is_explicit_validation_error():
  legacy={"request_id":str(uuid4()),"session_id":str(uuid4()),"message":"写欢迎词","mode":"content_generation","campus_id":"weijinlu","selected_building_id":None}
  with TestClient(app) as api:r=api.post("/api/chat",json=legacy)
  assert r.status_code==422 and r.json()["error"]["code"]=="VALIDATION_ERROR"
+
+
+# M1-R2 C01/C02 regression: these providers are isolated fixtures, never live evidence.
+def test_eof_timeout_disconnect_tools_missing_model_and_late_body_are_not_success(monkeypatch):
+ cases=[
+  (None,"glm-5.1",None,"eof","INCOMPLETE_OUTPUT","disconnect"),
+  (None,"glm-5.1",None,"timeout","INCOMPLETE_OUTPUT","timeout"),
+  (None,"glm-5.1",None,"disconnect","INCOMPLETE_OUTPUT","disconnect"),
+  ("length","glm-5.1",None,"eof","INCOMPLETE_OUTPUT","length"),
+  ("tool_calls","glm-5.1",[{"index":0,"id":"tool1","type":"function","function":{"name":"navigate","arguments":"{}"}}],"eof","UPSTREAM_PROTOCOL_ERROR","upstream"),
+  ("stop",None,None,"eof","UPSTREAM_PROTOCOL_ERROR","upstream"),
+ ]
+ class Broken(Chunks):
+  def __init__(self,chunks,end):super().__init__(chunks);self.end=end
+  async def __aiter__(self):
+   for item in self.chunks:yield item
+   if self.end=="timeout":await asyncio.sleep(0.1)
+   if self.end=="disconnect":raise httpx.ReadError("fixture disconnect")
+ for finish,model,tools,end,code,reason in cases:
+  delta={"content":"已收到正文"}
+  if tools:delta["tool_calls"]=tools
+  payload={"id":"x","object":"chat.completion.chunk","created":1,"choices":[{"index":0,"delta":delta,"finish_reason":finish}]}
+  if model:payload["model"]=model
+  raw=("data: "+json.dumps(payload)+"\n\n").encode()
+  store,client=install(monkeypatch,lambda request,r=raw,e=end:httpx.Response(200,headers={"content-type":"text/event-stream"},stream=Broken([r],e)),idle=0.03)
+  with TestClient(app) as api:response=api.post("/api/chat/stream",json=body())
+  terminal=[e for e in events(response) if e["type"] in ("completed","error","cancelled")]
+  assert len(terminal)==1 and terminal[0]["type"]=="error"
+  assert terminal[0]["payload"]["code"]==code and terminal[0]["payload"]["reason"]==reason
+  assert stream_routes.model.provider.state.verified is False
+  if code=="INCOMPLETE_OUTPUT":assert terminal[0]["payload"]["partial"] and "已收到正文" in terminal[0]["payload"]["answer"]
+  asyncio.run(client.aclose())
+
+def test_delta_after_stop_is_rejected(monkeypatch):
+ raw=b""
+ for text,finish in [("first","stop"),("late",None)]:
+  raw+=("data: "+json.dumps({"id":"x","object":"chat.completion.chunk","created":1,"model":"glm-5.1","choices":[{"index":0,"delta":{"content":text},"finish_reason":finish}]})+"\n\n").encode()
+ store,client=install(monkeypatch,lambda request:httpx.Response(200,headers={"content-type":"text/event-stream"},stream=Chunks([raw])))
+ with TestClient(app) as api:response=api.post("/api/chat/stream",json=body())
+ es=events(response)
+ assert es[-1]["type"]=="error" and "late" not in "".join(e["payload"]["text"] for e in es if e["type"]=="answer_delta")
+ asyncio.run(client.aclose())
+
+def test_nonstream_generation_all_types_shared_history_and_runtime(monkeypatch):
+ import backend.model.routes as routes
+ captured=[]
+ def handler(request):
+  payload=json.loads(request.content);captured.append(payload)
+  assert payload["stream"] is False
+  return httpx.Response(200,json={"id":"test","object":"chat.completion","created":1,"model":"glm-5.1","choices":[{"index":0,"message":{"role":"assistant","content":"欢迎来到天津大学，这是创作欢迎词。"},"finish_reason":"stop"}]})
+ store,client=install(monkeypatch,handler)
+ monkeypatch.setattr(routes,"runtime",store);monkeypatch.setattr(routes,"model",stream_routes.model)
+ with TestClient(app) as api:
+  for kind in ("social_post","guide_script","visit_plan"):
+   request=body(kind);response=api.post("/api/chat",json=request)
+   assert response.status_code==200 and response.json()["answer"].startswith("【创作内容】")
+   rid=next(reversed(store.records));record=store.records[rid]
+   assert record.mode=="content_generation" and record.generation_type==kind and record.terminal_count==1
+   assert any(e.request_id==rid and e.stage=="generation" and e.status=="completed" for e in store.events)
+   receipt={"event_id":str(uuid4()),"request_id":request["request_id"],"session_id":request["session_id"],"message_id":request["message_id"],"campus_id":request["campus_id"],"answer_chars":len(response.json()["answer"])}
+   assert api.post("/api/runtime/generation-rendered",json=receipt).status_code==200
+ assert len(captured)==3
+ asyncio.run(client.aclose())
