@@ -19,6 +19,9 @@ async def chat(request: ChatRequest):
             if not building or building.campus_id != request.campus_id:
                 raise DomainError("building_not_found", "建筑不存在或不属于所选校区", 422, request.request_id)
         response = await model.generate(request)
+        commit = getattr(model, "commit", None)
+        if commit is not None:
+            commit(request, response)
         record.status = "completed"
         runtime.emit(request.request_id, "request", "completed", duration_ms=(time.monotonic()-started)*1000)
         return response
