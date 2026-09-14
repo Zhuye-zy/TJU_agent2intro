@@ -1,12 +1,16 @@
 """C-owned bounded in-memory runtime. Not a durable audit database."""
 import asyncio
 import time
+import json
+import os
+from pathlib import Path
 from collections import OrderedDict, deque
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 from backend.common.errors import DomainError
 from backend.contracts import RuntimeEvent, EventData, EventPage, SceneAction, SceneAck, SceneAckResponse, ClientEventInput
+from backend.r2_contracts import GenerationRendered, RenderReceipt
 from backend.knowledge.service import knowledge
 @dataclass
 class RequestRecord:
@@ -18,11 +22,19 @@ class RequestRecord:
     task: asyncio.Task | None = None
     actions: dict = field(default_factory=dict)
     acks: dict = field(default_factory=dict)
+    message_id: UUID | None = None
+    campus_id: str | None = None
+    mode: str | None = None
+    generation_type: str | None = None
+    answer_chars: int = 0
+    terminal_count: int = 0
 class RuntimeStore:
     def __init__(self):
         self.records: OrderedDict[UUID, RequestRecord] = OrderedDict()
         self.events: deque[RuntimeEvent] = deque(maxlen=2000)
         self.client_ids: OrderedDict[UUID, tuple] = OrderedDict()
+        self.render_ids: OrderedDict[UUID, tuple] = OrderedDict()
+        self.traces: deque[dict] = deque(maxlen=4000)
         self.seq = 0
     def begin(self, request_id: UUID, session_id: UUID):
         now = time.monotonic()
@@ -42,6 +54,39 @@ class RuntimeStore:
             del self.records[terminal]
         self.records[request_id] = RequestRecord(session_id=session_id, task=asyncio.current_task())
         return self.records[request_id]
+    def attach_task(self, request_id: UUID):
+        record = self.get(request_id)
+        record.task = asyncio.current_task()
+        return record
+    def configure_generation(self, request_id: UUID, message_id: UUID, campus_id: str, mode: str, generation_type: str | None):
+        record = self.get(request_id)
+        record.message_id, record.campus_id, record.mode = message_id, campus_id, mode
+        record.generation_type = generation_type
+    def finish(self, request_id: UUID, status: str, answer_chars: int = 0) -> bool:
+        record = self.get(request_id)
+        if record.status != "running":
+            return False
+        record.status, record.answer_chars = status, answer_chars
+        record.terminal_count += 1
+        record.task = None
+        return True
+    def trace(self, request_id: UUID, *, action: str, stage: str, status: str, attempt: int = 1,
+              generation_type: str | None = None, elapsed_ms: float | None = None,
+              upstream_http_status: int | None = None, finish_reason: str | None = None,
+              body_chars: int | None = None, usage: dict | None = None, content_type: str | None = None):
+        self.get(request_id)
+        entry = {"request_id": str(request_id), "action": action, "generation_type": generation_type,
+                 "attempt": attempt, "stage": stage, "status": status,
+                 "monotonic_ms": round(time.monotonic() * 1000, 3), "elapsed_ms": elapsed_ms,
+                 "upstream_http_status": upstream_http_status, "finish_reason": finish_reason,
+                 "body_chars": body_chars, "usage": usage, "content_type": content_type}
+        self.traces.append(entry)
+        if "PYTEST_CURRENT_TEST" not in os.environ:
+            path = Path(".runtime/model-r2.jsonl")
+            path.parent.mkdir(exist_ok=True)
+            with path.open("a", encoding="utf-8") as output:
+                output.write(json.dumps(entry, ensure_ascii=False, separators=(",", ":")) + "\n")
+        return entry
     def get(self, request_id: UUID, session_id: UUID | None = None):
         record = self.records.get(request_id)
         if not record:
@@ -103,4 +148,25 @@ class RuntimeStore:
         while len(self.client_ids) > 1024:
             self.client_ids.popitem(last=False)
         return event
+    def generation_rendered(self, body: GenerationRendered):
+        record = self.get(body.request_id, body.session_id)
+        if record.mode != "content_generation" or record.status != "completed" or record.answer_chars <= 0:
+            raise DomainError("render_not_allowed", "请求没有可确认的完整生成结果", 409, body.request_id)
+        if record.message_id != body.message_id or record.campus_id != body.campus_id or record.answer_chars != body.answer_chars:
+            raise DomainError("render_mismatch", "渲染回执与生成结果不匹配", 409, body.request_id)
+        payload = body.model_dump(mode="json")
+        existing = self.render_ids.get(body.event_id)
+        if existing:
+            if existing[0] != payload:
+                raise DomainError("render_conflict", "重复渲染回执内容冲突", 409, body.request_id)
+            return RenderReceipt(event_id=body.event_id, request_id=body.request_id, status="duplicate")
+        if any(item[0]["request_id"] == str(body.request_id) and item[0]["message_id"] == str(body.message_id)
+               for item in self.render_ids.values()):
+            raise DomainError("render_conflict", "该生成结果已有渲染回执", 409, body.request_id)
+        self.emit(body.request_id, "generation", "rendered", {"count": body.answer_chars}, origin="frontend", event_id=body.event_id)
+        receipt = RenderReceipt(event_id=body.event_id, request_id=body.request_id, status="recorded")
+        self.render_ids[body.event_id] = (payload, receipt)
+        while len(self.render_ids) > 1024:
+            self.render_ids.popitem(last=False)
+        return receipt
 runtime = RuntimeStore()

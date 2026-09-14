@@ -117,7 +117,7 @@ def test_empty_answer_is_separate_sanitized_failure(monkeypatch):
     with TestClient(app) as client:
         response = client.post("/api/chat", json=body)
         events = client.get("/api/runtime/events", params={"request_id": body["request_id"]}).json()
-    assert response.status_code == 503 and response.json()["error"]["code"] == "model_empty_answer"
+    assert response.status_code == 503 and response.json()["error"]["code"] == "EMPTY_OUTPUT"
     assert service.provider.state.verified is False and "private_input_marker" not in str(events)
     _close(http_client)
 
@@ -132,7 +132,7 @@ def test_auth_error_redacts_gateway_body_header_and_prompt(monkeypatch):
     with TestClient(app) as client:
         response = client.post("/api/chat", json=body)
         events = client.get("/api/runtime/events", params={"request_id": body["request_id"]}).json()
-    assert response.status_code == 503 and response.json()["error"]["code"] == "model_auth_failed"
+    assert response.status_code == 503 and response.json()["error"]["code"] == "UPSTREAM_AUTH_ERROR"
     combined = response.text + str(events)
     assert all(marker not in combined for marker in ("raw_gateway_secret_marker", "private_prompt_marker", "isolated-test-placeholder"))
     _close(http_client)
@@ -151,7 +151,7 @@ def test_timeout_is_retryable_without_automatic_retry(monkeypatch):
     with TestClient(app) as client:
         response = client.post("/api/chat", json=_body())
     assert response.status_code == 503
-    assert response.json()["error"]["code"] == "model_timeout"
+    assert response.json()["error"]["code"] == "UPSTREAM_TIMEOUT"
     assert response.json()["error"]["retryable"] is True and calls == 1
     _close(http_client)
 
@@ -164,7 +164,7 @@ def test_non_json_response_is_sanitized(monkeypatch):
     _install(monkeypatch, service)
     with TestClient(app) as client:
         response = client.post("/api/chat", json=_body())
-    assert response.status_code == 503 and response.json()["error"]["code"] == "model_invalid_response"
+    assert response.status_code == 503 and response.json()["error"]["code"] == "UPSTREAM_PROTOCOL_ERROR"
     assert "raw_non_json_secret_marker" not in response.text
     _close(http_client)
 
@@ -179,16 +179,16 @@ def test_missing_config_never_marks_upstream_started(monkeypatch):
     body = _body()
     with TestClient(app) as client:
         response = client.post("/api/chat", json=body)
-    assert response.status_code == 503 and response.json()["error"]["code"] == "model_not_configured"
+    assert response.status_code == 503 and response.json()["error"]["code"] == "NOT_CONFIGURED"
     record = store.records[next(iter(store.records))]
     assert record.upstream_stop == "not_started" and service.provider.state.verified is False
 
 
 def test_rate_limit_server_error_and_network_are_distinct(monkeypatch):
     cases = [
-        (lambda request: httpx.Response(429, json={"error": {"message": "limited"}}), "model_rate_limited", 429),
-        (lambda request: httpx.Response(503, json={"error": {"message": "down"}}), "model_upstream_error", 503),
-        (lambda request: (_ for _ in ()).throw(httpx.ConnectError("offline", request=request)), "model_network_error", 503),
+        (lambda request: httpx.Response(429, json={"error": {"message": "limited"}}), "RATE_LIMITED", 429),
+        (lambda request: httpx.Response(503, json={"error": {"message": "down"}}), "UPSTREAM_PROTOCOL_ERROR", 503),
+        (lambda request: (_ for _ in ()).throw(httpx.ConnectError("offline", request=request)), "NETWORK_ERROR", 503),
     ]
     for handler, code, status in cases:
         service, http_client = _service(handler)
@@ -282,7 +282,7 @@ def test_fabricated_citation_rejects_answer(monkeypatch):
     _install(monkeypatch, service)
     with TestClient(app) as client:
         response = client.post("/api/chat", json=_body("校园事实", mode="campus_qa"))
-    assert response.status_code == 503 and response.json()["error"]["code"] == "model_invalid_citations"
+    assert response.status_code == 503 and response.json()["error"]["code"] == "UPSTREAM_PROTOCOL_ERROR"
     _close(http_client)
 
 
@@ -296,6 +296,19 @@ def test_here_without_selection_clarifies_without_upstream(monkeypatch):
         response = client.post("/api/chat", json=_body("这里是什么地方？", mode="campus_qa"))
     assert response.status_code == 200 and "请先选择" in response.json()["answer"]
     assert response.json()["model"] == "local-workflow" and response.json()["usage"] is None
+    _close(http_client)
+
+def test_general_followup_phrase_does_not_trigger_poi_clarification(monkeypatch):
+    calls=[]
+    def handler(request):
+        calls.append(json.loads(request.content))
+        return httpx.Response(200,json=_completion("简短回答"))
+    service,http_client=_service(handler);_install(monkeypatch,service);session_id=uuid4()
+    with TestClient(app) as client:
+        first=client.post("/api/chat",json=_body("第一问",session_id=session_id))
+        second=client.post("/api/chat",json=_body("刚才那个回答再简短一点",session_id=session_id))
+    assert first.status_code==200 and second.status_code==200 and len(calls)==2
+    assert [m["role"] for m in calls[1]["messages"]]==["system","user","assistant","user"]
     _close(http_client)
 
 
