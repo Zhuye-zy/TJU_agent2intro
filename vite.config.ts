@@ -5,7 +5,20 @@ const frontend = fileURLToPath(new URL('./frontend', import.meta.url));
 const shared = fileURLToPath(new URL('./shared', import.meta.url));
 export default defineConfig({
   root: frontend,
-  plugins: [react()],
+  plugins: [react(), {
+    name: 'local-private-paths',
+    configureServer(server) {
+      server.middlewares.use((request, response, next) => {
+        let pathname: string;
+        try { pathname = decodeURIComponent((request.url ?? '/').split('?')[0]).replaceAll('\\', '/'); }
+        catch { response.statusCode = 400; response.end('Invalid path'); return; }
+        if (/(^|\/)\.(?:env[^/]*|runtime|git)(?:\/|$)/i.test(pathname)) {
+          response.statusCode = 403; response.end('Private path'); return;
+        }
+        next();
+      });
+    }
+  }],
   envDir: false,
   build: { outDir: '../dist', emptyOutDir: true },
   server: {

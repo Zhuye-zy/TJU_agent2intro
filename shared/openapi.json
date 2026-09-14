@@ -134,7 +134,15 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ChatRequest"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/R2ChatRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChatRequest"
+                  }
+                ],
+                "title": "Request"
               }
             }
           },
