@@ -20,7 +20,7 @@ function operationError(error:unknown):string {
   const labels:Record<string,string>={
     map_not_configured:'在线地图未配置，基础导览和外部导航仍可使用。',
     map_proxy_not_ready:'地图安全代理尚未就绪。',
-    test_budget_exhausted:'今日地图调用额度已用完，请使用外部导航。',
+    test_budget_exhausted:'今日地图调用额度已用完，明日可继续使用应用内规划。',
     rate_limited:'操作过于频繁，请稍后再试。',
     operation_in_progress:'请等待当前地图操作结束。',
     destination_unverified:'目标没有核验的导航坐标，暂不能规划应用内路线。',
@@ -29,13 +29,36 @@ function operationError(error:unknown):string {
     route_no_data:'高德没有返回匹配地点或可用步行路线。',
     location_accuracy_unverified:'定位精度不足或为IP定位，可设置手动起点。',
     location_expired_or_inaccurate:'起点已过期或精度不足，请重新明确起点。',
-    map_timeout:'地图服务超时，可使用外部导航。',
+    map_timeout:'地图服务超时，请稍后重新规划。',
+    NETWORK_ERROR:'无法连接应用内地图接口，请检查本地服务是否运行。',
+    TRANSPORT_TIMEOUT:'应用内地图请求超时，请稍后重新规划。',
+    UPSTREAM_TIMEOUT:'高德响应超时，请稍后重新规划。',
+    RATE_LIMITED:'地图请求过于频繁，请稍后重新规划。',
+    VALIDATION_ERROR:'地图请求参数未通过校验，请重新选择起点和目的地。',
+    UPSTREAM_PROTOCOL_ERROR:'高德返回的数据格式异常，本次未生成有效路线。',
+    INVALID_USER_KEY:'高德 Key 无效或已停用。',
+    USERKEY_PLAT_NOMATCH:'高德 Key 平台类型与当前接口不匹配。',
+    INVALID_USER_SCODE:'高德安全密钥与 Key 不匹配。',
+    INVALID_USER_DOMAIN:'当前访问域名不在高德允许列表中。',
+    DAILY_QUERY_OVER_LIMIT:'高德今日服务额度已用完。',
+    INSUFFICIENT_PRIVILEGES:'高德未授予此 Key 对应服务权限。',
+    NOT_CONFIGURED:'应用尚未加载高德配置，请重启本地服务。',
+    NO_ROADS_NEARBY:'起点或目的地附近没有可用道路，请在道路上重新选点。',
+    OVER_DIRECTION_RANGE:'起终点超出高德步行规划范围，请选择同一校区内的起点。',
+    OUT_OF_SERVICE:'起点或目的地不在高德服务范围内。',
+    invalid_route_result:'路线距离或分步数据不完整，请重新规划。',
+    invalid_route_step:'高德返回的路线步骤缺少道路信息，请重新规划。',
+    invalid_coordinates:'地点坐标格式无效，请重新选点或匹配地点。',
+    budget_storage_invalid:'浏览器保存的地图用量数据损坏，请清除此站点的数据后刷新。',
+    budget_storage_unavailable:'浏览器无法保存地图用量，请允许此站点使用本地存储。',
+    operation_capacity:'本页操作次数达到上限，请刷新后继续。',
+    map_provider_failed:'高德定位插件未返回有效位置，可在地图上选择步行起点。',
     city_location_unavailable:'当前出口 IP 未返回可用城市位置。',
     permission_denied:'定位权限被拒绝，请使用手动起点。',
     location_timeout:'定位超时，请设置手动起点或稍后重试。',
     cancelled:'本地已停止；实际额度扣减以高德控制台为准。',
   };
-  return labels[code] ?? '地图操作未成功，可能涉及权限或服务不可用。可设置手动起点或使用外部导航。';
+  return labels[code] ? labels[code]+'（'+code+'）' : '地图操作发生未识别异常，请刷新后重试。（map_unexpected_error）';
 }
 export function CampusExplorer({campus,sessionId,focusPoiId,focusRevision,onSelect,onAssets,onAsk,onReadRoute}:Props) {
   const [items,setItems]=useState<POI[]>([]),[total,setTotal]=useState<number|null>(null),[nextCursor,setNextCursor]=useState<string|null>(null);
@@ -161,7 +184,7 @@ export function CampusExplorer({campus,sessionId,focusPoiId,focusRevision,onSele
       const matches=await onlineRef.current.findDestination(poi,freshUuid(),operation.controller.signal);
       if(!operation.current()||selectedRef.current?.id!==poi.id||campusRef.current!==campus)return;
       setDestinations(matches);onlineRef.current.showDestination(matches[0]);
-    }catch(error){if(operation.current())setRouteError(operationError(error));}
+    }catch(error){if(operation.current())setRouteError('目的地匹配失败：'+operationError(error));}
     finally{if(operation.current())setDestinationBusy(false);updateBudget();}
   }
   function confirmDestination(match:MapDestination){clearRoute();setDestination(match);setView('online');onlineRef.current?.showDestination(match);}
@@ -173,8 +196,10 @@ export function CampusExplorer({campus,sessionId,focusPoiId,focusRevision,onSele
     try{
       const result=await onlineRef.current.walk({route_id:freshUuid(),session_id:sessionId,campus_id:campus,destination_poi_id:poi.id,entrance_id:null,origin:position,user_initiated:true},poi,operation.controller.signal,destination??undefined);
       if(!operation.current()||selectedRef.current?.id!==poi.id||campusRef.current!==campus)return;
-      setRoute(result);onlineRef.current.showRoute(result.steps.map(step=>step.polyline));
-    }catch(error){if(operation.current())setRouteError(operationError(error));}
+      setRoute(result);
+      try{onlineRef.current.showRoute(result.steps.map(step=>step.polyline));}
+      catch{setRouteError('路线已取得，但地图绘制失败；下方可查看实际分步指引。（map_render_failed）');}
+    }catch(error){if(operation.current())setRouteError('步行规划失败：'+operationError(error));}
     finally{if(operation.current()){routeBusyRef.current=false;setRouteBusy(false);}updateBudget();}
   }
   const filteredSchematic=useMemo(()=>activeMap?items.filter(item=>item.campus_id===campus&&item.schematic_position?.map_id===activeMap.id):[],[items,activeMap,campus]);

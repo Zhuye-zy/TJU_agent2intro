@@ -28,7 +28,7 @@ export async function createOnlineMap(host: HTMLElement, config: MapPublicConfig
     if (service.origin !== location.origin) throw new Error('service_host_not_same_origin');
     (window as Window & {_AMapSecurityConfig?: {serviceHost:string}})._AMapSecurityConfig = {serviceHost:service.href.replace(/\/$/, '')};
     const loader = await import('@amap/amap-jsapi-loader');
-    namespace = await loader.default.load({key:settings.js_key!,version:'2.0',plugins:['AMap.Geolocation','AMap.CitySearch','AMap.PlaceSearch','AMap.Walking','AMap.Scale']}) as AMapApi;
+    namespace = await loader.default.load({key:settings.js_key!,version:'2.0',plugins:['AMap.Geolocation','AMap.CitySearch','AMap.Scale']}) as AMapApi;
     return namespace;
   });
   const map = await navigation.createMap(host, operationId, signal, true, {viewMode:'2D',center:[117.17,39.11],zoom:15}) as any;
