@@ -426,7 +426,7 @@ export class CampusSpeechController implements SpeechController {
         if (chars.length > available) {
           let cut = available;
           for (let i = available - 1; i >= Math.floor(available / 2); i -= 1) {
-            if (/[???;?:\s]/u.test(chars[i])) { cut = i + 1; break; }
+            if (/[\uFF0C\u3001\uFF1B;\uFF1A:\s]/u.test(chars[i])) { cut = i + 1; break; }
           }
           while (cut > 0 && /[A-Za-z0-9]/u.test(chars[cut - 1]) && /[A-Za-z0-9]/u.test(chars[cut] ?? '')) cut -= 1;
           spoken = chars.slice(0, cut).join('').trim();

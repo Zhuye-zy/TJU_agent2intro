@@ -97,7 +97,7 @@ Chrome 是 headless 会话，虽有真实解码、`play()` resolved、AudioConte
 本次实际命令与结果：
 
 - node scripts/check-adapters.mjs：PASS，当前 speech.js 重新构建（113 modules）。
-- node --test tests/speech/adapter.test.mjs tests/speech/controller.test.mjs：**20 tests / 20 pass / 0 fail**，其中 adapter 3、controller 17；全为隔离替身，不联网、不更新真实服务在线状态。
+- node --test tests/speech/adapter.test.mjs tests/speech/controller.test.mjs：**21 tests / 21 pass / 0 fail**，其中 adapter 3、controller 18；全为隔离替身，不联网、不更新真实服务在线状态。
 - npm.cmd run build：PASS，TypeScript noEmit + Vite，132 modules transformed。
 - git diff --check：PASS，仅 Windows CRLF 正常转换提示。
 

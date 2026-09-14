@@ -359,3 +359,12 @@ test('selected long text uses bounded FIFO segments; empty speech fails explicit
   assert.ok(adapter.played.every((s) => [...s].length <= 4000));
   assert.equal((await c.playFull(ids(), 'https://example.edu')).error_code, 'speech_empty');
 });
+
+test('B04 long first sentence prefers the Chinese comma before the 220-character limit', async () => {
+  const adapter = new FakeAdapter(), c = new CampusSpeechController({ adapter });
+  await c.enable(true);
+  const run = { ...ids(), mode: 'brief' };
+  const text = '校'.repeat(150) + '，' + '园'.repeat(150) + '。末句。';
+  await c.begin(run); await c.finish(run.generation_id, text);
+  assert.equal(adapter.played.join(''), '校'.repeat(150) + '，');
+});
