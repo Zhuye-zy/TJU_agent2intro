@@ -1,6 +1,6 @@
 # M/C only. Does not print secrets or copy .env into worktrees.
 $ErrorActionPreference='Stop'
-$root='E:\AI4TJU'
+$root=Split-Path -Parent $PSScriptRoot
 $path=Join-Path $root '.env'
 $lines=if (Test-Path -LiteralPath $path) { @(Get-Content -LiteralPath $path) } else { @(Get-Content -LiteralPath (Join-Path $root '.env.example')) }
 if ($lines | Where-Object { $_ -match '^CAMPUS_LLM_API_KEY=.+$' }) { Write-Host 'Existing project key retained.'; exit 0 }

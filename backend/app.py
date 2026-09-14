@@ -4,7 +4,9 @@ os.environ["LANGSMITH_TRACING"] = "false"
 os.environ["LANGCHAIN_TRACING_V2"] = "false"
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from starlette.exceptions import HTTPException
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from backend.common.config import get_settings
@@ -52,3 +54,22 @@ def health():
 app.include_router(model_router)
 app.include_router(speech_router)
 app.include_router(knowledge_router)
+
+
+# Build output is an explicit opt-in. API routes always take precedence.
+if os.environ.get("AI4TJU_SERVE_FRONTEND") == "1":
+    dist = (Path(__file__).resolve().parents[1] / "dist").resolve()
+    if not (dist / "index.html").is_file():
+        raise RuntimeError("Frontend build missing; run npm run build")
+    app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
+    if (dist / "vendor").is_dir():
+        app.mount("/vendor", StaticFiles(directory=dist / "vendor"), name="vendor")
+
+    @app.get("/{path:path}", include_in_schema=False)
+    def frontend(path: str):
+        if path == "api" or path.startswith("api/") or any(part.startswith(".") for part in path.split("/")):
+            return error_response("http_error", "?????", 404)
+        # No arbitrary filesystem lookup: public assets have dedicated mounts.
+        if "." in path:
+            return error_response("http_error", "?????", 404)
+        return FileResponse(dist / "index.html", headers={"Cache-Control": "no-cache"})
