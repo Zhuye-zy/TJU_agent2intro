@@ -18,7 +18,7 @@ import re
 from typing import Any, Protocol
 
 from backend.contracts import Building, CampusId, KnowledgeStatus, Source
-from backend.r2_contracts import CampusAssets, CampusCounts, Coverage, POI, POIPage
+from backend.r2_contracts import CampusAssets, CampusCounts, Coverage, POI, POIPage, KnowledgeRecord
 
 
 DATA_DIRECTORY = Path(__file__).resolve().parents[2] / "data" / "knowledge"
@@ -77,6 +77,8 @@ class LocalKnowledge:
         self._building_aliases: dict[str, tuple[str, ...]] = {}
         self._pois: dict[str, POI] = {}
         self._assets: dict[str, CampusAssets] = {}
+        self._facts: list[KnowledgeRecord] = []
+        self._registry: dict[str, dict] = {}
         self._version: str | None = None
         self._updated_at: str | None = None
         self._load()
@@ -90,6 +92,7 @@ class LocalKnowledge:
         raw_buildings = _load_array(buildings_path)
         raw_pois = _load_array(pois_path)
         raw_assets = _load_array(assets_path)
+        self._registry = {row["id"]: row for row in _load_array(self.data_directory / "SOURCE_REGISTRY.json") if isinstance(row, dict) and "id" in row}
         for row in raw_buildings:
             if not isinstance(row, dict):
                 continue
@@ -139,10 +142,21 @@ class LocalKnowledge:
                 })
             except (TypeError, ValueError):
                 continue
+        for row in _load_array(self.data_directory / "facts.json"):
+            fact = KnowledgeRecord.model_validate(row)
+            self._facts.append(fact)
+            source = fact.sources[0].model_copy(update={"id": fact.id, "title": fact.title, "snippet": fact.fact})
+            self._documents.append(_Document(source, tuple(fact.aliases), fact.entity_id, fact.applicable_at))
+        for poi in self._pois.values():
+            registered = next((self._registry[x] for x in poi.source_refs if x in self._registry), None)
+            if registered:
+                self._buildings[poi.id] = Building(id=poi.id, title=poi.name, campus_id=poi.campus_id, summary=poi.description,
+                    url=registered["canonical_url"], published_at=None, retrieved_at=registered["retrieved_at"], coordinates=None)
+                self._building_aliases[poi.id] = tuple(poi.aliases)
         if not self._documents and not self._buildings and not self._pois:
             return
         payload = b""
-        for path in (documents_path, buildings_path, pois_path, assets_path):
+        for path in (documents_path, buildings_path, pois_path, assets_path, self.data_directory / "facts.json", self.data_directory / "SOURCE_REGISTRY.json"):
             try:
                 payload += path.read_bytes()
             except OSError:
@@ -168,52 +182,66 @@ class LocalKnowledge:
     def get_building(self, id: str) -> Building | None:
         return self._buildings.get(id)
 
+    def _filter_digest(self, campus_id, category, query):
+        return sha256(json.dumps([self._version, campus_id, category, query], ensure_ascii=False).encode()).hexdigest()[:24]
+
     def _cursor(self, campus_id: CampusId, category: str | None, query: str, offset: int) -> str:
-        payload = json.dumps({"v": self._version, "c": campus_id, "g": category, "q": query, "o": offset}, separators=(",", ":"), ensure_ascii=True)
-        digest = sha256(payload.encode("utf-8")).hexdigest()[:12]
-        return base64.urlsafe_b64encode(f"{digest}.{payload}".encode("utf-8")).decode("ascii").rstrip("=")
+        payload = json.dumps({"f": self._filter_digest(campus_id, category, query), "o": offset}, separators=(",", ":"))
+        digest = sha256(payload.encode()).hexdigest()[:12]
+        return base64.urlsafe_b64encode(f"{digest}.{payload}".encode()).decode().rstrip("=")
 
     def _parse_cursor(self, cursor: str, campus_id: CampusId, category: str | None, query: str) -> int:
         try:
-            decoded = base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4)).decode("utf-8")
+            if len(cursor) > 256: raise ValueError
+            decoded = base64.b64decode(cursor + "=" * (-len(cursor) % 4), altchars=b"-_", validate=True).decode()
             digest, payload = decoded.split(".", 1)
             parsed = json.loads(payload)
-            if digest != sha256(payload.encode("utf-8")).hexdigest()[:12]:
-                raise ValueError
-            if (parsed.get("v"), parsed.get("c"), parsed.get("g"), parsed.get("q")) != (self._version, campus_id, category, query):
-                raise ValueError
-            offset = parsed.get("o")
-            if not isinstance(offset, int) or offset < 0:
-                raise ValueError
+            if digest != sha256(payload.encode()).hexdigest()[:12]: raise ValueError
+            if not isinstance(parsed, dict) or set(parsed) != {"f", "o"}: raise ValueError
+            if parsed["f"] != self._filter_digest(campus_id, category, query): raise ValueError
+            offset = parsed["o"]
+            if type(offset) is not int or not 0 <= offset <= len(self._pois): raise ValueError
             return offset
-        except (ValueError, UnicodeDecodeError, json.JSONDecodeError, binascii.Error):
+        except (ValueError, UnicodeDecodeError, binascii.Error, TypeError):
             raise ValueError("invalid_cursor") from None
 
     def list_pois(self, campus_id: CampusId, category: str | None, query: str, limit: int, cursor: str | None) -> POIPage:
-        normalized_query = query.strip().lower()
-        offset = self._parse_cursor(cursor, campus_id, category, normalized_query) if cursor else 0
-        candidates = [poi for poi in self._pois.values() if poi.campus_id == campus_id and (category is None or poi.category == category)]
-        if normalized_query:
-            tokens = _tokens(normalized_query)
-            candidates = [poi for poi in candidates if tokens & _tokens(" ".join((poi.id, poi.name, *poi.aliases, poi.description)))]
-        candidates.sort(key=lambda poi: poi.id)
+        query = query.strip().lower()
+        offset = self._parse_cursor(cursor, campus_id, category, query) if cursor else 0
+        candidates = [p for p in self._pois.values() if p.campus_id == campus_id and (category is None or p.category == category)]
+        if query:
+            direct = [p for p in candidates if any(query in x.lower() for x in (p.id,p.name,*p.aliases))]
+            candidates = direct or [p for p in candidates if len(_tokens(query) & _tokens(" ".join((p.name,*p.aliases,p.description)))) >= 2]
+        candidates.sort(key=lambda p: (0 if query and query in [p.name.lower(),*[x.lower() for x in p.aliases]] else 1,p.id))
         page = candidates[offset:offset + limit]
-        next_offset = offset + len(page)
-        return POIPage(items=page, total=len(candidates), next_cursor=(self._cursor(campus_id, category, normalized_query, next_offset) if next_offset < len(candidates) else None), version=self._version)
+        following = offset + len(page)
+        return POIPage(items=page,total=len(candidates),next_cursor=self._cursor(campus_id,category,query,following) if following < len(candidates) else None,version=self._version)
 
     def get_poi(self, id: str) -> POI | None:
         return self._pois.get(id)
 
     def get_coverage(self) -> Coverage:
-        def campus_counts(campus_id: CampusId) -> CampusCounts:
-            pois = [poi for poi in self._pois.values() if poi.campus_id == campus_id]
-            facts = len([document for document in self._documents if document.source.campus_id == campus_id]) + len(pois)
-            return CampusCounts(campus_id=campus_id, facts=facts, pois=len(pois), verified_coordinates=len([poi for poi in pois if poi.location and poi.location.quality != "pending"]), usable_media=len(self._assets.get(campus_id, CampusAssets(maps=[], media=[], version=None)).media))
-        return Coverage(status="ready" if self._version else "not_implemented", version=self._version, source_pages=6 if self._version else 0, fact_count=sum(item.facts for item in (campus_counts("weijinlu"), campus_counts("beiyangyuan"))), chunk_count=0, campuses=[campus_counts("weijinlu"), campus_counts("beiyangyuan")])
+        campuses = []
+        for campus in ("weijinlu","beiyangyuan"):
+            pois = [p for p in self._pois.values() if p.campus_id == campus]
+            verified = [p for p in pois if p.location and p.location.quality != "pending"
+                        and p.location.verified_at and p.location.coordinate_source
+                        and p.verification_status == "verified"]
+            campuses.append(CampusCounts(campus_id=campus, facts=sum(f.campus_id==campus for f in self._facts),
+                pois=len(pois), verified_coordinates=len(verified),
+                usable_media=len(self.get_campus_assets(campus).media)))
+        urls = {d.source.url for d in self._documents}
+        urls.update(r["canonical_url"] for r in self._registry.values())
+        return Coverage(status="ready" if self._version else "not_implemented",version=self._version,
+                        source_pages=len(urls),fact_count=len(self._facts) if self._facts else None,
+                        chunk_count=0,campuses=campuses)
 
     def get_campus_assets(self, campus_id: CampusId) -> CampusAssets:
         assets = self._assets.get(campus_id, CampusAssets(maps=[], media=[], version=None))
         return assets.model_copy(update={"version": self._version})
+
+    def get_assets(self, campus_id: CampusId) -> CampusAssets:
+        return self.get_campus_assets(campus_id)
 
     def _score(self, document: _Document, query: str, query_tokens: set[str]) -> int:
         searchable = " ".join((
@@ -241,12 +269,14 @@ class LocalKnowledge:
         query_tokens = _tokens(query)
         if not query_tokens:
             return []
+        if any(term in query for term in ("几点", "营业时间", "开放时间", "门禁", "施工", "现在开放")):
+            return []
         ranked = [
             (self._score(document, query, query_tokens), index, document.source)
             for index, document in enumerate(self._documents)
             if document.source.campus_id == campus_id
         ]
-        return [source for score, _, source in sorted(ranked, key=lambda row: (-row[0], row[1])) if score >= 1][:limit]
+        return [source for score, _, source in sorted(ranked, key=lambda row: (-row[0], row[1])) if score >= 2][:limit]
 
 
 class UnavailableKnowledge(LocalKnowledge):

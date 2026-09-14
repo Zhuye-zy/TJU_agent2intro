@@ -1,79 +1,99 @@
-"""Explicit, offline corpus maintenance helper; queries never invoke it.
-
-It intentionally accepts already-reviewed JSON rather than fetching arbitrary
-URLs.  Operators can validate a staging file, preview its replacement, then
-atomically install it with a timestamped backup.  Restore is equally explicit.
-"""
+"""Validate reviewed offline bundles and replace with rollback; never fetch URLs."""
 from __future__ import annotations
-
 import argparse
+from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
 import shutil
 import tempfile
+from backend.contracts import Source, Building
+from backend.r2_contracts import POI, KnowledgeRecord, CampusAssets
+from .service import DATA_DIRECTORY
 
-from .service import DATA_DIRECTORY, _load_array
+MANAGED = ("documents.json","buildings.json","pois.json","assets.json","SOURCE_REGISTRY.json","facts.json")
+def _rows(directory, name):
+    value=json.loads((directory/name).read_text(encoding="utf-8"))
+    if not isinstance(value,list) or any(not isinstance(x,dict) for x in value):
+        raise ValueError(f"{name}: expected object array")
+    return value
 
+def inspect(directory: Path) -> dict[str,int]:
+    rows={name:_rows(directory,name) for name in MANAGED}
+    for name,data in rows.items():
+        ids=[x.get("id") for x in data] if name!="assets.json" else [x.get("campus_id") for x in data]
+        if len(ids)!=len(set(ids)) or any(x is None for x in ids):raise ValueError(f"{name}: invalid/duplicate identity")
+    registry={x["id"]:x for x in rows["SOURCE_REGISTRY.json"]}
+    for row in registry.values():
+        if not row.get("canonical_url","").startswith("https://") or not row.get("retrieved_at"):raise ValueError("invalid source")
+    pois={x["id"]:POI.model_validate(x) for x in rows["pois.json"]}
+    for poi in pois.values():
+        if not poi.source_refs or not set(poi.source_refs)<=registry.keys():raise ValueError("orphan POI source")
+    for row in rows["documents.json"]:
+        copy=dict(row)
+        for extra in ("aliases","building_id","temporal_note"):copy.pop(extra,None)
+        Source.model_validate(copy)
+    for row in rows["buildings.json"]:
+        copy=dict(row);copy.pop("aliases",None); Building.model_validate(copy)
+    for row in rows["facts.json"]:
+        f=KnowledgeRecord.model_validate(row)
+        if f.entity_id and (f.entity_id not in pois or pois[f.entity_id].campus_id!=f.campus_id):raise ValueError("orphan/cross-campus fact")
+        if not f.sources:raise ValueError("fact requires sources")
+        for src in f.sources:
+            if src.id not in registry or src.url!=registry[src.id]["canonical_url"] or src.campus_id!=f.campus_id:raise ValueError("invalid fact source")
+    maps={}
+    for row in rows["assets.json"]:
+        a=CampusAssets.model_validate({k:v for k,v in row.items() if k!="campus_id"}|{"version":None})
+        for item in [*a.maps,*a.media]:
+            if item.campus_id!=row["campus_id"]:raise ValueError("cross-campus asset")
+            if not item.local_path.startswith("/assets/campus/") or ".." in item.local_path:raise ValueError("invalid asset path")
+        for m in a.maps:
+            if m.id in maps or not set(m.source_refs)<=registry.keys():raise ValueError("invalid map")
+            maps[m.id]=m
+    for poi in pois.values():
+        pos=poi.schematic_position
+        if pos and (pos.map_id not in maps or maps[pos.map_id].campus_id!=poi.campus_id or pos.source_ref not in registry):raise ValueError("invalid schematic reference")
+    return {name:len(value) for name,value in rows.items()}
 
-MANAGED = ("documents.json", "buildings.json", "pois.json", "assets.json", "SOURCE_REGISTRY.json")
-
-
-def inspect(directory: Path) -> dict[str, int]:
-    return {name: len(_load_array(directory / name)) for name in MANAGED}
-
-
-def replace_from_staging(staging: Path, dry_run: bool) -> dict[str, int]:
-    if not staging.is_dir():
-        raise ValueError("staging directory does not exist")
-    counts = inspect(staging)
-    missing = [name for name in MANAGED if not (staging / name).is_file()]
-    if missing:
-        raise ValueError(f"staging is missing managed files: {', '.join(missing)}")
-    if dry_run:
-        return counts
-    backup = DATA_DIRECTORY / ".backup-last"
-    temporary = Path(tempfile.mkdtemp(prefix="knowledge-import-", dir=DATA_DIRECTORY.parent))
+def replace_from_staging(staging:Path,dry_run:bool,destination:Path=DATA_DIRECTORY)->dict[str,int]:
+    counts=inspect(staging)
+    if dry_run:return counts
+    destination=destination.resolve(); staging=staging.resolve()
+    if staging==destination:raise ValueError("staging must differ from destination")
+    # Validate before creating or changing any active file. Preserve every complete
+    # backup, including the previous one; one-file os.replace is not a transaction.
+    destination.mkdir(parents=True,exist_ok=True)
+    backup=destination/".backups"/datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    backup.mkdir(parents=True)
+    existed={name:(destination/name).exists() for name in MANAGED}
+    for name,present in existed.items():
+        if present:shutil.copy2(destination/name,backup/name)
+    temporary=Path(tempfile.mkdtemp(prefix=".import-",dir=destination))
+    changed=[]
     try:
+        for name in MANAGED:shutil.copy2(staging/name,temporary/name)
         for name in MANAGED:
-            payload = json.loads((staging / name).read_text(encoding="utf-8"))
-            if not isinstance(payload, list):
-                raise ValueError(f"{name} is not a JSON array")
-            (temporary / name).write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        if backup.exists():
-            shutil.rmtree(backup)
-        backup.mkdir()
-        for name in MANAGED:
-            shutil.copy2(DATA_DIRECTORY / name, backup / name)
-            os.replace(temporary / name, DATA_DIRECTORY / name)
-    finally:
-        shutil.rmtree(temporary, ignore_errors=True)
+            os.replace(temporary/name,destination/name);changed.append(name)
+    except BaseException:
+        for name in reversed(changed):
+            if existed[name]:shutil.copy2(backup/name,destination/name)
+            else:(destination/name).unlink(missing_ok=True)
+        raise
+    finally:shutil.rmtree(temporary,ignore_errors=True)
+    (destination/".last-backup").write_text(str(backup),encoding="utf-8")
     return counts
 
+def restore_last_backup(destination:Path=DATA_DIRECTORY)->None:
+    destination=destination.resolve()
+    backup=Path((destination/".last-backup").read_text(encoding="utf-8")).resolve()
+    if backup.parent!=destination/".backups":raise ValueError("backup outside managed directory")
+    inspect(backup)
+    replace_from_staging(backup,False,destination)
 
-def restore_last_backup() -> None:
-    backup = DATA_DIRECTORY / ".backup-last"
-    if not backup.is_dir() or any(not (backup / name).is_file() for name in MANAGED):
-        raise ValueError("no complete backup available")
-    for name in MANAGED:
-        os.replace(backup / name, DATA_DIRECTORY / name)
-    backup.rmdir()
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Validate or atomically install reviewed campus knowledge JSON")
-    parser.add_argument("--staging", type=Path)
-    parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--restore-last-backup", action="store_true")
-    args = parser.parse_args()
-    if args.restore_last_backup:
-        restore_last_backup()
-        print("restored .backup-last")
-    elif args.staging:
-        print(json.dumps(replace_from_staging(args.staging, args.dry_run), ensure_ascii=False, sort_keys=True))
-    else:
-        print(json.dumps(inspect(DATA_DIRECTORY), ensure_ascii=False, sort_keys=True))
-
-
-if __name__ == "__main__":
-    main()
+def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--staging",type=Path);parser.add_argument("--dry-run",action="store_true");parser.add_argument("--restore-last-backup",action="store_true")
+    args=parser.parse_args()
+    if args.restore_last_backup:restore_last_backup();print("restored validated backup")
+    else:print(json.dumps(replace_from_staging(args.staging,args.dry_run) if args.staging else inspect(DATA_DIRECTORY),ensure_ascii=False,sort_keys=True))
+if __name__=="__main__":main()

@@ -1,4 +1,46 @@
 [
-  {"campus_id":"weijinlu","maps":[],"media":[]},
-  {"campus_id":"beiyangyuan","maps":[],"media":[]}
+  {
+    "campus_id": "weijinlu",
+    "maps": [
+      {
+        "id": "weijinlu-schematic-2017",
+        "campus_id": "weijinlu",
+        "local_path": "/assets/campus/weijinlu-schematic-2017.svg",
+        "kind": "schematic",
+        "width": 1000,
+        "height": 800,
+        "source_refs": [
+          "src-maps-2017"
+        ],
+        "creator": "AI4TJU project; independently drawn schematic",
+        "usage_basis": "Original abstract SVG; only relative factual layout read from official 2017 map, no source image redistributed.",
+        "version": "r2-reviewed-2017-v1",
+        "data_as_of": "2017-06-01",
+        "supports_precise_navigation": false
+      }
+    ],
+    "media": []
+  },
+  {
+    "campus_id": "beiyangyuan",
+    "maps": [
+      {
+        "id": "beiyangyuan-schematic-2017",
+        "campus_id": "beiyangyuan",
+        "local_path": "/assets/campus/beiyangyuan-schematic-2017.svg",
+        "kind": "schematic",
+        "width": 1000,
+        "height": 800,
+        "source_refs": [
+          "src-maps-2017"
+        ],
+        "creator": "AI4TJU project; independently drawn schematic",
+        "usage_basis": "Original abstract SVG; only relative factual layout read from official 2017 map, no source image redistributed.",
+        "version": "r2-reviewed-2017-v1",
+        "data_as_of": "2017-06-01",
+        "supports_precise_navigation": false
+      }
+    ],
+    "media": []
+  }
 ]

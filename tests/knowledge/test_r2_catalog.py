@@ -7,7 +7,7 @@ from backend.knowledge.service import LocalKnowledge
 def test_catalog_paginates_without_repeating_entities():
     knowledge = LocalKnowledge()
     first = knowledge.list_pois("weijinlu", None, "", 10, None)
-    assert first.total == 45
+    assert first.total == 50
     assert len(first.items) == 10 and first.next_cursor
     second = knowledge.list_pois("weijinlu", None, "", 10, first.next_cursor)
     assert not {poi.id for poi in first.items} & {poi.id for poi in second.items}
