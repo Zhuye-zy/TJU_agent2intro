@@ -38,14 +38,14 @@ C的后端：
 ```
 B语音不需要LLMkey；缺ASR须PARTIAL，不把chat作为语音服务。高德配置类型要区分；用户发来的未辨明类型配置不能擅自放入公开JS Key字段。可在主目录 scripts/Configure-Map.ps1 隐藏配置，不要求把秘密再次发到聊天。地图接口NOT_CONFIGURED不能阻塞无Key部分。
 
-主应用体验与测试步骤见 docs/R2/LOCAL_TEST_GUIDE.md；现在是M0基线，新增地图/流式等stub未实现，不能以按钮或HTTP在线当业务通过。
+主应用体验与测试步骤见 docs/R2/LOCAL_TEST_GUIDE.md；M1-R2已集成，实际结论R2_PARTIAL；详见FINAL_REPORT，不能以按钮或HTTP在线当现场验收。
 
 ## 协调与交接
 
 先读AGENTS、原OPEN_SOURCE_DECISION/CONTRACTS/OWNERSHIP/PARALLEL_RUN及第一轮handoff，再读R2/BASELINE/CONTRACTS/OWNERSHIP/ACCEPTANCE_MATRIX与本轮任务包。
 窗口只编辑OWNERSHIP范围。缺共享字段/入口/依赖立即提交 docs/requests/<窗口>/R2-主题.md：真实报错、拟改字段/包版本、公共路径、可继续的独立部分。
 M审查后给独立COORD_COMMIT；窗口先提交自己的改动，暂停该接口一次，`git cherry-pick <COORD_COMMIT>`，记录已同步号；不重复cherry-pick。不允许窗口自己改锁。冲突通知M，不整块ours/theirs。
-四窗口最终交接 docs/R2/handoffs/{A,B,C,D}.md：窗口、DONE/PARTIAL/BLOCKED、实际树/分支、BASE_COMMIT_R2、最终提交(消息给出即可)、改动范围、实际复用、测试及未验证、真实API状态、B语音/人物能力、D资料/地图/图片统计和版本、所需协调、已停止修改是/否。
+四窗口最终交接 docs/handoffs/R2_{A,B,C,D}.md：窗口、DONE/PARTIAL/BLOCKED、实际树/分支、BASE_COMMIT_R2、最终提交(消息给出即可)、改动范围、实际复用、测试及未验证、真实API状态、B语音/人物能力、D资料/地图/图片统计和版本、所需协调、已停止修改是/否。
 各自提交并推送原work分支，不能提交根.env/日志/录音/依赖。M1先独立评审和返修单/复验，再经用户明确授权按D→C→B→A合并，遵守仓库owner审核门禁。M0到R2_READY即交接，不能假称本轮所有业务已完成。
 
 ## 一句话启动
@@ -60,3 +60,5 @@ M审查后给独立COORD_COMMIT；窗口先提交自己的改动，暂停该接�
 
 ## 导航用量协调
 TJU_比赛路线改为JS API首选；共享模块和测试见NAVIGATION_COORDINATION.md。地图初始化/定位/在线POI/步行规划分计，默认真实小样本预算1/1/0/1，四窗口先跑零配额fixture，不自动做SDK真实探针。
+
+M1-R2最终原树头：A442e32d、B610cfc0、C91f9ab5、Dfc83625；全部已停止并合入。真实验收以REVIEW/FINAL_REPORT为准，M0段落仅保留准备记录。

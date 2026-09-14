@@ -89,3 +89,6 @@ A在加载SDK前将window._AMapSecurityConfig.serviceHost设置为location.origi
 
 ## TJU_比赛定位/导航与用量协调
 最新实现映射、按类别计数、JS优先方案及零配额隔离测试详见[NAVIGATION_COORDINATION.md](NAVIGATION_COORDINATION.md)，覆盖上文曾选定的REST主路线；不另造RouteResponse。模块已实现，UI/安全代理/真实定位语音仍待联调。
+
+## M1装配后的实际映射
+上文M0状态列为历史。当前POST /api/chat兼容完整R2请求，可非流式执行三种生成；/api/chat/stream使用同provider与唯一后端历史。A唯一管理客户端两个lane和可见状态，B只收增量。MapPublicConfig.route_backend=js_api，UserPosition.source支持amap_geolocation/manual，manual的accuracy_m=null。JS路线由浏览器SDK经固定同源安全代理到高德；可选REST端点独立，不自动双发。SpeechController optional replay/continueRemaining/playVerbatimUrl不破坏原stub。最终OpenAPI见shared/openapi.json，r2.schema.json保留协调版本。

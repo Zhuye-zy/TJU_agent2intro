@@ -20,3 +20,5 @@ D 的新接口与旧 buildings/search 必须是同一资料源的不同视图。
 第一轮交接保存在 docs/handoffs/；R2 写新的 docs/R2/handoffs/，不覆盖旧证据。每个窗口遵守 GitHub 审核门禁，提交自己分支并等待用户在 M1 指定合并。
 
 M新增公共导航/预算模块frontend/src/transport/{amap-navigation,map-budget}.ts；A必须复用并装配，不另写无预算SDK入口。地图模块测试tests/maps/navigation.test.mjs由M维护（本项覆盖C对tests/maps默认所有权），C仍管代理/REST后端测试。JS API为路线首选，REST仅另配对应Key的备选；见NAVIGATION_COORDINATION。
+
+M1-R2最终原树头：A442e32d、B610cfc0、C91f9ab5、Dfc83625；全部已停止并合入。真实验收以REVIEW/FINAL_REPORT为准，M0段落仅保留准备记录。

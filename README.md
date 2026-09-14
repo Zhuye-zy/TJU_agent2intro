@@ -1,85 +1,26 @@
 # 珂莱塔校园导游
+天津大学双校区数字人工作台，沿用 React/Vite、FastAPI、Live2D 和 LangGraph。角色为用户指定的 kelaita（珂莱塔），素材来源只用于形象，产品是校园导游。
 
-基于 React/Vite、FastAPI、Live2D 与 LangGraph 的天津大学数字人导游工作台。首版使用用户指定的 kelaita（珂莱塔）素材和角色语气，提供校园问答、内容生成、多轮聊天、资料来源与运行日志。
+当前 **R2_PARTIAL / BROWSER_QA_PENDING**：三类内容生成、指定glm-5.1聊天/追问、真实日志和取消已通过后端实测；双校区知识、点位与历史相对示意图已集成。构建及前后端回归通过。中文TTS已合成有效音频，真实浏览器自动播报/人物渲染仍待现场验收。
 
-M1 已按 D→C→B→A 合并并推送。指定 **glm-5.1** 已通过真实一问一追问，校园检索、中文 TTS 合成和后端取消已实测。**BROWSER_QA_PENDING**：浏览器工具因无法可靠确认当前 URL 停止，合并后的画面、播放和输入法仍需本机现场体验；尚不声明 FRAMEWORK_CORE_PASS 或比赛全部通过。
-
-## 在这台电脑上体验
-
-当前应用地址：**http://127.0.0.1:8000**。主目录已有依赖、人物素材和未跟踪的模型配置；可直接打开此地址。
-
-以后重新启动，在 PowerShell 执行：
-
+## 本机启动
 ```powershell
 cd E:\AI4TJU
-.\scripts\start-app.ps1
-```
-
-更新代码后运行 ` .\scripts\start-app.ps1 -Build ` 前，先停止已有实例：
-
-```powershell
 .\scripts\stop.ps1
 .\scripts\start-app.ps1 -Build
 ```
+打开 **http://127.0.0.1:8000**。当前电脑已有依赖、角色素材和后端模型配置。新环境先按锁运行 `scripts/Install.ps1`；Git不含密钥及受限人物/Core素材。
 
-脚本按自身目录定位项目，只监听 127.0.0.1，输出本项目 PID/端口。停止时核对 PID 和创建时间，不杀其他 node/python。若 PowerShell 阻止脚本，可对本次进程使用 `powershell -NoProfile -ExecutionPolicy Bypass -File E:\AI4TJU\scripts\start-app.ps1`，无需修改系统执行策略。
+[完整本地使用与测试步骤](docs/R2/LOCAL_TEST_GUIDE.md) · [独立验收报告](docs/R2/FINAL_REPORT.md) · [四窗口评审](docs/R2/REVIEW.md) · [返修台账](docs/R2/REWORK.md)
 
-详细操作与检查步骤见 **[本地使用与测试指南](docs/USER_GUIDE.md)**。
+## 现在可以尝试
+- 双校区目录、关键词/分类/分页、本地示意图与外部高德名称搜索。
+- 校园问答、普通多轮聊天，以及讲解词/参观计划/社交文案三种独立生成。
+- 真SSE正文、来源、日志、取消/重试；显式开启的简述、全文、选段语音控制。
 
-## 建议先试这几项
+尚缺：经核验地理坐标、足够的授权实景照片、ASR服务、真实听音与浏览器完整验收。高德在线/授权定位/应用内步行规划代码已适配，但实际Key未配置，未在线验证；本轮高德配额消耗0。无Key不阻塞文字/知识建设。2017示意图不代表当前道路或入口，角色不是3D/可捏脸模型。
 
-1. 切到“普通聊天”，输入“你好，请介绍你的名字和导游职责”；再追问上一轮内容。
-2. 切到“北洋园校区”，点击“郑东图书馆”下的“介绍这里”，展开回答下方的来源。
-3. 请求处理中打开“运行日志”，应先看到 request/model 的 started，完成后出现 completed。
-4. 点击回答下的“播放”或勾选“自动播报”；播放期间试“停止”。实际听音和人物 speaking 状态仍需你本机确认。
-5. 生成一段较长内容后点“停止”，再重试或清空会话，检查没有迟到回复与旧音频。
+## 开发和边界
+`scripts/start-dev.ps1` 为5173/8000开发模式；`scripts/check-r2.ps1` 为统一离线回归。前端所有模型请求只走自有后端。根.env和运行日志忽略，不复制到工作树。原integration/m0和四个work分支保留，审核政策见[REVIEW_POLICY](docs/REVIEW_POLICY.md)。
 
-## 安装、开发与接口检查
-
-本机已经安装，不需要每次重复 setup。新环境必须先安装 Node >=22.12 与 Python 3.11，然后准备有权使用的本地素材：
-
-```powershell
-.\scripts\setup.ps1 -Python 'D:\Program Files\Python311\python.exe'
-.\scripts\Configure-Local.ps1    # 仅在没有模型密钥时，本机隐藏输入
-.\scripts\start-app.ps1 -Build
-```
-
-锁文件：npm `package-lock.json` 与 uv `uv.lock`；setup 使用 npm ci / uv sync --frozen。人物及 Cubism Core 不随 GitHub 源码发布，素材准备详见指南和许可记录。
-
-开发模式：
-
-```powershell
-.\scripts\stop.ps1
-.\scripts\start-dev.ps1
-# 页面 http://127.0.0.1:5173；后端 http://127.0.0.1:8000
-.\scripts\check-api.ps1
-# 可选：真实调用一次指定 GLM
-.\scripts\check-api.ps1 -Chat
-```
-
-所有模型请求由自有后端发送。密钥只在主目录被忽略的 .env 或进程环境，不放入前端、日志、报告、工作树或 GitHub。网关及模型保持用户指定值，不自动切换供应商。
-
-## 已知范围
-
-- 知识库：7 条有来源摘要、2 个北洋园建筑；关键词检索，坐标为 null。2017 年地图仅为历史资料。
-- 形象：Live2D；缩放与背景是展示设置。没有三维、捏脸、皮肤/配饰系统、动作文件或准确口型。
-- 语音：Edge TTS 查询到 14 个中文音色并生成真实音频；未使用珂莱塔克隆音色。ASR 缺少独立服务，中文识别未完成。
-- 取消：本地任务可停止；已发出的 GLM/TTS 请求只报告上游停止 unconfirmed。
-- 当前 HTTP 成功与测试通过不等于浏览器端全流程通过。
-
-[统一验收报告](docs/FINAL_REPORT.md) · [实际开源复用](docs/OPEN_SOURCE_DECISION.md) · [接口契约](docs/CONTRACTS.md) · [协作目录](docs/PARALLEL_RUN.md) · [第三方许可](THIRD_PARTY_NOTICES.md) · [下一阶段](docs/NEXT_PHASE.md)
-
-协作提交请先推送功能分支并创建 PR，由 @xxwan320 审核并最终合并；具体保护范围及流程见 [推送与合并审核规则](docs/REVIEW_POLICY.md)。
-
-## R2 增量优化准备
-
-继续原珂莱塔校园导游与原分支，当前为M0-R2协作准备，业务修复由四窗口并行实施。已确认生成模式门控/模型不匹配、数据覆盖不足、语音队列和校区隔离缺口；尚未宣称修复完成。
-
-- [真实基线与故障证据](docs/R2/BASELINE.md)
-- [本地启动与效果试测](docs/R2/LOCAL_TEST_GUIDE.md)
-- [原工作树与四窗口启动指令](docs/R2/PARALLEL_RUN.md)
-- [接口契约](docs/R2/CONTRACTS.md)及[验收矩阵](docs/R2/ACCEPTANCE_MATRIX.md)
-
-地图采用无Key双校区本地图＋有Key在线增强；授权定位、按需路线和外部导航分别验收。校园通行条件独立核验。缺Key不阻塞聊天、内容生成、语音和知识建设。
-
-TJU_比赛导航协调补丁：JS API优先；地图初始化/定位/在线POI/路线分开计数，隔离测试不消耗高德配额。调用模块和测试已加入，页面与安全代理待A/C装配，见[导航与测试预算](docs/R2/NAVIGATION_COORDINATION.md)。
+[开源选型](docs/OPEN_SOURCE_DECISION.md) · [第三方使用与许可](THIRD_PARTY_NOTICES.md) · [后续比赛能力](docs/NEXT_PHASE.md)。成熟组件直接依赖与设计参考明确分开，角色/SDK授权不随代码许可证自动改变。

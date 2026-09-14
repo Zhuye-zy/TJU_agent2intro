@@ -75,7 +75,7 @@ async def main(args):
     return 0 if all(c.get("ok") for c in cases) and cases[-1].get("history_marker_recalled") else 1
 
 if __name__=="__main__":
-    parser=argparse.ArgumentParser();parser.add_argument("--base",default="http://127.0.0.1:8000");parser.add_argument("--output",default="docs/R2/evidence/m1-live-model.json")
+    parser=argparse.ArgumentParser();parser.add_argument("--base",default="http://127.0.0.1:8000");parser.add_argument("--output",default=".runtime/M1-R2/assessment/live-model.json")
     args=parser.parse_args()
     if not args.base.startswith(("http://127.0.0.1:","http://localhost:")):parser.error("Only the local application backend is supported")
     raise SystemExit(asyncio.run(main(args)))
