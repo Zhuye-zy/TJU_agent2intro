@@ -4,7 +4,7 @@
 
 ## 实际完成
 
-- 将 M0 检查页改为直接可操作的“海小棠数字人校园导游”工作台：主舞台突出人物与校园点位，右侧为对话，来源随答案展开，运行日志为抽屉；桌面与小屏均有响应式布局，没有桌宠、伴侣、游戏或营销首页功能。
+- 将 M0 检查页改为直接可操作的“珂莱塔数字人校园导游”工作台：主舞台突出人物与校园点位，右侧为对话，来源随答案展开，运行日志为抽屉；桌面与小屏均有响应式布局，没有桌宠、伴侣、游戏或营销首页功能。
 - 复用 React 19 的 hooks 状态能力、M0 的同源 `transport`/冻结 contracts，以及 B 暴露的 `createAvatarAdapter`、`createSpeechAdapter`。没有复制 OLV/AIRI UI 源码，没有新增依赖或改锁文件。
 - AvatarAdapter 挂载区为大尺寸舞台；`idle/listening/thinking/speaking/error` 由请求与语音事件驱动。renderer 未 ready 时只显示“人物渲染尚未接入”及文字身份印记，不生成替代人物。
 - 三种模式、校区选择、D 建筑列表/资料卡、`selected_building_id` 和“介绍这里”已接入冻结 transport。只实现 `CampusCardSceneAdapter(kind=2d)`，执行后发送 scene ack；没有可用 3D 入口。

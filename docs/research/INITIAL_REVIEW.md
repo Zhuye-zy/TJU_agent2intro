@@ -86,9 +86,9 @@ AIRI备选实际读过的核心路径：
 - [OLV后端LICENSE](https://github.com/Open-LLM-VTuber/Open-LLM-VTuber/blob/992309c0aa19845960228f880013d4685fde93b5/LICENSE)：MIT，版权所有者Yi-Ting Chiu 2025，样例人物明确例外。必须保留完整原文。
 - [OLV前端LICENSE](https://github.com/Open-LLM-VTuber/Open-LLM-VTuber-Web/blob/d176e7df2366952e3bacbf12cf9a8b18a4315932/LICENSE)：Open-LLM-VTuber License 1.0，以Apache 2.0附加条件表达；文本允许教育/学术/非商业用途，付费托管、商业重品牌再分发、商业嵌入要求单独商业许可。不是纯Apache2.0或MIT。校园教育演示的暂定选型不构成未来收费发行授权。
 - `src/renderer/WebSDK/Core/LICENSE.md`：Live2D Proprietary Software License；`Framework/LICENSE.md`：Live2D Open Software/SDK Release License相关条款，必须分别保留，不能以应用许可证覆盖。本次读了声明/链接，未做完整商业发行授权结论。
-- [OLV LICENSE-Live2D.md](https://github.com/Open-LLM-VTuber/Open-LLM-VTuber/blob/992309c0aa19845960228f880013d4685fde93b5/LICENSE-Live2D.md)：已读样例数据条款相关部分，Shizuku有不得改名/设定等个别约束。不能把样例换名叫海小棠就视为自有资产。
+- [OLV LICENSE-Live2D.md](https://github.com/Open-LLM-VTuber/Open-LLM-VTuber/blob/992309c0aa19845960228f880013d4685fde93b5/LICENSE-Live2D.md)：已读样例数据条款相关部分，Shizuku有不得改名/设定等个别约束。不能把样例换名叫珂莱塔就视为自有资产。
 - [AIRI LICENSE](https://github.com/moeru-ai/airi/blob/9f30a1977e09b3d68759492c5f8f775eb4502184/LICENSE)：MIT，Neko Ayaka 2024-PRESENT；不覆盖另有许可证的模型、第三方Live2D运行时与其他依赖。
-- kelaita资源来自用户指定的本地目录，其作者、授权、可再分发/改名边界以素材盘点为准，本子任务未直接读其本地素材，不能声称授权已完备。kelaita的展示名/海小棠产品身份也需保留来源说明。
+- kelaita资源来自用户指定的本地目录，其作者、授权、可再分发/改名边界以素材盘点为准，本子任务未直接读其本地素材，不能声称授权已完备。kelaita的展示名/珂莱塔产品身份也需保留来源说明。
 
 ## 6. 审查证据清单与未验证能力
 

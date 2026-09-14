@@ -4,7 +4,7 @@
 
 ## 结论与产品边界
 
-本项目产品是数字人校园导游。desktop-pet 只作为首版人物素材来源；素材格式不决定应用框架。用户在盘点期间明确“形象使用 kelaita”，因此首版形象路线已选定为该 Live2D Cubism 3 资源，人物选择不再构成阻塞。此项用户授权确定使用方向，不等同于第三方素材对外再分发许可。本地原角色明确标记为珂莱塔（Kelaita），必须保留原角色来源，不能把素材本身记为已核验的原创海小棠。
+本项目产品是数字人校园导游。desktop-pet 只作为首版人物素材来源；素材格式不决定应用框架。用户在盘点期间明确“形象使用 kelaita”，因此首版形象路线已选定为该 Live2D Cubism 3 资源，人物选择不再构成阻塞。此项用户授权确定使用方向，不等同于第三方素材对外再分发许可。本地原角色明确标记为珂莱塔（Kelaita），必须保留原角色来源，不能把素材本身记为已核验的原创珂莱塔。
 
 建议冻结可替换 AvatarAdapter、独立 renderer、资源 manifest 与 capabilities，以 kelaita 为首版本机资源接入方向。模型和语音调用归各自模块，人物不直接调用 LLM。M0 可以提供显式未实现的 renderer stub 与资源配置占位；具体渲染实现归 B 窗口。对外分发许可仍未核验，M0 不得把用户选择写成已取得原权利方授权。
 
@@ -41,7 +41,7 @@
 - 唯一 `Live2d_expression0.exp3.json` 用于切换水印参数 Param24，不能当作情绪表达；现有 model_dict 的 emotionMap 为空。
 - 有嘴形参数不等于已有音素或口型时间戳。未运行验证实际播放、渲染、嘴形同步或打断。
 
-`Open-LLM-VTuber/model_dict.json` 列出 mao_pro、shizuku、kelaita 三个名称；kelaita 描述为“珂莱塔桌宠（BongoCat 风格）”，不含“海小棠”。
+`Open-LLM-VTuber/model_dict.json` 列出 mao_pro、shizuku、kelaita 三个名称；kelaita 描述为“珂莱塔桌宠（BongoCat 风格）”，不含“珂莱塔”。
 
 ## 语音模型候选与边界
 
