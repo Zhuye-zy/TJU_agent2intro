@@ -83,6 +83,7 @@ export function sanitizeSpeechText(raw: string, final = true): Sanitized {
       if (labelEnd < 0) { if (!final) pendingAt = index; break; }
       if (!final && labelEnd === raw.length - 1) { pendingAt = index; break; }
       const label = raw.slice(index + 1, labelEnd);
+      if (/^source:/i.test(label)) { index = labelEnd + 1; continue; }
       if (raw[labelEnd + 1] === '(') {
         const urlEnd = raw.indexOf(')', labelEnd + 2);
         if (urlEnd < 0) { if (!final) pendingAt = index; break; }
@@ -126,6 +127,7 @@ export function sanitizeSpeechText(raw: string, final = true): Sanitized {
 /** Only call after the UI has established that the user explicitly asked to hear a URL verbatim. */
 export function sanitizeExplicitUrlSpeechText(raw: string): string {
   const withoutCode = raw
+    .replace(/\[source:[^\]]*(?:\]|$)/gi, '')
     .replace(/```[\s\S]*?(?:```|$)/g, '')
     .replace(/`[^`]*(?:`|$)/g, '')
     .replace(/!\[[^\]]*\]\([^)]*(?:\)|$)/g, '')

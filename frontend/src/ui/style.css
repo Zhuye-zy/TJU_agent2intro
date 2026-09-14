@@ -13,3 +13,5 @@
 .schematic-layer{height:auto;min-height:0;background-size:100% 100%;background-position:0 0;transform-origin:0 0}
 .schematic-viewport[hidden],.online-map-wrap[hidden]{display:none}
 .speech-controls{flex-wrap:wrap}.speech-controls button{font-size:11px}.map-budget{margin-top:10px;font-size:11px;color:var(--muted)}
+
+.destination-matches{margin:12px 0;padding:14px;border:1px solid var(--line);border-radius:12px;background:#fff}.destination-matches>p{font-size:12px;color:var(--muted)}.destination-matches>button{display:flex;flex-direction:column;gap:4px;width:100%;text-align:left;border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:6px;background:#fff}.destination-matches>button.selected,.route-result button[aria-current=step]{background:#e3f3fa;border-color:var(--blue)}.destination-matches span{font-size:12px;color:var(--muted)}.route-step-guide{padding:12px;background:#eef7fb;border-radius:10px}.route-step-guide button{margin:4px 6px 0 0}.route-result li>button{text-align:left;width:100%;border:1px solid var(--line);border-radius:6px;padding:8px;background:white}.route-result li{margin:6px 0}

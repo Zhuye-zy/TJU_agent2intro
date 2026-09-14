@@ -17,6 +17,18 @@ await build({
 const moduleUrl = pathToFileURL(`${process.cwd()}/.runtime/adapter-build/controller-r2.js`).href;
 const { CampusSpeechController, IncrementalSpeechSanitizer, sanitizeSpeechText } = await import(moduleUrl);
 
+test('source IDs are silent in full and streaming speech at every split',()=>{
+ const raw='第一步[source:local-one]。第二步。\n[source:web-official]';
+ const expected=sanitizeSpeechText(raw).text;
+ assert.equal(expected,'第一步。第二步。');
+ for(let split=1;split<raw.length;split++){
+  const sanitizer=new IncrementalSpeechSanitizer();
+  const chunks=[...sanitizer.append(raw.slice(0,split)),...sanitizer.append(raw.slice(split)),...sanitizer.finish('第一步。第二步。')];
+  assert.ok(!chunks.join('').includes('source:'));
+  assert.ok(!chunks.join('').includes('official'));
+ }
+});
+
 const ids = () => ({
   request_id: crypto.randomUUID(),
   session_id: crypto.randomUUID(),

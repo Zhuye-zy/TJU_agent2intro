@@ -6,6 +6,12 @@ import type { POI, StreamEvent } from '../../shared/r2.ts';
 import { classifyAmapLocation } from '../../frontend/src/ui/navigation-model.ts';
 import { applyStreamEvent, campusMediaFor, consumeR2Stream, exportGeneratedText, mergePoiPages, newTask, readableParagraphs, shouldFollowLatest, StreamTaskError, validateGenerationDraft, responseWithDeadline } from '../../frontend/src/ui/r2-model.ts';
 
+test('streamed citations never appear in answer paragraphs at any token boundary',()=>{
+  const marker='[source:web-official]';
+  for(let i=1;i<=marker.length;i++)assert.deepEqual(readableParagraphs('正文。'+marker.slice(0,i)),['正文。']);
+  assert.deepEqual(readableParagraphs('第一步[source:one]。\n\n第二步[source:two]。'),['第一步。','第二步。']);
+});
+
 const requestId = '11111111-1111-4111-8111-111111111111';
 const sessionId = '22222222-2222-4222-8222-222222222222';
 const messageId = '33333333-3333-4333-8333-333333333333';

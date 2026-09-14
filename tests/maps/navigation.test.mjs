@@ -119,3 +119,31 @@ test('manual origins remain explicit and do not invent GPS accuracy',async()=>{
  const another=new AmapNavigation(config,new MapBudget(),async()=>f.sdk);
  await assert.rejects(another.walk({...req,origin:{...req.origin,accuracy_m:0}},poi(),sig()),{code:'location_expired_or_inaccurate'});
 });
+
+test('live place matches enable walking for a directory POI without coordinates',async()=>{
+ const f=fakeSdk();let query,options,target;
+ f.sdk.PlaceSearch=class{constructor(opts){options=opts}search(text,cb){query=text;cb('complete',{poiList:{pois:[{id:'amap-fixture',name:'Fixture Library',address:'Fixture campus',location:{lng:1.02,lat:1.03}}]}})}};
+ const original=f.sdk.Walking;f.sdk.Walking=class extends original{search(origin,destination,cb){target=destination;super.search(origin,destination,cb)}};
+ const nav=new AmapNavigation(config,new MapBudget({limits}),async()=>f.sdk);
+ const local={...poi(),name:'Fixture Library',location:null,verification_status:'pending'};
+ const [match]=await nav.findDestination(local,'search',sig());
+ assert.ok(query.startsWith('天津大学卫津路校区 '));assert.equal(options.citylimit,true);
+ await assert.rejects(nav.walk(request(),local,sig(),{...match}),{code:'destination_match_expired'});
+ await assert.rejects(nav.walk({...request(),origin:{...position(),accuracy_m:null}},local,sig(),match),{code:'location_expired_or_inaccurate'});
+ const route=await nav.walk({...request(),origin:{...position(),source:'manual',accuracy_m:null}},local,sig(),match);
+ assert.equal(route.steps.length,1);assert.deepEqual(target,[1.02,1.03]);
+ assert.equal(local.location,null);assert.equal(local.verification_status,'pending');assert.equal(f.calls.walk,1);
+});
+
+test('cancelled or empty place searches do not fabricate destination coordinates',async()=>{
+ const f=fakeSdk();let callback;
+ f.sdk.PlaceSearch=class{search(text,cb){callback=cb}};
+ const nav=new AmapNavigation(config,new MapBudget({limits}),async()=>f.sdk);
+ const controller=new AbortController();const pending=nav.findDestination({...poi(),name:'Fixture'},'search',controller.signal);
+ await new Promise(resolve=>setImmediate(resolve));controller.abort();await assert.rejects(pending,{code:'cancelled'});
+ callback('complete',{poiList:{pois:[]}});
+ f.sdk.PlaceSearch=class{search(text,cb){cb('complete',{poiList:{pois:[]}})}};
+ const empty=new AmapNavigation(config,new MapBudget({limits}),async()=>f.sdk);
+ await assert.rejects(empty.findDestination({...poi(),name:'Fixture'},'empty',sig()),{code:'destination_not_found'});
+ assert.equal(f.calls.walk,0);
+});

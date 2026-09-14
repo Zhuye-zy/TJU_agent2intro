@@ -19,8 +19,17 @@ def test_citation_format_and_urls_do_not_discard_basic_answer():
         assert "source:unknown" not in answer
         assert [r.id for r in refs] == ["one"]
     answer, refs = _citations("Answer [source:one]", [source()], True, uuid4())
+    assert answer == "Answer"
     assert "资料提示" not in answer
     assert refs[0].id == "one"
+
+
+def test_step_citations_are_collected_once_at_end_not_in_body():
+    answer, refs = _citations("第一步[source:one]。\n第二步[source:one]。\n[source:unknown]", [source()], True, uuid4())
+    assert answer.startswith("第一步。\n第二步。")
+    assert "[source:" not in answer
+    assert "来源待核验" not in answer
+    assert [r.id for r in refs] == ["one"]
 
 
 def test_search_query_excludes_credentials_and_precise_coordinates():
