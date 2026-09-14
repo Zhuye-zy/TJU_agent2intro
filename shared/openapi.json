@@ -4915,6 +4915,12 @@
       },
       "MapPublicConfig": {
         "properties": {
+          "route_backend": {
+            "type": "string",
+            "const": "js_api",
+            "title": "Route Backend",
+            "default": "js_api"
+          },
           "js_key": {
             "anyOf": [
               {
@@ -6022,7 +6028,10 @@
           },
           "source": {
             "type": "string",
-            "const": "amap_geolocation",
+            "enum": [
+              "amap_geolocation",
+              "manual"
+            ],
             "title": "Source"
           },
           "accuracy_m": {

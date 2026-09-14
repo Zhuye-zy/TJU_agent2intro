@@ -18,3 +18,5 @@ D 的新接口与旧 buildings/search 必须是同一资料源的不同视图。
 素材只从项目内相对 URL 运行。D 不动珂莱塔素材；B 不提交原始人物/SDK包。校园图片的合法副本由 D 管，不得用生成图冒充实景。
 
 第一轮交接保存在 docs/handoffs/；R2 写新的 docs/R2/handoffs/，不覆盖旧证据。每个窗口遵守 GitHub 审核门禁，提交自己分支并等待用户在 M1 指定合并。
+
+M新增公共导航/预算模块frontend/src/transport/{amap-navigation,map-budget}.ts；A必须复用并装配，不另写无预算SDK入口。地图模块测试tests/maps/navigation.test.mjs由M维护（本项覆盖C对tests/maps默认所有权），C仍管代理/REST后端测试。JS API为路线首选，REST仅另配对应Key的备选；见NAVIGATION_COORDINATION。

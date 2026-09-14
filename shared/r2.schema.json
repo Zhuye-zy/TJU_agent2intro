@@ -1588,6 +1588,12 @@
       },
       "additionalProperties": false,
       "properties": {
+        "route_backend": {
+          "const": "js_api",
+          "default": "js_api",
+          "title": "Route Backend",
+          "type": "string"
+        },
         "js_key": {
           "anyOf": [
             {
@@ -2620,7 +2626,10 @@
           "type": "string"
         },
         "source": {
-          "const": "amap_geolocation",
+          "enum": [
+            "amap_geolocation",
+            "manual"
+          ],
           "title": "Source",
           "type": "string"
         },
@@ -2675,7 +2684,10 @@
               "type": "string"
             },
             "source": {
-              "const": "amap_geolocation",
+              "enum": [
+                "amap_geolocation",
+                "manual"
+              ],
               "title": "Source",
               "type": "string"
             },

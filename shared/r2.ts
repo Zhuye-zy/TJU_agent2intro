@@ -16,7 +16,7 @@ export interface CampusAssets {maps:CampusMap[];media:CampusMedia[];version:stri
 export interface ProviderCrosswalk {poi_id:string;provider:'amap';provider_poi_id:string;matched_at:string;match_status:'verified'|'pending';retention_basis:string}
 export interface Coverage {status:'ready'|'not_implemented';version:string|null;source_pages:number|null;fact_count:number|null;chunk_count:number|null;campuses:{campus_id:CampusId;facts:number;pois:number;verified_coordinates:number;usable_media:number}[]}
 export interface MapStatus {local_map:'ready'|'not_implemented';external_navigation:'ready'|'not_implemented';online_map:'NOT_CONFIGURED'|'NOT_IMPLEMENTED'|'UNVERIFIED'|'VERIFIED'|'FAILED';js_key_configured:boolean;security_key_configured:boolean;web_service_key_configured:boolean;precise_location:'not_implemented'|'NOT_CONFIGURED'|'UNVERIFIED'|'VERIFIED'|'FAILED';in_app_routing:'not_implemented'|'NOT_CONFIGURED'|'UNVERIFIED'|'VERIFIED'|'FAILED'}
-export interface MapPublicConfig {js_key:string|null;service_host:'/api/maps/amap/_AMapService';status:MapStatus}
+export interface MapPublicConfig {route_backend:'js_api';js_key:string|null;service_host:'/api/maps/amap/_AMapService';status:MapStatus}
 export interface ExternalNavigation {poi_id:string;url:string|null;kind:'coordinate'|'search'|'unavailable';precision:'verified_destination'|'name_search'|'unknown'}
 type Payloads = {
  accepted:{session_id:string;message_id:string;campus_id:CampusId;mode:Mode};
@@ -43,6 +43,8 @@ export interface SpeechController {
  playSegment(run:SpeechRun,text:string,segment_id:string):Promise<AdapterResult>;
  playFull(run:SpeechRun,text:string):Promise<AdapterResult>;
  stop(reason:'user'|'new_request'|'clear'|'campus_change'|'cancel'):Promise<void>;
+ replay?():Promise<AdapterResult>; continueRemaining?():Promise<AdapterResult>;
+ playVerbatimUrl?(run:SpeechRun,text:string,segment_id:string,explicitRequest:boolean):Promise<AdapterResult>;
  pause():Promise<AdapterResult>; resume():Promise<AdapterResult>;
  listVoices():Promise<Voice[]>;
  subscribe(callback:(state:SpeechProgress)=>void):()=>void;
@@ -50,7 +52,7 @@ export interface SpeechController {
 }
 export const CAMPUS_ALIASES:Record<CampusId,readonly string[]> = {weijinlu:['卫津路','卫津路校区','老校区'],beiyangyuan:['北洋园','北洋园校区','新校区']};
 
-export interface UserPosition {lng:number;lat:number;crs:'GCJ02';source:'amap_geolocation';accuracy_m:number|null;timestamp:string}
+export interface UserPosition {lng:number;lat:number;crs:'GCJ02';source:'amap_geolocation'|'manual';accuracy_m:number|null;timestamp:string}
 export interface RouteRequest {route_id:string;session_id:string;campus_id:CampusId;destination_poi_id:string;entrance_id:string|null;origin:UserPosition;user_initiated:true}
 export interface RouteResponse {route_id:string;destination_poi_id:string;provider:'amap';crs:'GCJ02';distance_m:number;duration_s:number|null;steps:{instruction:string;distance_m:number;polyline:[number,number][]}[];campus_access:'unverified'|'verified';access_source_refs:string[]}
 export interface RouteCancelResponse {route_id:string;local_stopped:boolean;upstream_stop:'not_started'|'unconfirmed'|'confirmed'}

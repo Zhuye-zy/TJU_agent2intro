@@ -81,3 +81,5 @@ cd E:\AI4TJU
 - [接口契约](docs/R2/CONTRACTS.md)及[验收矩阵](docs/R2/ACCEPTANCE_MATRIX.md)
 
 地图采用无Key双校区本地图＋有Key在线增强；授权定位、按需路线和外部导航分别验收。校园通行条件独立核验。缺Key不阻塞聊天、内容生成、语音和知识建设。
+
+TJU_比赛导航协调补丁：JS API优先；地图初始化/定位/在线POI/路线分开计数，隔离测试不消耗高德配额。调用模块和测试已加入，页面与安全代理待A/C装配，见[导航与测试预算](docs/R2/NAVIGATION_COORDINATION.md)。
