@@ -2,7 +2,7 @@
 
 M0主目录：E:\AI4TJU，集成分支integration/m0。没有云远程，不发布。
 
-BASE_COMMIT为轻量标签 **m0-bootstrap** 所指的完整提交。标签只创建一次、禁止移动。每个工作树的.runtime/BASE_COMMIT保存实际40位哈希；运行 `git rev-parse refs/tags/m0-bootstrap` 可核验。Git提交不能在自身跟踪文件内包含自己的最终哈希，故用不可移动标签及本机生成记录精确定位；四个工作树必须同指该提交，不能从各自不同HEAD启动。
+BASE_COMMIT为轻量标签 **m0-bootstrap** 所指的完整提交。标签只创建一次、禁止移动。每个工作树的.runtime/BASE_COMMIT保存实际40位哈希；运行 `git rev-parse refs/tags/m0-bootstrap` 可核验。Git提交不能在自身跟踪文件内包含自己的最终哈希，故用不可移动标签及本机生成记录精确定位；四个工作树均从该提交创建；若M0出现协调修复，必须全体一致同步，不能从不同HEAD启动。实际launch_commit及coord_commit见.runtime/parallel-state.json和M0_COORDINATION.md。
 
 |窗口|绝对目录|分支|前端/后端端口|
 |---|---|---|---|
