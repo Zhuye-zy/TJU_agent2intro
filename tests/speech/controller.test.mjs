@@ -169,6 +169,17 @@ test('pause and resume expose the actual adapter boundary', async () => {
   assert.equal((await controller.resume()).status, 'ready');
 });
 
+test('verbatim URL playback is isolated behind an explicit-request guard', async () => {
+  const adapter = new FakeAdapter();
+  const controller = new CampusSpeechController({ adapter });
+  await controller.enable(true);
+  const run = ids();
+  assert.equal((await controller.playVerbatimUrl(run, '网址是 https://www.tju.edu.cn/', 'url', false)).error_code, 'explicit_url_request_required');
+  assert.equal((await controller.playVerbatimUrl(run, '网址是 https://www.tju.edu.cn/', 'url', true)).status, 'ready');
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.match(adapter.played.at(-1), /https:\/\/www\.tju\.edu\.cn\//);
+});
+
 test('autoplay rejection retains the current segment and explicit resume plays it', async () => {
   const adapter = new FakeAdapter({ blocked: true });
   const controller = new CampusSpeechController({ adapter });

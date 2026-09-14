@@ -121,6 +121,18 @@ export function sanitizeSpeechText(raw: string, final = true): Sanitized {
   return { text: cleanLines(output), pendingRawChars: pendingAt < 0 ? 0 : raw.length - pendingAt };
 }
 
+/** Only call after the UI has established that the user explicitly asked to hear a URL verbatim. */
+export function sanitizeExplicitUrlSpeechText(raw: string): string {
+  const withoutCode = raw
+    .replace(/```[\s\S]*?(?:```|$)/g, '')
+    .replace(/`[^`]*(?:`|$)/g, '')
+    .replace(/!\[[^\]]*\]\([^)]*(?:\)|$)/g, '')
+    .replace(/<[^>]*(?:>|$)/g, '')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/giu, '$1，$2')
+    .replace(/\[(?:\s*\d+(?:\s*[-,，]\s*\d+)*)\]|【(?:\s*\d+(?:\s*[-,，]\s*\d+)*)】/g, '');
+  return cleanLines(withoutCode);
+}
+
 function sentenceEnds(text: string, from: number): number[] {
   const ends: number[] = [];
   const pattern = /[。！？!?；;](?:[”’）】])?/gu;
@@ -206,6 +218,7 @@ export const SPEECH_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   speech_final_mismatch: '最终答案与已播增量不一致，已停止以避免重复播报。',
   nothing_to_replay: '当前没有可重播的语音段。',
   nothing_to_continue: '当前回答没有未播报的剩余段。',
+  explicit_url_request_required: '只有用户明确要求逐字朗读网址时才能使用此入口。',
 };
 
 export interface SpeechControllerOptions extends SpeechAdapterOptions { adapter?: CampusSpeechAdapter }
@@ -367,6 +380,20 @@ export class CampusSpeechController implements SpeechController {
     const remaining = previous.remaining;
     this.lastResponse = null;
     return this.playFull(run, remaining);
+  }
+
+  /** Separate guarded path for an explicit user request to read a URL verbatim. */
+  async playVerbatimUrl(run: SpeechRun, text: string, segmentId: string, explicitRequest: boolean): Promise<AdapterResult> {
+    if (!explicitRequest) return { status: 'failed', error_code: 'explicit_url_request_required' };
+    const spoken = sanitizeExplicitUrlSpeechText(text);
+    if (!spoken) return { status: 'failed', error_code: 'speech_empty' };
+    if ([...spoken].length > MAX_SEGMENT_CHARS) return { status: 'failed', error_code: 'speech_queue_overflow' };
+    const ready = await this.begin({ ...run, mode: 'full' });
+    if (ready.status !== 'ready') return ready;
+    const state = this.activeRun!;
+    state.finished = true;
+    this.enqueueItem(state, spoken, segmentId);
+    return { status: 'ready' };
   }
 
   listVoices(): Promise<Voice[]> { return this.adapter.listVoices(); }
