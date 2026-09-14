@@ -65,3 +65,6 @@ Cubism Core独立专有条款、Framework条款及kelaita素材来源分别保�
 ## M0证据与交接
 
 真实构建/启动及契约测试见docs/M0_VERIFICATION.md；路径/分支/基线见PARALLEL_RUN。模型密钥存在、服务在线、模型真实调用成功三个状态分开。M0不验证真实GLM/语音/渲染/知识，归对应窗口。早期缺包阻塞已解除，初次暂定判断留存在research/INITIAL_REVIEW.md作为历史证据，不再作为当前主路线。
+
+## R2增量（2026-09-14）
+保留原组件组合路线、React/Vite、Pixi/Live2D、FastAPI/OpenAI SDK/LangGraph/edge-tts；不改成桌宠。新增直接依赖eventsource-parser4.1.0和可选@amap/amap-jsapi-loader1.0.1。前者实际读取README、src/parse.ts、package.json和MIT LICENSE，后者实际读取发布包README、src/index.ts及package.json（MIT元数据，无单独LICENSE）。固定版本与integrity在package-lock.json，源码审查记录docs/R2/DEPENDENCIES.md。HTTP路线代理继续用现有httpx；本地图用本地SVG/图片与现有React交互，无需Key和额外大型地图框架。

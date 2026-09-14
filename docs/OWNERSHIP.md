@@ -15,3 +15,6 @@ M 独占：AGENTS.md、shared/**（含OpenAPI）、backend/contracts.py、backen
 M0创建的stub之后归对应窗口；不要以stub由M创建为由等待M实现。若需要装配新导出或共享变更，按PARALLEL_RUN立即提阻塞请求。A可以在其App内调用冻结transport与B adapter；B仅实现既有adapter导出，避免A/B同时改App或状态context。
 
 会话语义：A只持不含秘密的会话ID和展示消息缓存；C持用于LLM的消息历史，最多20条user/assistant消息、合计32000字符，不含system。成功才提交一个完整轮次，失败/取消不追加；同一session最多一个运行chat。最多1000会话，闲置1小时淘汰。M0尚未实现此历史存储，C不得更改约定。
+
+## R2增量所有权
+当前扩展路径和职责以[R2/OWNERSHIP.md](R2/OWNERSHIP.md)为准，仍使用原工作树；本文件保留第一轮分工历史。

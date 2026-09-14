@@ -10,7 +10,11 @@ foreach ($item in $items) {
  $process=Get-Process -Id $item.pid -ErrorAction SilentlyContinue
  if (-not $process) { continue }
  if ($process.StartTime.ToUniversalTime().Ticks.ToString() -ne $item.started_ticks) { Write-Warning "PID $($item.pid) was reused; left untouched."; continue }
- Stop-Process -Id $process.Id -ErrorAction Stop
+ try { Stop-Process -Id $process.Id -ErrorAction Stop }
+ catch {
+  # A recorded parent can exit as its child stops; disappearance is successful.
+  if (Get-Process -Id $item.pid -ErrorAction SilentlyContinue) { throw }
+ }
  Write-Host "Stopped owned PID $($item.pid) ($($item.role))"
 }
 # Keep receipt as a local audit; next launch ignores exited processes.

@@ -70,3 +70,14 @@ cd E:\AI4TJU
 [统一验收报告](docs/FINAL_REPORT.md) · [实际开源复用](docs/OPEN_SOURCE_DECISION.md) · [接口契约](docs/CONTRACTS.md) · [协作目录](docs/PARALLEL_RUN.md) · [第三方许可](THIRD_PARTY_NOTICES.md) · [下一阶段](docs/NEXT_PHASE.md)
 
 协作提交请先推送功能分支并创建 PR，由 @xxwan320 审核并最终合并；具体保护范围及流程见 [推送与合并审核规则](docs/REVIEW_POLICY.md)。
+
+## R2 增量优化准备
+
+继续原珂莱塔校园导游与原分支，当前为M0-R2协作准备，业务修复由四窗口并行实施。已确认生成模式门控/模型不匹配、数据覆盖不足、语音队列和校区隔离缺口；尚未宣称修复完成。
+
+- [真实基线与故障证据](docs/R2/BASELINE.md)
+- [本地启动与效果试测](docs/R2/LOCAL_TEST_GUIDE.md)
+- [原工作树与四窗口启动指令](docs/R2/PARALLEL_RUN.md)
+- [接口契约](docs/R2/CONTRACTS.md)及[验收矩阵](docs/R2/ACCEPTANCE_MATRIX.md)
+
+地图采用无Key双校区本地图＋有Key在线增强；授权定位、按需路线和外部导航分别验收。校园通行条件独立核验。缺Key不阻塞聊天、内容生成、语音和知识建设。

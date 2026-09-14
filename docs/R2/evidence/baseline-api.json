@@ -13,7 +13,6 @@
       "usage": null,
       "error_code": null,
       "requires_selection": true,
-      "started_while_pending": true,
       "events": {
         "events": [
           {
@@ -53,7 +52,8 @@
         ],
         "next_cursor": 94,
         "truncated": false
-      }
+      },
+      "started_observed": true
     },
     {
       "name": "generation_plain",
@@ -66,7 +66,6 @@
       "usage": null,
       "error_code": "model_mismatch",
       "requires_selection": false,
-      "started_while_pending": true,
       "events": {
         "events": [
           {
@@ -140,7 +139,8 @@
         ],
         "next_cursor": 98,
         "truncated": false
-      }
+      },
+      "started_observed": true
     },
     {
       "name": "chat_control",
@@ -157,7 +157,6 @@
       },
       "error_code": null,
       "requires_selection": false,
-      "started_while_pending": true,
       "events": {
         "events": [
           {
@@ -231,7 +230,8 @@
         ],
         "next_cursor": 102,
         "truncated": false
-      }
+      },
+      "started_observed": true
     }
   ],
   "health": {

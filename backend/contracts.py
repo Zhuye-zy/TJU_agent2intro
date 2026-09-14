@@ -1,8 +1,8 @@
-"""M-owned wire schema v1.0.0. UTC ISO-8601 dates; no client system prompt/history."""
+"""M-owned wire schema v1.1.0. UTC ISO-8601 dates; no client system prompt/history."""
 from typing import Literal
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
-CONTRACT_VERSION = "1.0.0"
+CONTRACT_VERSION = "1.1.0"
 CampusId = Literal["weijinlu", "beiyangyuan"]
 class Strict(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -83,8 +83,8 @@ class RuntimeEvent(Strict):
     seq: int
     timestamp: str
     origin: Literal["backend", "frontend"]
-    stage: Literal["request", "knowledge", "model", "speech", "avatar", "scene"]
-    status: Literal["started", "completed", "failed", "cancelled"]
+    stage: Literal["request", "knowledge", "model", "speech", "avatar", "scene", "generation"]
+    status: Literal["started", "completed", "failed", "cancelled", "rendered"]
     duration_ms: float | None
     data: EventData
 class EventPage(Strict):

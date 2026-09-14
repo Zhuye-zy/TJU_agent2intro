@@ -56,3 +56,6 @@ git cherry-pick <M提供的COORD_COMMIT>
 - D：在E:\AI4TJU\.worktrees\knowledge读取冻结文档，构建少量真实天大资料和建筑索引，提供search/status/building函数及冻结端点，禁止造数据。
 
 最终分别提交docs/handoffs/A.md等，报告提交号、验证/未验证、DONE/PARTIAL。M0完成后M等待这四个窗口；不提前执行M1或完成其业务。
+
+## R2继续原分支
+当前BASE_COMMIT_R2、原树快进、端口和启动流程见[R2/PARALLEL_RUN.md](R2/PARALLEL_RUN.md)，不要运行旧Setup-Worktrees.ps1回到bootstrap。

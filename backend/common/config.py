@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     asr_api_key: SecretStr = SecretStr("")
     tts_provider: str = "edge"
     tts_voice: str = "zh-CN-XiaoxiaoNeural"
+    amap_js_key: str = ""
+    amap_security_key: SecretStr = SecretStr("")
+    amap_web_service_key: SecretStr = SecretStr("")
     @property
     def sdk_base_url(self) -> str:
         suffix = "/chat/completions"

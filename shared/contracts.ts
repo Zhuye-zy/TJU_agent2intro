@@ -1,5 +1,5 @@
-// M-owned. CONTRACT_VERSION=1.0.0. Mirror backend/contracts.py; changes require coordination commit.
-export const CONTRACT_VERSION = '1.0.0';
+// M-owned. CONTRACT_VERSION=1.1.0. Mirror backend/contracts.py; changes require coordination commit.
+export const CONTRACT_VERSION = '1.1.0';
 export type CampusId = 'weijinlu' | 'beiyangyuan';
 export type Mode = 'campus_qa' | 'content_generation' | 'general_chat';
 export type AvatarState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'error';
@@ -25,7 +25,7 @@ export interface ChatRequest { request_id: string; session_id: string; message: 
 export interface SceneAction { action_id: string; request_id: string; type: 'focus_building'|'show_building_card'; parameters: {building_id:string} }
 export interface ChatResponse { request_id: string; session_id: string; answer: string; sources: Source[]; model: string; usage: {prompt_tokens:number;completion_tokens:number;total_tokens:number}|null; elapsed_ms: number; actions: SceneAction[] }
 export interface ApiError { error: { code: string; message: string; request_id: string|null; retryable: boolean } }
-export interface RuntimeEvent { event_id: string; request_id: string; seq: number; timestamp: string; origin: 'backend'|'frontend'; stage: 'request'|'knowledge'|'model'|'speech'|'avatar'|'scene'; status: 'started'|'completed'|'failed'|'cancelled'; duration_ms: number|null; data: {code?: string|null;action_id?:string|null;building_id?:string|null;count?:number|null;model?:string|null} }
+export interface RuntimeEvent { event_id: string; request_id: string; seq: number; timestamp: string; origin: 'backend'|'frontend'; stage: 'request'|'knowledge'|'model'|'speech'|'avatar'|'scene'|'generation'; status: 'started'|'completed'|'failed'|'cancelled'|'rendered'; duration_ms: number|null; data: {code?: string|null;action_id?:string|null;building_id?:string|null;count?:number|null;model?:string|null} }
 export interface EventPage { events: RuntimeEvent[]; next_cursor: number; truncated: boolean }
 export interface CancelRequest { session_id: string }
 export interface CancelResponse { request_id: string; status: 'cancel_requested'|'already_terminal'; local_task_stopped: boolean; upstream_stop: 'not_started'|'unconfirmed'|'confirmed' }

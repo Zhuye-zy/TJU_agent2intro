@@ -28,3 +28,8 @@ C:\Users\ASUS\Desktop\desktop-pet\Open-LLM-VTuber\live2d-models\kelaita
 ## 审查但未采用源码
 
 OLV后端MIT、OLV-Web附加条件许可、AIRI MIT、TalkingHead MIT、three-vrm MIT、FastAPI模板MIT。其README/源码只读审查不计作本项目实际源码复用。开源对照与固定提交见OPEN_SOURCE_DECISION；不将各自MIT覆盖到第三方模型/SDK。
+
+## R2新增直接依赖
+
+eventsource-parser 4.1.0（MIT）：M的frontend/src/transport/r2.ts导出createParser给A做真实SSE消费；许可证快照见docs/licenses/eventsource-parser/LICENSE。当前UI尚未调用流端点，不宣称页面流已实现。
+@amap/amap-jsapi-loader 1.0.1：发布包package.json声明MIT，已安装供A按需加载JSAPI2.0及Geolocation插件；发布包没有单独LICENSE文本，保存PACKAGE_METADATA.json并记录此缺口，不能将其MIT元数据扩大为高德在线服务/底图/厂商POI许可。在线平台条款和来源限制单独适用。

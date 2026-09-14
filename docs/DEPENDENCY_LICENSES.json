@@ -1,183 +1,197 @@
 [
-    {
-        "ecosystem":  "npm",
-        "name":  "react",
-        "version":  "19.3.0",
-        "license":  "MIT",
-        "license_files":  [
-                              "docs\\licenses\\react\\LICENSE"
-                          ]
-    },
-    {
-        "ecosystem":  "npm",
-        "name":  "react-dom",
-        "version":  "19.3.0",
-        "license":  "MIT",
-        "license_files":  [
-                              "docs\\licenses\\react-dom\\LICENSE"
-                          ]
-    },
-    {
-        "ecosystem":  "npm",
-        "name":  "pixi.js",
-        "version":  "6.5.10",
-        "license":  "MIT",
-        "license_files":  [
-                              "docs\\licenses\\pixi.js\\LICENSE"
-                          ]
-    },
-    {
-        "ecosystem":  "npm",
-        "name":  "pixi-live2d-display",
-        "version":  "0.4.0",
-        "license":  "MIT",
-        "license_files":  [
-                              "docs\\licenses\\pixi-live2d-display\\LICENSE"
-                          ]
-    },
-    {
-        "ecosystem":  "npm",
-        "name":  "@ricky0123/vad-web",
-        "version":  "0.0.31",
-        "license":  "ISC",
-        "license_files":  [
-                              "docs/licenses/_ricky0123_vad-web/LICENSE"
-                          ]
-    },
-    {
-        "ecosystem":  "npm",
-        "name":  "@types/react",
-        "version":  "19.3.0",
-        "license":  "MIT",
-        "license_files":  [
-                              "docs\\licenses\\_types_react\\LICENSE"
-                          ]
-    },
-    {
-        "ecosystem":  "npm",
-        "name":  "@types/react-dom",
-        "version":  "19.3.0",
-        "license":  "MIT",
-        "license_files":  [
-                              "docs\\licenses\\_types_react-dom\\LICENSE"
-                          ]
-    },
-    {
-        "ecosystem":  "npm",
-        "name":  "@types/node",
-        "version":  "24.13.4",
-        "license":  "MIT",
-        "license_files":  [
-                              "docs\\licenses\\_types_node\\LICENSE"
-                          ]
-    },
-    {
-        "ecosystem":  "npm",
-        "name":  "@vitejs/plugin-react",
-        "version":  "6.1.1",
-        "license":  "MIT",
-        "license_files":  [
-                              "docs\\licenses\\_vitejs_plugin-react\\LICENSE"
-                          ]
-    },
-    {
-        "ecosystem":  "npm",
-        "name":  "typescript",
-        "version":  "5.9.3",
-        "license":  "Apache-2.0",
-        "license_files":  [
-                              "docs\\licenses\\typescript\\LICENSE.txt"
-                          ]
-    },
-    {
-        "ecosystem":  "npm",
-        "name":  "vite",
-        "version":  "8.3.0",
-        "license":  "MIT",
-        "license_files":  [
-                              "docs\\licenses\\vite\\LICENSE.md"
-                          ]
-    },
-    {
-        "ecosystem":  "python",
-        "name":  "fastapi",
-        "version":  "0.141.1",
-        "license":  "MIT",
-        "license_files":  [
-                              "docs\\licenses\\fastapi\\licenses__LICENSE"
-                          ]
-    },
-    {
-        "ecosystem":  "python",
-        "name":  "uvicorn",
-        "version":  "0.52.4",
-        "license":  "BSD-3-Clause",
-        "license_files":  [
-                              "docs\\licenses\\uvicorn\\licenses__LICENSE.md"
-                          ]
-    },
-    {
-        "ecosystem":  "python",
-        "name":  "openai",
-        "version":  "3.13.0",
-        "license":  "Apache-2.0",
-        "license_files":  [
-                              "docs\\licenses\\openai\\licenses__LICENSE",
-                              "docs\\licenses\\openai\\_vendor__httpx_aiohttp__LICENSE"
-                          ]
-    },
-    {
-        "ecosystem":  "python",
-        "name":  "edge-tts",
-        "version":  "7.2.8",
-        "license":  "LGPL-3.0; src/edge_tts/srt_composer.py MIT",
-        "license_files":  [
-                              "docs\\licenses\\edge-tts\\licenses__LICENSE"
-                          ]
-    },
-    {
-        "ecosystem":  "python",
-        "name":  "langgraph",
-        "version":  "1.2.11",
-        "license":  "MIT",
-        "license_files":  [
-                              "docs\\licenses\\langgraph\\licenses__LICENSE"
-                          ]
-    },
-    {
-        "ecosystem":  "python",
-        "name":  "pydantic-settings",
-        "version":  "2.15.0",
-        "license":  "MIT",
-        "license_files":  [
-                              "docs\\licenses\\pydantic-settings\\licenses__LICENSE"
-                          ]
-    },
-    {
-        "ecosystem":  "python",
-        "name":  "httpx",
-        "version":  "0.28.1",
-        "license":  "BSD-3-Clause",
-        "license_files":  [
-                              "docs\\licenses\\httpx\\licenses__LICENSE.md"
-                          ]
-    },
-    {
-        "ecosystem":  "python",
-        "name":  "pytest",
-        "version":  "9.1.1",
-        "license":  "MIT",
-        "license_files":  [
-                              "docs\\licenses\\pytest\\licenses__LICENSE"
-                          ]
-    },
-    {
-        "ecosystem":  "python",
-        "name":  "pydantic",
-        "version":  "2.13.5",
-        "license":  "MIT",
-        "license_files":  [
-                              "docs\\licenses\\pydantic\\licenses__LICENSE"
-                          ]
-    }
+  {
+    "ecosystem": "npm",
+    "name": "@amap/amap-jsapi-loader",
+    "version": "1.0.1",
+    "license": "MIT",
+    "license_files": []
+  },
+  {
+    "ecosystem": "npm",
+    "name": "@ricky0123/vad-web",
+    "version": "0.0.31",
+    "license": "ISC",
+    "license_files": []
+  },
+  {
+    "ecosystem": "npm",
+    "name": "eventsource-parser",
+    "version": "4.1.0",
+    "license": "MIT",
+    "license_files": [
+      "docs\\licenses\\eventsource-parser\\LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "npm",
+    "name": "pixi-live2d-display",
+    "version": "0.4.0",
+    "license": "MIT",
+    "license_files": [
+      "docs\\licenses\\pixi-live2d-display\\LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "npm",
+    "name": "pixi.js",
+    "version": "6.5.10",
+    "license": "MIT",
+    "license_files": [
+      "docs\\licenses\\pixi.js\\LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "npm",
+    "name": "react",
+    "version": "19.3.0",
+    "license": "MIT",
+    "license_files": [
+      "docs\\licenses\\react\\LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "npm",
+    "name": "react-dom",
+    "version": "19.3.0",
+    "license": "MIT",
+    "license_files": [
+      "docs\\licenses\\react-dom\\LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "npm",
+    "name": "@types/node",
+    "version": "24.13.4",
+    "license": "MIT",
+    "license_files": [
+      "docs\\licenses\\_types_node\\LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "npm",
+    "name": "@types/react",
+    "version": "19.3.0",
+    "license": "MIT",
+    "license_files": [
+      "docs\\licenses\\_types_react\\LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "npm",
+    "name": "@types/react-dom",
+    "version": "19.3.0",
+    "license": "MIT",
+    "license_files": [
+      "docs\\licenses\\_types_react-dom\\LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "npm",
+    "name": "@vitejs/plugin-react",
+    "version": "6.1.1",
+    "license": "MIT",
+    "license_files": [
+      "docs\\licenses\\_vitejs_plugin-react\\LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "npm",
+    "name": "typescript",
+    "version": "5.9.3",
+    "license": "Apache-2.0",
+    "license_files": [
+      "docs\\licenses\\typescript\\LICENSE.txt"
+    ]
+  },
+  {
+    "ecosystem": "npm",
+    "name": "vite",
+    "version": "8.3.0",
+    "license": "MIT",
+    "license_files": [
+      "docs\\licenses\\vite\\LICENSE.md"
+    ]
+  },
+  {
+    "ecosystem": "python",
+    "name": "fastapi",
+    "version": "0.141.1",
+    "license": "MIT",
+    "license_files": [
+      "docs\\licenses\\fastapi\\licenses__LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "python",
+    "name": "uvicorn",
+    "version": "0.52.4",
+    "license": "BSD-3-Clause",
+    "license_files": [
+      "docs\\licenses\\uvicorn\\licenses__LICENSE.md"
+    ]
+  },
+  {
+    "ecosystem": "python",
+    "name": "openai",
+    "version": "3.13.0",
+    "license": "Apache-2.0",
+    "license_files": [
+      "docs\\licenses\\openai\\licenses__LICENSE",
+      "docs\\licenses\\openai\\_vendor__httpx_aiohttp__LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "python",
+    "name": "edge-tts",
+    "version": "7.2.8",
+    "license": null,
+    "license_files": [
+      "docs\\licenses\\edge-tts\\licenses__LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "python",
+    "name": "langgraph",
+    "version": "1.2.11",
+    "license": "MIT",
+    "license_files": [
+      "docs\\licenses\\langgraph\\licenses__LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "python",
+    "name": "pydantic-settings",
+    "version": "2.15.0",
+    "license": "MIT",
+    "license_files": [
+      "docs\\licenses\\pydantic-settings\\licenses__LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "python",
+    "name": "httpx",
+    "version": "0.28.1",
+    "license": "BSD-3-Clause",
+    "license_files": [
+      "docs\\licenses\\httpx\\licenses__LICENSE.md"
+    ]
+  },
+  {
+    "ecosystem": "python",
+    "name": "pytest",
+    "version": "9.1.1",
+    "license": "MIT",
+    "license_files": [
+      "docs\\licenses\\pytest\\licenses__LICENSE"
+    ]
+  },
+  {
+    "ecosystem": "python",
+    "name": "pydantic",
+    "version": "2.13.5",
+    "license": "MIT",
+    "license_files": [
+      "docs\\licenses\\pydantic\\licenses__LICENSE"
+    ]
+  }
 ]
