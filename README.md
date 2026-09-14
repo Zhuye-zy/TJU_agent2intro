@@ -1,4 +1,4 @@
-# 珂莱塔数字人校园导游
+# 珂莱塔校园导游
 
 基于 React/Vite、FastAPI、Live2D 与 LangGraph 的天津大学数字人导游工作台。第一版使用用户指定的 kelaita（珂莱塔）素材；应用形态是网页校园导游。
 
