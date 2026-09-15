@@ -15,3 +15,4 @@ GitHub 审核规则：默认/integration/**/main/master 受保护，唯一审核
 R2增量准备与开发优先读docs/R2/{BASELINE,CONTRACTS,OWNERSHIP,PARALLEL_RUN,ACCEPTANCE_MATRIX}.md。本轮实际契约1.1.0，原integration/m0及work/ui、work/avatar、work/api、work/knowledge继续使用。M0只冻结/准备，M1再评审返修；最新地图要求无Key基础导览、有Key授权定位和按需路线增强，外部导航始终保留。
 
 R3开发优先读docs/R3/{BASELINE,CONTRACTS,OWNERSHIP,PARALLEL_RUN,ACCEPTANCE_MATRIX}.md。当前M0只准备，R3_READY后业务窗再开发。R3增量契约1.2.0，旧1.1.0端点兼容；以r3-launch及.runtime/BASE_COMMIT_R3同步同一基线。M本轮prepare/r3-m0，四个原work分支复用；保留最新高德同源JS代理、目的地匹配、IP粗略起点、应用内步行和外部导航。tests/r3_fixture.py仅测试/明确开发环境，绝不作为真实行程或服务证据。
+R3并行期间M持续协调共享字段、依赖、导航公共模块和入口装配。共享变更由M单独提交，仅受影响窗口同步；清单见docs/R3/coordination/README.md及各窗.runtime/R3/M-COORD-*.json。共同启动标签不移动，不对正在开发的原工作树重跑Prepare-R3；工作窗先保存/提交现场再同步所需协调，不整体merge M分支。业务交接与M1仍按原阶段顺序。

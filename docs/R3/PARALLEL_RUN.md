@@ -20,7 +20,7 @@ M分支 `prepare/r3-m0`，基线 `git rev-parse r3-launch`。发布后五个HEAD
 2. 创建不可移动r3-launch标签，保留原分支和全部现场。
 3. `scripts/Prepare-R3.ps1` 对ALL树预检干净、同名分支、祖先关系、依赖普通目录、无.env，然后逐树安全快进、按锁安装和独立检查。
 4. receipt.status=R3_READY且四树同40位号，才发送启动消息。失败即R3_NOT_READY；保留已完成工作，不回滚。
-5. 共享变更以后单独COORD_COMMIT发布给四窗；各窗先提交业务再cherry-pick一次。不要各自从远端不同分支拉“最新”。
+5. 共享变更以后单独COORD_COMMIT仅发布给受影响窗口；各窗先提交业务再cherry-pick一次。不要各自从远端不同分支拉“最新”。
 
 原树不安全时不stash/reset/覆盖。M可建立 `.worktrees/r3-<窗口>` 新隔离树，从同一基线复制安装依赖（不共享可写目录）并公布替代路径/端口；独有修改由原作者审查迁移。本轮原树均可安全快进，已优先复用。
 
