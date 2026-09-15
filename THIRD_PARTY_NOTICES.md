@@ -23,7 +23,7 @@ kelaita源目录：
 C:\Users\ASUS\Desktop\desktop-pet\Open-LLM-VTuber\live2d-models\kelaita
 由用户选定，仅复制必要素材文件及 README。原角色为鸣潮珂莱塔/BongoCat 风格，作为本产品首版展示角色；不冒称原创素材。保留 README、水印、文件相对引用；不复制整个桌宠，不运行其程序。未核验人物再分发/商用权利，不导入本地克隆音色。
 
-本机归档在.runtime/asset-source，工作树各复制到frontend/public/assets/kelaita及frontend/public/vendor，均被Git忽略。素材可替换，不成为LLM或知识模块依赖。源码依用户授权推送 GitHub；人物/Core 原文件保持忽略，未部署云应用。
+本机归档在 `.runtime/asset-source`，运行素材复制到 `frontend/public/assets/kelaita` 及 `frontend/public/vendor`，均被 Git 忽略。素材可替换，不成为 LLM 或知识模块依赖。人物/Core 原文件保持忽略，未部署云应用。
 
 ## 审查但未采用源码
 

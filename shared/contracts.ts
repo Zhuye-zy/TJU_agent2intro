@@ -1,4 +1,4 @@
-// M-owned. CONTRACT_VERSION=1.1.0. Mirror backend/contracts.py; changes require coordination commit.
+// CONTRACT_VERSION mirrors backend/contracts.py.
 export const CONTRACT_VERSION = '1.1.0';
 export type CampusId = 'weijinlu' | 'beiyangyuan';
 export type Mode = 'campus_qa' | 'content_generation' | 'general_chat';
@@ -33,8 +33,6 @@ export interface SceneAck { request_id:string; session_id:string; action_id:stri
 export interface SceneAckResponse { request_id:string; action_id:string; status:'recorded'|'duplicate' }
 export interface ClientEventInput { event_id:string; request_id:string; session_id:string; stage:'speech'|'avatar'; status:'started'|'completed'|'failed'|'cancelled'; duration_ms:number|null; data:{code?:'not_implemented'|'playback_failed'|'permission_denied'|'stopped'} }
 export interface Health { status:'ok'; contract_version:string; model:{configured:boolean;verified:boolean}; capabilities:{chat:boolean;asr:boolean;tts:boolean;knowledge:boolean;scene_3d:boolean} }
-export interface SceneAdapter { readonly kind:'2d'|'3d'; execute(action:SceneAction):Promise<{status:'completed'|'failed';error_code?:'execution_failed'|'unsupported'}> }
-
 export interface SpeechStopResponse { request_id:string; local_stopped:boolean; upstream_stop:'not_started'|'unconfirmed'|'confirmed' }
 export interface SearchResponse { hits:Source[]; status:KnowledgeStatus }
 export interface BuildingList { buildings:Building[] }

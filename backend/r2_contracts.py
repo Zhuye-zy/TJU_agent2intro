@@ -1,4 +1,4 @@
-"""M-owned R2 additions to v1. Existing IDs and stores remain authoritative."""
+"""R2 wire-schema additions compatible with the v1 API."""
 from typing import Annotated, Literal
 from uuid import UUID
 from pydantic import Field, model_validator

@@ -7,7 +7,7 @@ if (Test-Path -LiteralPath $receiptPath) {
  $prior=Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json
  foreach ($item in $prior.processes) {
   $process=Get-Process -Id $item.pid -ErrorAction SilentlyContinue
-  if ($process -and $process.StartTime.ToUniversalTime().Ticks.ToString() -eq $item.started_ticks) { throw 'This checkout is already running. Use scripts/stop.ps1 first.' }
+  if ($process -and $process.StartTime.ToUniversalTime().Ticks.ToString() -eq $item.started_ticks) { throw 'This project is already running. Use scripts/stop.ps1 first.' }
  }
 }
 $ports=if ($Mode -eq 'dev') { @($ApiPort,$WebPort) } else { @($ApiPort) }
@@ -51,7 +51,7 @@ for ($attempt=0; $attempt -lt 20; $attempt++) {
   $webReady=$true
   if ($Mode -eq 'dev') { $null=Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$WebPort/" -TimeoutSec 2 }
   if ($health.status -eq 'ok' -and $webReady) { break }
- } catch { if ($attempt -eq 19) { throw 'Startup check failed. Inspect this checkout .runtime/logs; stop.ps1 stops only recorded processes.' }; Start-Sleep -Milliseconds 500 }
+ } catch { if ($attempt -eq 19) { throw 'Startup check failed. Inspect this project .runtime/logs; stop.ps1 stops only recorded processes.' }; Start-Sleep -Milliseconds 500 }
 }
 Save-Receipt
 $url=if ($Mode -eq 'dev') { "http://127.0.0.1:$WebPort" } else { "http://127.0.0.1:$ApiPort" }

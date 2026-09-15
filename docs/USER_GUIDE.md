@@ -20,7 +20,7 @@ cd E:\AI4TJU
 .\scripts\start-app.ps1 -Build
 ```
 
-停止脚本仅处理本工作树记录的 PID，并比对创建时间。端口占用时不会杀其他程序。需要换端口可用 ` .\scripts\start-app.ps1 -Port 8080 `，对应访问 http://127.0.0.1:8080。
+停止脚本仅处理本项目记录的 PID，并比对创建时间。端口占用时不会杀其他程序。需要换端口可用 ` .\scripts\start-app.ps1 -Port 8080 `，对应访问 http://127.0.0.1:8080。
 
 ## 2. 五分钟试用流程
 
@@ -92,4 +92,4 @@ cd E:\AI4TJU
 
 新环境需要 Node >=22.12、Python 3.11、Git。安装使用固定锁文件：
 ` .\scripts\setup.ps1 -Python '你的Python311路径' -AssetSource '素材归档目录' `。
-归档应包含 kelaita/ReadMe.txt、kelaita/runtime 下模型相关文件和 live2dcubismcore.min.js。主目录 .env 不复制到工作树；其他窗口需要配置时只能显式指定 AI4TJU_ENV_FILE。
+归档应包含 kelaita/ReadMe.txt、kelaita/runtime 下模型相关文件和 live2dcubismcore.min.js。项目 `.env` 仅保存在本机，不纳入 Git。

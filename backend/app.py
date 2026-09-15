@@ -1,4 +1,4 @@
-"""M owns public application assembly. No model key or automatic upstream probe on boot."""
+"""Public application assembly with no model-key or upstream probe on boot."""
 import os
 os.environ["LANGSMITH_TRACING"] = "false"
 os.environ["LANGCHAIN_TRACING_V2"] = "false"

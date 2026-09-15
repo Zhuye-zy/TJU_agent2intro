@@ -1,4 +1,4 @@
-// M-owned same-origin transport; contains no key or upstream URL.
+// Same-origin transport; contains no key or upstream URL.
 import type { ChatRequest, ChatResponse, EventPage, Health, KnowledgeStatus, CancelResponse, SceneAck, SceneAckResponse, ClientEventInput, RuntimeEvent, SpeechStopResponse, SearchResponse, BuildingList, Building, CampusId } from '../../../shared/contracts';
 export async function api<T>(path:string, options?:RequestInit):Promise<T> {
   const controller=new AbortController();

@@ -1,4 +1,4 @@
-// M-owned shared guard. Counts application initiations, never vendor quota debits.
+// Counts application initiations, never vendor quota debits.
 export type MapOperation = 'map_load'|'geolocation'|'poi_search'|'walking_route';
 export type MapCounters = {initiated:number;completed:number;failed:number;cancelled:number;blocked:number};
 export type MapLimits = Record<MapOperation,number>;

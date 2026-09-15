@@ -1,4 +1,4 @@
-// M-owned R2 contract 1.1.0; legacy wire types stay compatible.
+// R2 contract 1.1.0; legacy wire types stay compatible.
 import type { CampusId, Mode, Source, ChatRequest, ChatResponse, SceneAction, Voice, AdapterResult } from './contracts';
 export type GenerationOptions = { type:'guide_script'|'visit_plan'|'social_post'; requirements:string; length:'short'|'medium'|'long'; style:'friendly'|'formal'|'lively' };
 export type R2ChatRequest = ChatRequest & {message_id:string; selected_poi_id:string|null; generation:GenerationOptions|null};

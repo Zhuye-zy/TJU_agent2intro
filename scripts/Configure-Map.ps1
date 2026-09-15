@@ -13,7 +13,7 @@ try {
  $next=@($lines|Where-Object {$_ -notmatch ('^'+[regex]::Escape($name)+'=')})
  $next+=($name+'='+$value)
  [IO.File]::WriteAllLines($path,$next,[Text.UTF8Encoding]::new($false))
- Write-Output "$name configured: true. Restart only this checkout with scripts/stop.ps1 and scripts/start-app.ps1."
+ Write-Output "$name configured: true. Restart this project with scripts/stop.ps1 and scripts/start-app.ps1."
 } finally {
  [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr)
  $value=$null

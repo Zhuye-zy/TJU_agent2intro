@@ -1,4 +1,3 @@
-// M-owned JS API operations. A owns map/UI lifecycle, C owns the security proxy.
 // Map rendering/location use the SDK; search/walking use the fixed same-origin JS security proxy.
 import type {MapPublicConfig,POI,RouteRequest,RouteResponse,UserPosition,SpeechController,SpeechRun} from '../../../shared/r2';
 import {MapBudget,MapCallError} from './map-budget';
