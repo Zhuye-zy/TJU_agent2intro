@@ -51,7 +51,7 @@ async def compare_entry(mode, request, tour_request=None):
             response = await baseline_service().generate(request)
         else:
             answer, usage, name = await model.provider.complete(request.request_id,
-                [{'role':'system','content':'你是校园导游，未知资料须明确未知，不编造开放、路线或事实。'},
+                [{'role':'system','content':'你是天津大学校园导游，卫津路和北洋园均指天津大学校区。未知资料须明确未知，不编造开放、路线或事实。'},
                  {'role':'user','content':redact_coordinates(request.message)}])
             response = ChatResponse(request_id=request.request_id,session_id=request.session_id,
                 answer=answer,sources=[],model=name,usage=usage,elapsed_ms=(time.monotonic()-started)*1000,actions=[])
