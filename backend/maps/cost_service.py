@@ -1,6 +1,20 @@
-"""C-owned route-cost slot; never invent estimates or spend map quota on boot."""
-from backend.common.errors import DomainError
-class PendingCostService:
+﻿"""Conservative adjacent costs. No map requests or quota use during planning."""
+from backend.r3_contracts import RouteCostResponse, RouteCostResult
+from backend.model.tour_catalog import catalog
+
+
+class CostService:
+    def __init__(self, directory=catalog):
+        self.catalog = directory
+
     async def estimate(self, body):
-        raise DomainError("ROUTE_COST_NOT_IMPLEMENTED", "R3路线成本服务待C窗口实现", 501, body.request_id)
-cost_service = PendingCostService()
+        for place in body.places:
+            if place.kind == 'poi':
+                self.catalog.poi(place.poi_id, body.campus_id)
+        return RouteCostResponse(request_id=body.request_id, costs=[
+            RouteCostResult(from_ref=a, to_ref=b, distance_m=None, duration_s=None,
+                source='unknown', verification='unverified', checked_at=None,
+                campus_access='unverified', evidence_ids=[], reason='missing_data')
+            for a, b in zip(body.places, body.places[1:])])
+
+cost_service = CostService()
