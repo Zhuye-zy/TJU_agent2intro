@@ -97,7 +97,7 @@ def test_metadata_version_is_portable_and_invalidates_when_evidence_changes(tmp_
 
 def test_core_evidence_exposes_pending_not_field_verified():
     k = LocalKnowledge()
-    for campus, count in (("weijinlu", 8), ("beiyangyuan", 7)):
+    for campus, count in (("weijinlu", 42), ("beiyangyuan", 36)):
         bundle = k.get_core_bundle(campus)
         assert len(bundle["items"]) == count and not bundle["field_verified"]
         for row in bundle["items"]:

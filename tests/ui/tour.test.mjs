@@ -123,3 +123,16 @@ test('M integration saves formal constraints and interprets only explicit remain
  assert.equal(remainingTimeIntent('校史馆开放30分钟吗'),null);
  assert.ok(!privateText('%31%31%37%2E%31%32%33%34').includes('%31'));
 });
+
+const photosOutput=await build({configFile:false,logLevel:'silent',build:{write:false,minify:false,lib:{entry:'frontend/src/ui/tour-photos.ts',formats:['es'],fileName:()=> 'tour-photos.js'}}});
+const photosChunk=(Array.isArray(photosOutput)?photosOutput[0]:photosOutput).output.find(v=>v.type==='chunk');
+const {tourPhotoFor}=await import('data:text/javascript;base64,'+Buffer.from(photosChunk.code).toString('base64'));
+test('tour stop photos: unmapped stops keep a clearly marked placeholder slot',()=>{
+ const photo=tourPhotoFor('poi-without-photo','第九教学楼');
+ assert.equal(photo.placeholder,true);
+ assert.equal(photo.caption,'第九教学楼');
+ assert.ok(photo.src.startsWith('data:image/svg+xml'));
+ const decoded=decodeURIComponent(photo.src);
+ assert.ok(decoded.includes('第九教学楼'));
+ assert.ok(decoded.includes('实景图待补充'));
+});

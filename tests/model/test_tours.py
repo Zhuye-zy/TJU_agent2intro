@@ -270,3 +270,18 @@ def test_json_and_encoded_coordinate_values_are_removed():
     for value in ('{"lat":39.123456,"lng":117.123456}', 'location=117.123456%2C39.123456'):
         safe=redact_coordinates(value)
         assert '117.123456' not in safe and '39.123456' not in safe
+
+
+def test_variety_keeps_at_most_one_previous_optional_stop():
+    async def run():
+        service,provider=fixture_service(Costs())
+        body=request(session_id=uuid4())
+        first=(await service.create(body)).session
+        first_ids=[s.poi_id for s in first.plan.stops]
+        assert len(first_ids)==3
+        second=(await service.create(body.model_copy(update={'request_id':uuid4()}))).session
+        second_ids=[s.poi_id for s in second.plan.stops]
+        assert len(second_ids)==3
+        assert len(set(second_ids)&set(first_ids))<=1
+        assert provider.calls==2
+    asyncio.run(run())

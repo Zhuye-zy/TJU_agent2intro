@@ -36,6 +36,7 @@ class TourService:
         self.requests = OrderedDict()
         self.expired_requests = OrderedDict()
         self.metrics = OrderedDict()
+        self.recent_stops = OrderedDict()
 
     def _prune(self):
         now = self.clock()
@@ -159,7 +160,8 @@ class TourService:
     async def create(self, body):
         async def op(metrics):
             safe = TourRequest.model_validate(body.model_copy(update={'message': redact_coordinates(body.message), 'interests': [redact_coordinates(x) for x in body.interests]}).model_dump())
-            plan, usage, service = await self.planner.create(safe, metrics)
+            previous = list(self.recent_stops.get(body.session_id, []))
+            plan, usage, service = await self.planner.create(safe, metrics, previous)
             if any(has_coordinates(x) for x in [body.message, *body.interests]):
                 plan.warnings.insert(0, '精确位置已移除，请通过导航位置入口提供起点。')
             session = TourSession(tour_id=uuid4(), session_id=body.session_id, state_version=1,
@@ -169,6 +171,11 @@ class TourService:
                 if metrics['model_calls']:
                     service.history.commit(body.session_id, '行程需求：'+ '；'.join([safe.message, *safe.interests]),
                         '目录候选计划：'+ '、'.join(s.poi_id for s in plan.stops)+'；状态：'+plan.status)
+                if plan.stops:
+                    self.recent_stops[body.session_id] = (previous + [[s.poi_id for s in plan.stops]])[-3:]
+                    self.recent_stops.move_to_end(body.session_id)
+                    while len(self.recent_stops) > self.capacity:
+                        self.recent_stops.popitem(last=False)
             return session, usage, commit
         return await self._run('/tours', body, op)
 
