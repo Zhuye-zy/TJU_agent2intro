@@ -4,7 +4,7 @@ import json, sys
 root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(root))
 from backend import r3_contracts as r3
-names = ["PlaceRef", "Evidence", "RouteCostResult", "TourRequest", "TourStop", "TourPlan", "StopProgress", "TourSession", "PlanRevision", "TourCommand", "TourRestore", "TourResult", "RouteCostRequest", "RouteCostResponse", "SpeechInteractionEvent", "EvaluationRecord"]
+names = ["ClarificationQuestion", "PlaceRef", "Evidence", "RouteCostResult", "TourRequest", "TourStop", "TourPlan", "StopProgress", "TourSession", "PlanRevision", "TourCommand", "TourRestore", "TourResult", "RouteCostRequest", "RouteCostResponse", "SpeechInteractionEvent", "EvaluationRecord"]
 schemas = {name: getattr(r3, name).model_json_schema() for name in names}
 bundle = {"contract_version": r3.R3_CONTRACT_VERSION, "schemas": schemas}
 definitions = {}

@@ -1,5 +1,6 @@
 """M-owned R3 additive wire contract. No chat history or precise positions."""
 from typing import Annotated, Literal
+from datetime import date
 from uuid import UUID
 from pydantic import Field, AwareDatetime, model_validator
 from backend.contracts import Strict, CampusId, Usage
@@ -64,6 +65,20 @@ class TourRequest(Strict):
     start: PlaceRef
     end: PlaceRef
     accessibility: Literal["standard", "step_free"] = "standard"
+    message: str = Field(default="", max_length=2000)
+    must_visit: list[Id] = Field(default_factory=list, max_length=5)
+    avoid: list[Id] = Field(default_factory=list, max_length=100)
+    visit_date: date | None = None
+    max_walking_minutes: int | None = Field(default=None, ge=0, le=240)
+    @model_validator(mode="after")
+    def structured_constraints(self):
+        if len(set(self.must_visit)) != len(self.must_visit) or len(set(self.avoid)) != len(self.avoid):
+            raise ValueError("Duplicate constraint IDs")
+        if set(self.must_visit) & set(self.avoid):
+            raise ValueError("Conflicting required and avoided places")
+        if any(p.poi_id in self.avoid for p in (self.start, self.end) if p.kind == "poi"):
+            raise ValueError("Endpoint cannot be avoided")
+        return self
 
 class TourStop(Strict):
     stop_id: UUID
@@ -115,8 +130,11 @@ class TourSession(Strict):
     remaining_minutes: int = Field(ge=0, le=240)
     saved: bool
     updated_at: AwareDatetime
+    completion_reason: Literal["all_stops_resolved", "user_ended"] | None = None
     @model_validator(mode="after")
     def consistency(self):
+        if self.completion_reason is not None and self.status != "completed":
+            raise ValueError("Completion reason belongs only to completed sessions")
         ids = {s.stop_id for s in self.plan.stops}
         if self.session_id != self.plan.request.session_id:
             raise ValueError("Session mismatch")
@@ -152,11 +170,14 @@ class PlanRevision(Mutation):
         return self
 
 class TourCommand(Mutation):
-    action: Literal["check", "start", "arrive", "explain", "complete_stop", "next", "pause", "resume", "cancel", "save", "forget"]
+    accept_unverified: bool = False
+    action: Literal["check", "start", "arrive", "explain", "complete_stop", "next", "pause", "resume", "cancel", "save", "forget", "skip", "end"]
     stop_id: UUID | None = None
     @model_validator(mode="after")
     def stop_field(self):
-        if (self.action in ("arrive", "explain", "complete_stop")) != (self.stop_id is not None):
+        if self.accept_unverified and self.action not in ("start", "resume"):
+            raise ValueError("Risk acknowledgement belongs only to start/resume")
+        if (self.action in ("arrive", "explain", "complete_stop", "skip")) != (self.stop_id is not None):
             raise ValueError("stop_id required only for stop actions")
         return self
 
@@ -170,12 +191,29 @@ class TourRestore(Strict):
             raise ValueError("Only explicitly saved same-session snapshots restore")
         return self
 
+class ClarificationQuestion(Strict):
+    question_id: Id
+    field: Literal["message", "duration_minutes", "interests", "start", "end", "must_visit", "avoid", "visit_date", "max_walking_minutes", "accessibility"]
+    prompt: Text
+    candidate_poi_ids: list[Id] = Field(default_factory=list, max_length=20)
+
 class TourResult(Strict):
     contract_version: Literal["1.2.0"] = "1.2.0"
     request_id: UUID
     session: TourSession
     replayed: bool = False
     usage: Usage | None = None
+    clarification_required: bool = False
+    clarifications: list[ClarificationQuestion] = Field(default_factory=list, max_length=8)
+    @model_validator(mode="after")
+    def questions_match(self):
+        if self.clarification_required != bool(self.clarifications):
+            raise ValueError("Clarification flag and questions disagree")
+        if self.clarification_required and self.session.status not in ("draft", "infeasible"):
+            raise ValueError("Clarification must precede execution")
+        if len({q.question_id for q in self.clarifications}) != len(self.clarifications):
+            raise ValueError("Duplicate question IDs")
+        return self
 
 class RouteCostRequest(Strict):
     request_id: UUID
@@ -225,8 +263,16 @@ class EvaluationRecord(Strict):
     usage: Usage | None
     unknown_usage_calls: int = Field(ge=0)
     map_operations: int | None = Field(ge=0)
+    solution_id: Literal["direct_glm", "baseline", "enhanced"] | None = None
+    comparison_group_id: UUID | None = None
+    web_search_calls: int | None = Field(default=None, ge=0)
+    failure_retries: int | None = Field(default=None, ge=0)
+    first_content_ms: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    first_content_source: Literal["stream_first_visible", "nonstream_response", "unknown"] = "unknown"
     @model_validator(mode="after")
     def usage_truth(self):
+        if (self.first_content_ms is None) != (self.first_content_source == "unknown"):
+            raise ValueError("First content timing requires an actual observation source")
         if (self.usage_status == "unknown") != (self.usage is None):
             raise ValueError("Unknown usage remains null")
         if self.usage_status == "known" and self.unknown_usage_calls != 0:

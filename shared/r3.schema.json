@@ -1,6 +1,55 @@
 {
   "contract_version": "1.2.0",
   "schemas": {
+    "ClarificationQuestion": {
+      "additionalProperties": false,
+      "properties": {
+        "question_id": {
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+          "title": "Question Id",
+          "type": "string"
+        },
+        "field": {
+          "enum": [
+            "message",
+            "duration_minutes",
+            "interests",
+            "start",
+            "end",
+            "must_visit",
+            "avoid",
+            "visit_date",
+            "max_walking_minutes",
+            "accessibility"
+          ],
+          "title": "Field",
+          "type": "string"
+        },
+        "prompt": {
+          "maxLength": 500,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Prompt",
+          "type": "string"
+        },
+        "candidate_poi_ids": {
+          "items": {
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Candidate Poi Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "question_id",
+        "field",
+        "prompt"
+      ],
+      "title": "ClarificationQuestion",
+      "type": "object"
+    },
     "PlaceRef": {
       "additionalProperties": false,
       "properties": {
@@ -340,6 +389,57 @@
           ],
           "title": "Accessibility",
           "type": "string"
+        },
+        "message": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Message",
+          "type": "string"
+        },
+        "must_visit": {
+          "items": {
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "maxItems": 5,
+          "title": "Must Visit",
+          "type": "array"
+        },
+        "avoid": {
+          "items": {
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Avoid",
+          "type": "array"
+        },
+        "visit_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Visit Date"
+        },
+        "max_walking_minutes": {
+          "anyOf": [
+            {
+              "maximum": 240,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Walking Minutes"
         }
       },
       "required": [
@@ -689,6 +789,57 @@
               ],
               "title": "Accessibility",
               "type": "string"
+            },
+            "message": {
+              "default": "",
+              "maxLength": 2000,
+              "title": "Message",
+              "type": "string"
+            },
+            "must_visit": {
+              "items": {
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+                "type": "string"
+              },
+              "maxItems": 5,
+              "title": "Must Visit",
+              "type": "array"
+            },
+            "avoid": {
+              "items": {
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "title": "Avoid",
+              "type": "array"
+            },
+            "visit_date": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Visit Date"
+            },
+            "max_walking_minutes": {
+              "anyOf": [
+                {
+                  "maximum": 240,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Max Walking Minutes"
             }
           },
           "required": [
@@ -1266,6 +1417,57 @@
               ],
               "title": "Accessibility",
               "type": "string"
+            },
+            "message": {
+              "default": "",
+              "maxLength": 2000,
+              "title": "Message",
+              "type": "string"
+            },
+            "must_visit": {
+              "items": {
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+                "type": "string"
+              },
+              "maxItems": 5,
+              "title": "Must Visit",
+              "type": "array"
+            },
+            "avoid": {
+              "items": {
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "title": "Avoid",
+              "type": "array"
+            },
+            "visit_date": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Visit Date"
+            },
+            "max_walking_minutes": {
+              "anyOf": [
+                {
+                  "maximum": 240,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Max Walking Minutes"
             }
           },
           "required": [
@@ -1410,6 +1612,22 @@
           "format": "date-time",
           "title": "Updated At",
           "type": "string"
+        },
+        "completion_reason": {
+          "anyOf": [
+            {
+              "enum": [
+                "all_stops_resolved",
+                "user_ended"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Completion Reason"
         }
       },
       "required": [
@@ -1533,6 +1751,11 @@
           "title": "Expected State Version",
           "type": "integer"
         },
+        "accept_unverified": {
+          "default": false,
+          "title": "Accept Unverified",
+          "type": "boolean"
+        },
         "action": {
           "enum": [
             "check",
@@ -1545,7 +1768,9 @@
             "resume",
             "cancel",
             "save",
-            "forget"
+            "forget",
+            "skip",
+            "end"
           ],
           "title": "Action",
           "type": "string"
@@ -1961,6 +2186,57 @@
               ],
               "title": "Accessibility",
               "type": "string"
+            },
+            "message": {
+              "default": "",
+              "maxLength": 2000,
+              "title": "Message",
+              "type": "string"
+            },
+            "must_visit": {
+              "items": {
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+                "type": "string"
+              },
+              "maxItems": 5,
+              "title": "Must Visit",
+              "type": "array"
+            },
+            "avoid": {
+              "items": {
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "title": "Avoid",
+              "type": "array"
+            },
+            "visit_date": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Visit Date"
+            },
+            "max_walking_minutes": {
+              "anyOf": [
+                {
+                  "maximum": 240,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Max Walking Minutes"
             }
           },
           "required": [
@@ -2043,6 +2319,22 @@
               "format": "date-time",
               "title": "Updated At",
               "type": "string"
+            },
+            "completion_reason": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "all_stops_resolved",
+                    "user_ended"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Completion Reason"
             }
           },
           "required": [
@@ -2149,6 +2441,55 @@
     },
     "TourResult": {
       "$defs": {
+        "ClarificationQuestion": {
+          "additionalProperties": false,
+          "properties": {
+            "question_id": {
+              "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+              "title": "Question Id",
+              "type": "string"
+            },
+            "field": {
+              "enum": [
+                "message",
+                "duration_minutes",
+                "interests",
+                "start",
+                "end",
+                "must_visit",
+                "avoid",
+                "visit_date",
+                "max_walking_minutes",
+                "accessibility"
+              ],
+              "title": "Field",
+              "type": "string"
+            },
+            "prompt": {
+              "maxLength": 500,
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Prompt",
+              "type": "string"
+            },
+            "candidate_poi_ids": {
+              "items": {
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Candidate Poi Ids",
+              "type": "array"
+            }
+          },
+          "required": [
+            "question_id",
+            "field",
+            "prompt"
+          ],
+          "title": "ClarificationQuestion",
+          "type": "object"
+        },
         "Evidence": {
           "additionalProperties": false,
           "properties": {
@@ -2534,6 +2875,57 @@
               ],
               "title": "Accessibility",
               "type": "string"
+            },
+            "message": {
+              "default": "",
+              "maxLength": 2000,
+              "title": "Message",
+              "type": "string"
+            },
+            "must_visit": {
+              "items": {
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+                "type": "string"
+              },
+              "maxItems": 5,
+              "title": "Must Visit",
+              "type": "array"
+            },
+            "avoid": {
+              "items": {
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "title": "Avoid",
+              "type": "array"
+            },
+            "visit_date": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Visit Date"
+            },
+            "max_walking_minutes": {
+              "anyOf": [
+                {
+                  "maximum": 240,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Max Walking Minutes"
             }
           },
           "required": [
@@ -2616,6 +3008,22 @@
               "format": "date-time",
               "title": "Updated At",
               "type": "string"
+            },
+            "completion_reason": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "all_stops_resolved",
+                    "user_ended"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Completion Reason"
             }
           },
           "required": [
@@ -2754,6 +3162,19 @@
             }
           ],
           "default": null
+        },
+        "clarification_required": {
+          "default": false,
+          "title": "Clarification Required",
+          "type": "boolean"
+        },
+        "clarifications": {
+          "items": {
+            "$ref": "#/$defs/ClarificationQuestion"
+          },
+          "maxItems": 8,
+          "title": "Clarifications",
+          "type": "array"
         }
       },
       "required": [
@@ -3303,6 +3724,85 @@
             }
           ],
           "title": "Map Operations"
+        },
+        "solution_id": {
+          "anyOf": [
+            {
+              "enum": [
+                "direct_glm",
+                "baseline",
+                "enhanced"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Solution Id"
+        },
+        "comparison_group_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comparison Group Id"
+        },
+        "web_search_calls": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Web Search Calls"
+        },
+        "failure_retries": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Failure Retries"
+        },
+        "first_content_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "First Content Ms"
+        },
+        "first_content_source": {
+          "default": "unknown",
+          "enum": [
+            "stream_first_visible",
+            "nonstream_response",
+            "unknown"
+          ],
+          "title": "First Content Source",
+          "type": "string"
         }
       },
       "required": [

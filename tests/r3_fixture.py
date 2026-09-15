@@ -76,6 +76,17 @@ class FixtureTour:
             if pending:pending["state"]="navigating"
             else:s["status"]="completed"
         elif action in ("pause","cancel"):s["status"]="paused" if action=="pause" else "cancelled"
+        elif action=="end":
+            s["status"]="completed";s["completion_reason"]="user_ended";s["current_stop_id"]=None
+            for progress in s["progress"]:
+                if progress["state"]!="completed":progress["state"]="skipped"
+        elif action=="skip":
+            for progress in s["progress"]:
+                if progress["stop_id"]==str(body.stop_id):progress["state"]="skipped"
+            pending=next((x for x in s["progress"] if x["state"] not in ("completed","skipped")),None)
+            s["current_stop_id"]=pending["stop_id"] if pending else None
+            if pending:pending["state"]="navigating"
+            else:s["status"]="completed";s["completion_reason"]="all_stops_resolved"
         elif action in ("save","forget"):s["saved"]=action=="save"
         else:
             for p in s["progress"]:

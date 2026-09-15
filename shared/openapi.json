@@ -5205,6 +5205,55 @@
         ],
         "title": "ChatResponse"
       },
+      "ClarificationQuestion": {
+        "properties": {
+          "question_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+            "title": "Question Id"
+          },
+          "field": {
+            "type": "string",
+            "enum": [
+              "message",
+              "duration_minutes",
+              "interests",
+              "start",
+              "end",
+              "must_visit",
+              "avoid",
+              "visit_date",
+              "max_walking_minutes",
+              "accessibility"
+            ],
+            "title": "Field"
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Prompt"
+          },
+          "candidate_poi_ids": {
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Candidate Poi Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question_id",
+          "field",
+          "prompt"
+        ],
+        "title": "ClarificationQuestion"
+      },
       "ClientEventData": {
         "properties": {
           "code": {
@@ -7258,6 +7307,11 @@
             "minimum": 1.0,
             "title": "Expected State Version"
           },
+          "accept_unverified": {
+            "type": "boolean",
+            "title": "Accept Unverified",
+            "default": false
+          },
           "action": {
             "type": "string",
             "enum": [
@@ -7271,7 +7325,9 @@
               "resume",
               "cancel",
               "save",
-              "forget"
+              "forget",
+              "skip",
+              "end"
             ],
             "title": "Action"
           },
@@ -7437,6 +7493,55 @@
             ],
             "title": "Accessibility",
             "default": "standard"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Message",
+            "default": ""
+          },
+          "must_visit": {
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+            },
+            "type": "array",
+            "maxItems": 5,
+            "title": "Must Visit"
+          },
+          "avoid": {
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Avoid"
+          },
+          "visit_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visit Date"
+          },
+          "max_walking_minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 240.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Walking Minutes"
           }
         },
         "additionalProperties": false,
@@ -7507,6 +7612,19 @@
                 "type": "null"
               }
             ]
+          },
+          "clarification_required": {
+            "type": "boolean",
+            "title": "Clarification Required",
+            "default": false
+          },
+          "clarifications": {
+            "items": {
+              "$ref": "#/components/schemas/ClarificationQuestion"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "title": "Clarifications"
           }
         },
         "additionalProperties": false,
@@ -7584,6 +7702,21 @@
             "type": "string",
             "format": "date-time",
             "title": "Updated At"
+          },
+          "completion_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "all_stops_resolved",
+                  "user_ended"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Reason"
           }
         },
         "additionalProperties": false,
