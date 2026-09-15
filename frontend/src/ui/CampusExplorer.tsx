@@ -140,7 +140,7 @@ export function CampusExplorer({campus,sessionId,focusPoiId,focusRevision,onSele
   useEffect(()=>{if(position)onlineRef.current?.showPosition(position);},[position,onlineReady]);
   useEffect(()=>{if(route)onlineRef.current?.highlightStep(route.steps[activeStep]?.polyline??[]);},[route,activeStep]);
   useEffect(()=>{
-    if(onlineReady&&selected&&pendingMapFocus.current===selected.id){pendingMapFocus.current=null;if(tourSession?.status==='active')void planRoute();else if(!tourSession)void viewOnMap();}
+    if(onlineReady&&selected&&selectedRef.current?.id===selected.id&&pendingMapFocus.current===selected.id){pendingMapFocus.current=null;if(tourSession?.status==='active')void planRoute();else if(!tourSession)void viewOnMap();}
   },[selected,onlineReady,focusRevision]);
   useEffect(()=>()=>{routeScope.current.cancel();locationScope.current.cancel();if(locationTimer.current)clearTimeout(locationTimer.current);},[]);
   async function loadMore(){

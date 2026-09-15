@@ -93,6 +93,14 @@ class LocalKnowledge:
         self._updated_at: str | None = None
         self._load()
 
+    def get_tour_context(self, poi_id, campus_id, visit_date=None):
+        from .tour_projection import context
+        return context(self, poi_id, campus_id, visit_date)
+
+    def get_tour_route_costs(self, request):
+        from .tour_projection import route_costs
+        return route_costs(self, request)
+
     def _load(self) -> None:
         documents_path = self.data_directory / DOCUMENTS_FILE.name
         buildings_path = self.data_directory / BUILDINGS_FILE.name

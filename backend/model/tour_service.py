@@ -7,7 +7,7 @@ import json
 import time
 from uuid import uuid4
 from backend.common.errors import DomainError
-from backend.r3_contracts import TourRequest, TourResult, TourSession, StopProgress
+from backend.r3_contracts import TourRequest, TourResult, TourSession, StopProgress, ClarificationQuestion
 from .runtime import runtime
 from .tour_catalog import utcnow
 from .tour_planner import Planner, understand
@@ -108,7 +108,10 @@ class TourService:
             # No await from cancellation/version check through state/history commit.
             if session.tour_id not in self.tours and len(self.tours) >= self.capacity:
                 raise DomainError('TOUR_CAPACITY', '行程保留容量已满', 429, body.request_id)
-            result = TourResult(request_id=body.request_id, session=session, usage=usage)
+            questions = [ClarificationQuestion(question_id=f'question-{i}', field='message', prompt=w)
+                for i,w in enumerate(session.plan.warnings) if w.startswith(('请明确','请确认可接受')) or '请集中确认' in w][:8] if session.status in ('draft','infeasible') else []
+            result = TourResult(request_id=body.request_id, session=session, usage=usage,
+                clarification_required=bool(questions), clarifications=questions)
             if history_commit:
                 history_commit()
             old = self.tours.get(session.tour_id)
@@ -124,7 +127,7 @@ class TourService:
             entry.result = result.model_copy(deep=True)
             self.runtime.finish(body.request_id, 'completed')
             self.runtime.emit(body.request_id, 'request', 'completed', duration_ms=metrics['elapsed']())
-            metrics['task_completed'] = session.status == 'completed'
+            metrics['task_completed'] = session.status == 'completed' and session.completion_reason == 'all_stops_resolved' and all(p.state == 'completed' for p in session.progress)
             metrics['outcome'] = 'pass'
             return result
         except (asyncio.CancelledError, TimeoutError) as error:
@@ -155,16 +158,16 @@ class TourService:
 
     async def create(self, body):
         async def op(metrics):
-            safe = TourRequest.model_validate(body.model_copy(update={'interests': [redact_coordinates(x) for x in body.interests]}).model_dump())
+            safe = TourRequest.model_validate(body.model_copy(update={'message': redact_coordinates(body.message), 'interests': [redact_coordinates(x) for x in body.interests]}).model_dump())
             plan, usage, service = await self.planner.create(safe, metrics)
-            if any(has_coordinates(x) for x in body.interests):
+            if any(has_coordinates(x) for x in [body.message, *body.interests]):
                 plan.warnings.insert(0, '精确位置已移除，请通过导航位置入口提供起点。')
             session = TourSession(tour_id=uuid4(), session_id=body.session_id, state_version=1,
                 status=plan.status, plan=plan, progress=[StopProgress(stop_id=s.stop_id, state='pending') for s in plan.stops],
                 current_stop_id=None, remaining_minutes=body.duration_minutes, saved=False, updated_at=utcnow())
             def commit():
                 if metrics['model_calls']:
-                    service.history.commit(body.session_id, '行程需求：'+ '；'.join(safe.interests),
+                    service.history.commit(body.session_id, '行程需求：'+ '；'.join([safe.message, *safe.interests]),
                         '目录候选计划：'+ '、'.join(s.poi_id for s in plan.stops)+'；状态：'+plan.status)
             return session, usage, commit
         return await self._run('/tours', body, op)
@@ -195,14 +198,14 @@ class TourService:
             require(current.state in allowed[action])
             current.state = {'arrive':'arrived', 'explain':'explaining', 'complete_stop':'completed'}[action]
             if all(p.state in ('completed', 'skipped') for p in session.progress):
-                session.status = 'completed'; session.current_stop_id = None
+                session.status = 'completed'; session.current_stop_id = None; session.completion_reason = 'all_stops_resolved'
         elif action == 'next':
             require(session.status == 'active' and current is not None and current.state in ('completed', 'skipped'))
             pending = next((p for p in session.progress if p.state == 'pending'), None)
             if pending:
                 session.current_stop_id = pending.stop_id; pending.state = 'navigating'
             else:
-                session.status = 'completed'; session.current_stop_id = None
+                session.status = 'completed'; session.current_stop_id = None; session.completion_reason = 'all_stops_resolved'
         elif action == 'pause':
             require(session.status == 'active'); session.status = 'paused'
         elif action == 'resume':
@@ -212,7 +215,7 @@ class TourService:
                 current.state = 'arrived'
         elif action == 'skip':
             # Reserved internal semantics pending M's command enum coordination.
-            require(session.status == 'active' and current is not None and current.state not in ('completed', 'skipped'))
+            require(session.status == 'active' and current is not None and (stop_id is None or current.stop_id == stop_id) and current.state not in ('completed', 'skipped'))
             current.state = 'skipped'
             self._transition(session, 'next')
         elif action == 'end':
@@ -220,7 +223,7 @@ class TourService:
             for item in session.progress:
                 if item.state != 'completed':
                     item.state = 'skipped'
-            session.current_stop_id = None; session.status = 'completed'
+            session.current_stop_id = None; session.status = 'completed'; session.completion_reason = 'user_ended'
         else:
             require(False)
 
@@ -237,6 +240,10 @@ class TourService:
                 session.status = 'infeasible' if session.plan.status == 'infeasible' else 'checked'
                 session.plan.status = session.status; session.plan.version += 1
             else:
+                if body.action in ('start','resume') and not body.accept_unverified:
+                    if (session.plan.request.accessibility == 'step_free' or
+                        any(l.duration_s is None or l.verification != 'verified' or l.campus_access != 'verified' for l in session.plan.legs)):
+                        raise DomainError('TOUR_UNVERIFIED_ACK_REQUIRED', '路线或通行尚未核实，请明确确认后开始或恢复', 422)
                 self._transition(session, body.action, body.stop_id)
             session.state_version += 1; session.updated_at = utcnow()
             return session, None, None
@@ -268,9 +275,9 @@ class TourService:
                     raise DomainError('TOUR_STOP_LOCKED', '已完成站点不可改；当前站点请先暂停', 409)
                 index = next(i for i,s in enumerate(session.plan.stops) if s.stop_id == body.stop_id)
                 old = session.plan.stops[index]
-                constraints = understand('；'.join(session.plan.request.interests), self.planner.catalog, session.plan.campus_id)
-                required = set(constraints.must_visit) | {p.poi_id for p in (session.plan.request.start, session.plan.request.end) if p.kind == 'poi'}
-                if old.poi_id in required or body.replacement_poi_id in constraints.avoid:
+                constraints = understand('；'.join([session.plan.request.message, *session.plan.request.interests]), self.planner.catalog, session.plan.campus_id)
+                required = set(constraints.must_visit) | set(session.plan.request.must_visit) | {p.poi_id for p in (session.plan.request.start, session.plan.request.end) if p.kind == 'poi'}
+                if old.poi_id in required or body.replacement_poi_id in set(constraints.avoid) | set(session.plan.request.avoid):
                     raise DomainError('TOUR_INFEASIBLE', '修改违反原必去、避开或起终点约束，请重新明确需求', 422)
                 if body.operation == 'remove_stop':
                     session.plan.stops.pop(index); session.progress.remove(progress)
@@ -304,10 +311,18 @@ class TourService:
         async def op(metrics):
             snapshot = body.snapshot.model_copy(deep=True)
             if snapshot.tour_id in self.tours:
-                return self._read(snapshot.tour_id, body.session_id), None, None
+                existing = self._read(snapshot.tour_id, body.session_id)
+                if existing.status == 'active':
+                    self._elapsed(existing)
+                    existing.status = 'paused'
+                    existing.state_version += 1
+                    existing.updated_at = utcnow()
+                    for progress in existing.progress:
+                        if progress.state == 'explaining': progress.state = 'arrived'
+                return existing, None, None
             if snapshot.updated_at > utcnow() or snapshot.plan.created_at > utcnow():
                 raise DomainError('TOUR_RESTORE_INVALID', '保存快照时间无效', 422)
-            text_values = [*snapshot.plan.request.interests, *snapshot.plan.warnings,
+            text_values = [snapshot.plan.request.message, *snapshot.plan.request.interests, *snapshot.plan.warnings,
                 *[v for stop in snapshot.plan.stops for v in (stop.title,stop.purpose)],
                 *[v for item in snapshot.plan.evidence for v in (item.claim,item.source_ref)]]
             if any(has_coordinates(value) for value in text_values):

@@ -2,7 +2,8 @@ import { TourWorkspace, type TourMemory } from './TourWorkspace';
 import { privateText, speechEventCurrent } from './tour-model';
 import type { SpeechInteractionController, SpeechInteractionContext } from '../../../shared/r3-speech';
 import type { SpeechInteractionEvent } from '../../../shared/r3';
-const interactionModules = import.meta.glob('../speech/interaction.ts');
+import { createSpeechInteractionController } from '../speech/interaction';
+import { connectSpeechInteraction } from '../transport/r3-speech';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { ApiError, AvatarAdapter, AvatarState, CampusId, ChatResponse, Health, Mode, RuntimeEvent, Source, SpeechAdapter, Voice } from '../../../shared/contracts';
 import type { CampusAssets, GenerationOptions, POI, SpeechController, SpeechProgress, SpeechRun, StreamEvent } from '../../../shared/r2';
@@ -86,6 +87,7 @@ function TaskCard({ task, currentCampus, canStop, onStop, onRetry, onLogs, onCop
 export function App() {
   const [prefs, setPrefs] = useState(readPreferences); const [health, setHealth] = useState<Health | null>(null); const [serviceError, setServiceError] = useState(false);
   const [tourMode,setTourMode]=useState(true);
+  const tourTextRef=useRef<((text:string)=>Promise<boolean>)|null>(null);
   const tourMemoryRef=useRef<Partial<Record<CampusId,TourMemory>>>({});const tourCancelRef=useRef<(()=>void)|null>(null);
   const [voiceSend,setVoiceSend]=useState<'confirm'|'auto'>('confirm');
   const interactionRef=useRef<SpeechInteractionController|null>(null); const interactionContext=useRef<SpeechInteractionContext|null>(null); const voiceSendRef=useRef(voiceSend); voiceSendRef.current=voiceSend;
@@ -112,10 +114,12 @@ export function App() {
   campusRef.current=prefs.campus;
   useEffect(() => {
     let active = true; const avatar = createAvatarAdapter(); const controller = createSpeechController(); const asr = controller.getAdapter(); avatarRef.current = avatar; asrRef.current = asr; speechControllerRef.current = controller;
+    interactionRef.current=connectSpeechInteraction(()=>createSpeechInteractionController({speechController:controller}),controller);
+    const unsubscribeLevel=controller.getAdapter().subscribeAudioLevel(level=>avatar.setAudioLevel?.(level));
     void transport.health().then((value) => { if (active) { setHealth(value); setServiceError(false); } }).catch(() => { if (active) setServiceError(true); });
     if (avatarHostRef.current) void avatar.mount(avatarHostRef.current).then((result) => { if (active) { setAvatarReady(result.status === 'ready'); setAvatarMessage(result.status === 'ready' ? '人物已就位' : result.status === 'failed' ? '人物渲染失败' : '人物渲染尚未接入'); } });
     const unsubscribe = controller.subscribe((progress) => { if (!active) return; speechProgressRef.current = progress; setSpeechProgress(progress); if (progress.status === 'error') setNotice('播报失败：' + (progress.code ?? 'speech_failed') + '。可点击恢复声音或重新朗读。'); speechRunRequestRef.current = progress.status === 'idle' || progress.status === 'stopped' || progress.status === 'error' ? null : progress.request_id; if (progress.status === 'speaking') setAvatarState('speaking'); else if (!runningRef.current.chat && !runningRef.current.generation) setAvatarState(progress.status === 'error' ? 'error' : 'idle'); });
-    return () => { active = false; laneAbortRef.current.chat?.abort(); laneAbortRef.current.generation?.abort(); asrAbortRef.current?.abort(); unsubscribe(); controller.dispose(); interactionContext.current=null;interactionRef.current?.dispose(); avatar.dispose(); if (asrRequestRef.current) void asr.stop(asrRequestRef.current); };
+    return () => { active = false; laneAbortRef.current.chat?.abort(); laneAbortRef.current.generation?.abort(); asrAbortRef.current?.abort(); unsubscribe(); unsubscribeLevel(); controller.dispose(); interactionContext.current=null;interactionRef.current?.dispose(); avatar.dispose(); if (asrRequestRef.current) void asr.stop(asrRequestRef.current); };
   }, []);
   useEffect(() => { avatarRef.current?.setState(avatarState); }, [avatarState]);
   useEffect(() => {
@@ -137,7 +141,7 @@ export function App() {
     }
   }, [generationTasks, workView, prefs.campus]);
 
-  function currentSession(lane: Lane, campus = prefs.campus) { return sessionsRef.current[lane][campus]; }
+  function currentSession(lane: Lane, campus = prefs.campus) { return (tourMode?tourMemoryRef.current[campus]?.session?.session_id:undefined)??sessionsRef.current[lane][campus]; }
   function setTasks(lane: Lane, update: (current: TaskRecord[]) => TaskRecord[]) { if (lane === 'chat') setChatTasks(update); else setGenerationTasks(update); }
   function setRunning(lane: Lane, value: boolean) { runningRef.current[lane] = value; setLaneBusy((current) => ({ ...current, [lane]: value })); }
   function isCurrent(lane: Lane, generation: number, requestId: string) { return laneGenerationRef.current[lane] === generation && requestRef.current[lane] === requestId; }
@@ -146,9 +150,17 @@ export function App() {
     const poll = async () => { if (stopped || pending || !isCurrent(lane, generation, requestId)) return; pending = true; try { const page = await transport.events(requestId, cursor); if (isCurrent(lane, generation, requestId)) { cursor = page.next_cursor; setEvents((current) => mergeRuntimeEvents(current, page.events)); } } catch { /* SSE error card remains authoritative. */ } finally { pending = false; } };
     void poll(); timer = window.setInterval(() => void poll(), 500); return async () => { window.clearInterval(timer); await poll(); stopped = true; };
   }
+  const lastSpeechRunRef=useRef<SpeechRun|null>(null);
+  function bindPlayback(run:SpeechRun){
+    lastSpeechRunRef.current=run;
+    const context:SpeechInteractionContext={interaction_id:freshUuid(),session_id:run.session_id,campus_id:run.campus_id,generation_id:run.generation_id,request_id:run.request_id};
+    interactionContext.current=context;
+    interactionRef.current?.bind?.({context,mode:'continuous',onEvent:handleInteraction});
+  }
   async function beginSpeech(task: TaskRecord, generationId: string): Promise<boolean> {
     if (!speechEnabled || prefs.speechMode === 'off' || !voiceId || !speechControllerRef.current) return false;
     const run: SpeechRun = { request_id: task.requestId, session_id: currentSession(task.lane, task.campus), campus_id: task.campus, generation_id: generationId, voice_id: voiceId, mode: prefs.speechMode, signal: laneAbortRef.current[task.lane]!.signal };
+    bindPlayback(run);
     const result = await speechControllerRef.current.begin(run); if (result.status !== 'ready') { setNotice('语音导览控制器尚未就绪，正文会继续生成。'); return false; } speechRunRequestRef.current = task.requestId; return true;
   }
   async function handleSceneEvent(event: Extract<StreamEvent, { type: 'poi_action' }>, task: TaskRecord, laneGeneration: number) {
@@ -205,7 +217,7 @@ export function App() {
     const sessionId = requestSessionRef.current[lane];if(!sessionId)return; ++laneGenerationRef.current[lane]; laneAbortRef.current[lane]?.abort(); laneAbortRef.current[lane] = null; setRunning(lane, false);
     setTasks(lane, (current) => current.map((item) => item.requestId === requestId && item.phase !== 'complete' ? { ...item, phase: 'cancelled', errorCode: 'CANCELLED', errorMessage: '本次操作已取消。', finishedAt: Date.now() } : item));
     if (speechRunRequestRef.current === requestId) await speechControllerRef.current?.stop(reason === 'user' ? 'cancel' : reason);
-    void transport.cancel(requestId, sessionId).then((result) => { if (result.upstream_stop === 'unconfirmed') setNotice('本地已停止；上游停止状态未确认。'); }).catch(() => setNotice('本地已停止；取消回执未确认。'));
+    await transport.cancel(requestId, sessionId).then((result) => { if (result.upstream_stop === 'unconfirmed') setNotice('本地已停止；上游停止状态未确认。'); }).catch(() => setNotice('本地已停止；取消回执未确认。'));
     if (!runningRef.current.chat && !runningRef.current.generation) setAvatarState('idle');
   }
   async function enableSpeech() {
@@ -215,25 +227,32 @@ export function App() {
   async function playTask(task: TaskRecord, text: string, segmentId?: string) {
     if (!speechEnabled || !voiceId || !speechControllerRef.current) { setNotice('请先开启语音导览并选择中文音色。'); return; }
     const generationId = freshUuid(); const controller = new AbortController(); const run: SpeechRun = { request_id: task.requestId, session_id: currentSession(task.lane, task.campus), campus_id: task.campus, generation_id: generationId, voice_id: voiceId, mode: 'full', signal: controller.signal };
+    await stopListening();bindPlayback(run);
     const result = segmentId ? await speechControllerRef.current.playSegment(run, text, segmentId) : await speechControllerRef.current.playFull(run, text); if (result.status !== 'ready') setNotice('语音播放未能开始。');
+  }
+  async function continueSpeech(){
+    const previous=lastSpeechRunRef.current;
+    if(!previous||previous.campus_id!==prefs.campus){setNotice('没有本校区可继续的内容。');return;}
+    const run:SpeechRun={...previous,generation_id:freshUuid(),signal:new AbortController().signal};
+    bindPlayback(run);
+    const result=await speechControllerRef.current?.continueRemaining?.(run);
+    if(result?.status!=='ready')setNotice('没有可继续的内容，请选择正文朗读。');
+  }
+  async function submitTourText(text:string){
+    if(tourMode&&await tourTextRef.current?.(text)){setChatInput('');return;}
+    await runTask('chat',text,'campus_qa',null);
   }
   async function startListening() {
     if(asrBusy)return;const listenGeneration=++asrGenerationRef.current;
     tourCancelRef.current?.();
     await cancelLane('chat'); await cancelLane('generation'); await speechControllerRef.current?.stop('new_request');
     if(campusRef.current!==prefs.campus||listenGeneration!==asrGenerationRef.current)return;
-    const loader=interactionModules['../speech/interaction.ts'];
-    if(loader){
+    if(interactionRef.current){
       try{
-        const module=await loader() as {createSpeechInteractionController():SpeechInteractionController};
         if(campusRef.current!==prefs.campus||listenGeneration!==asrGenerationRef.current)return;
-        interactionRef.current??=module.createSpeechInteractionController();
         const context:SpeechInteractionContext={interaction_id:freshUuid(),session_id:currentSession('chat'),campus_id:prefs.campus,generation_id:freshUuid(),request_id:null};
         interactionContext.current=context;setAsrBusy(true);setAvatarState('listening');
-        const result=await interactionRef.current.start({context,mode:'continuous',onEvent:handleInteraction,onAudioLevel:level=>{
-          if(interactionContext.current!==context)return;
-          (avatarRef.current as (AvatarAdapter&{setAudioLevel?(level:number):void})|null)?.setAudioLevel?.(level);
-        }});
+        const result=await interactionRef.current.start({context,mode:'continuous',onEvent:handleInteraction});
         if(interactionContext.current!==context)return;
         if(result.status==='unavailable'){setAsrBusy(false);setNotice('语音服务暂不可用，请使用文字输入。');}
       }catch{setAsrBusy(false);setNotice('语音识别无法启动，请检查麦克风权限或服务。');}
@@ -243,7 +262,7 @@ export function App() {
     if (asrBusy || runningRef.current.chat) { setNotice('请先结束当前语音或对话任务。'); return; }
     const requestId = freshUuid(asrRequestRef.current ?? undefined); const generation = ++asrGenerationRef.current; const campus = prefs.campus; const sessionId = currentSession('chat', campus); const controller = new AbortController(); asrAbortRef.current = controller; asrRequestRef.current = requestId; setAsrBusy(true); setAvatarState('listening');
     try {
-      const result = await asr.start({ request_id: requestId, session_id: sessionId, signal: controller.signal }, { onText: (text, isFinal) => { if (asrGenerationRef.current !== generation || campusRef.current !== campus) return; setChatInput(text); if (isFinal) { setAsrBusy(false); setAvatarState('idle'); if(voiceSendRef.current==='auto')void runTask('chat',text,'campus_qa',null);else {void stopListening();setNotice('识别文字已填入，请确认后发送。');} } }, onStart: () => undefined, onEnd: () => undefined, onFailure: (id, code) => { if (asrGenerationRef.current !== generation || id !== requestId || campusRef.current !== campus) return; setAsrBusy(false); setAvatarState('idle'); setNotice(code.includes('permission') ? '麦克风权限被拒绝。' : '语音识别服务暂不可用。'); } });
+      const result = await asr.start({ request_id: requestId, session_id: sessionId, signal: controller.signal }, { onText: (text, isFinal) => { if (asrGenerationRef.current !== generation || campusRef.current !== campus) return; setChatInput(text); if (isFinal) { setAsrBusy(false); setAvatarState('idle'); if(voiceSendRef.current==='auto')void submitTourText(text);else {void stopListening();setNotice('识别文字已填入，请确认后发送。');} } }, onStart: () => undefined, onEnd: () => undefined, onFailure: (id, code) => { if (asrGenerationRef.current !== generation || id !== requestId || campusRef.current !== campus) return; setAsrBusy(false); setAvatarState('idle'); setNotice(code.includes('permission') ? '麦克风权限被拒绝。' : '语音识别服务暂不可用。'); } });
       if (asrGenerationRef.current === generation && result.status !== 'ready') { setAsrBusy(false); setAvatarState('idle'); }
     } catch { if (asrGenerationRef.current === generation) { setAsrBusy(false); setAvatarState('idle'); setNotice('无法启动语音识别。'); } }
   }
@@ -258,12 +277,12 @@ export function App() {
     if(event.type==='recognition.final'){
       const text=privateText(event.text??'').trim();if(!text)return;setChatInput(text);
       if(text!==(event.text??'').trim()){setNotice('识别中包含精确位置，已移除；请改用地图定位。');return;}
-      if(voiceSendRef.current==='auto')void runTask('chat',text,'campus_qa',null);
+      if(voiceSendRef.current==='auto')void submitTourText(text);
       else {void stopListening();setNotice('识别文字已填入，请确认后发送。');}
     }
     if(event.type==='speech.error'){setAsrBusy(false);setNotice('语音服务暂不可用，请使用文字输入。');}
   }
-  async function stopListening() { interactionContext.current=null;void interactionRef.current?.stop('user'); const id = asrRequestRef.current; asrRequestRef.current = null; ++asrGenerationRef.current; asrAbortRef.current?.abort(); asrAbortRef.current = null; setAsrBusy(false); setAvatarState('idle'); if (id) await asrRef.current?.stop(id); }
+  async function stopListening() { interactionContext.current=null;await interactionRef.current?.stop('user'); const id = asrRequestRef.current; asrRequestRef.current = null; ++asrGenerationRef.current; asrAbortRef.current?.abort(); asrAbortRef.current = null; setAsrBusy(false); setAvatarState('idle'); if (id) await asrRef.current?.stop(id); }
   function copyTask(task: TaskRecord) { if (!task.answer.trim()) return; void navigator.clipboard.writeText(privateText(task.answer)).then(() => setNotice('内容已复制。')).catch(() => setNotice('浏览器未允许复制，请手动选择正文。')); }
   function exportTask(task: TaskRecord) { const blob = exportGeneratedText({...task,answer:privateText(task.answer)}); if (!blob) { setNotice('正文为空，无法导出。'); return; } const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = `tju-${task.generation?.type ?? 'content'}-${task.requestId.slice(0, 8)}.txt`; anchor.click(); URL.revokeObjectURL(url); }
   function retryTask(task: TaskRecord) { if (task.lane === 'generation') void runTask('generation', task.prompt, 'content_generation', task.generation, task.requestId, task.poiId === selectedPoi?.id ? selectedPoi : null, task.poiId); else void runTask('chat', task.prompt, task.mode, null, task.requestId, task.poiId === selectedPoi?.id ? selectedPoi : null, task.poiId); }
@@ -277,16 +296,16 @@ export function App() {
   const serviceTone = serviceError ? 'off' : health ? 'ready' : 'pending'; const modelTone = health?.model.verified ? 'ready' : health?.model.configured ? 'pending' : 'off';
 
   return <div className="app-shell r2-shell">
-    <header className="topbar"><div className="brand"><span className="brand-mark">珂</span><div><strong>珂莱塔</strong><span>天津大学数字人校园导游</span></div></div><details className="system-status"><summary>技术详情</summary><span className={`status-pill ${serviceTone}`}><i/>{serviceError ? '应用离线' : health ? '应用在线' : '连接中'}</span><span className={`status-pill ${modelTone}`}><i/>{health?.model.verified ? '模型已连通' : health?.model.configured ? '模型待验证' : '模型未配置'}</span></details><div className="speech-controls">{!speechEnabled ? <button onClick={() => void enableSpeech()}>开启语音导览</button> : <><select aria-label="自动播报方式" value={prefs.speechMode} onChange={(event) => { setPrefs({ ...prefs, speechMode: event.target.value as SpeechMode }); if (event.target.value === 'off') void speechControllerRef.current?.stop('user'); }}><option value="off">自动播报关闭</option><option value="brief">自动简述</option><option value="full">自动全文</option></select><select aria-label="导览语音" value={voiceId} onChange={(event) => setVoiceId(event.target.value)}>{voices.map((voice) => <option key={voice.id} value={voice.id}>{voice.name}</option>)}</select><button onClick={() => void enableSpeech()}>刷新音色</button><button onClick={() => void speechControllerRef.current?.enable(true).then((result) => setNotice(result.status === 'ready' ? '已请求恢复声音。' : '声音恢复失败，请检查浏览器权限。'))}>恢复声音</button>{speechControllerRef.current?.continueRemaining && <button onClick={() => void speechControllerRef.current?.continueRemaining?.().then((result) => { if (result.status !== 'ready') setNotice('没有可继续的内容，请选择正文朗读。'); })}>继续讲</button>}<span>{speechProgress?.status === 'speaking' ? '正在播报' : speechProgress?.status === 'buffering' ? '准备播报' : speechProgress?.status === 'error' ? '播报失败，请恢复或重读' : speechProgress?.status === 'paused' ? '播报已暂停' : '语音已开启'}</span>{(speechProgress?.status === 'speaking' || speechProgress?.status === 'buffering') && <button onClick={() => void speechControllerRef.current?.stop('user')}>停止播报</button>}</>}</div><button className="logs-button" onClick={() => showLogs()}><span>运行日志</span>{events.length > 0 && <b>{events.length}</b>}</button></header>
+    <header className="topbar"><div className="brand"><span className="brand-mark">珂</span><div><strong>珂莱塔</strong><span>天津大学数字人校园导游</span></div></div><details className="system-status"><summary>技术详情</summary><span className={`status-pill ${serviceTone}`}><i/>{serviceError ? '应用离线' : health ? '应用在线' : '连接中'}</span><span className={`status-pill ${modelTone}`}><i/>{health?.model.verified ? '模型已连通' : health?.model.configured ? '模型待验证' : '模型未配置'}</span></details><div className="speech-controls">{!speechEnabled ? <button onClick={() => void enableSpeech()}>开启语音导览</button> : <><select aria-label="自动播报方式" value={prefs.speechMode} onChange={(event) => { setPrefs({ ...prefs, speechMode: event.target.value as SpeechMode }); if (event.target.value === 'off') void speechControllerRef.current?.stop('user'); }}><option value="off">自动播报关闭</option><option value="brief">自动简述</option><option value="full">自动全文</option></select><select aria-label="导览语音" value={voiceId} onChange={(event) => setVoiceId(event.target.value)}>{voices.map((voice) => <option key={voice.id} value={voice.id}>{voice.name}</option>)}</select><button onClick={() => void enableSpeech()}>刷新音色</button><button onClick={() => void speechControllerRef.current?.enable(true).then((result) => setNotice(result.status === 'ready' ? '已请求恢复声音。' : '声音恢复失败，请检查浏览器权限。'))}>恢复声音</button>{speechControllerRef.current?.continueRemaining && <button onClick={() => void continueSpeech()}>继续讲</button>}<span>{speechProgress?.status === 'speaking' ? '正在播报' : speechProgress?.status === 'buffering' ? '准备播报' : speechProgress?.status === 'error' ? '播报失败，请恢复或重读' : speechProgress?.status === 'paused' ? '播报已暂停' : '语音已开启'}</span>{(speechProgress?.status === 'speaking' || speechProgress?.status === 'buffering') && <button onClick={() => void speechControllerRef.current?.stop('user')}>停止播报</button>}</>}</div><button className="logs-button" onClick={() => showLogs()}><span>运行日志</span>{events.length > 0 && <b>{events.length}</b>}</button></header>
     <aside className="guide-character" aria-label="数字人导游"><div ref={avatarHostRef} className="guide-character-host" style={{transform: `scale(${prefs.avatarScale})`}}/><span>{avatarReady?AVATAR_LABELS[avatarState]:avatarMessage}</span></aside>
     <nav className="experience-switch" aria-label="使用方式"><button aria-pressed={tourMode} onClick={()=>setTourMode(true)}>行程与步行导览</button><button aria-pressed={!tourMode} onClick={()=>{setTourMode(false);void stopListening();void cancelLane('chat');void cancelLane('generation');void speechControllerRef.current?.stop('user');}}>校园对话与内容生成</button></nav>
-    {tourMode&&<TourWorkspace key={prefs.campus} campus={prefs.campus} memory={tourMemoryRef.current[prefs.campus]} onMemory={value=>{tourMemoryRef.current[prefs.campus]=value;}} registerCancel={handler=>{tourCancelRef.current=handler;}} onCampus={campus=>setPrefs(current=>({...current,campus}))}
+    {tourMode&&<TourWorkspace key={prefs.campus} campus={prefs.campus} memory={tourMemoryRef.current[prefs.campus]} onMemory={value=>{tourMemoryRef.current[prefs.campus]=value;}} registerCancel={handler=>{tourCancelRef.current=handler;}} registerText={handler=>{tourTextRef.current=handler;}} onCampus={campus=>setPrefs(current=>({...current,campus}))}
       onReadRoute={route=>{const task:TaskRecord={...newTask(freshUuid(),freshUuid()),lane:'chat',prompt:'路线讲解',mode:'campus_qa',campus:prefs.campus,poiId:null,generation:null};void playTask(task,privateText(routeNarration(route)));}}
       onStop={async()=>{await stopListening();await cancelLane('chat');await cancelLane('generation');await speechControllerRef.current?.stop('user');}}
-      onExplain={stop=>{void cancelLane('chat').then(()=>runTask('chat','请简短讲解'+stop.title+'，说明值得观察的细节；缺少资料时明确说明。','campus_qa',null,null,null,stop.poi_id));}}
+      onExplain={stop=>{void cancelLane('chat').then(()=>runTask('chat','请简短讲解'+stop.title+'，说明值得观察的细节；缺少资料时明确说明。','content_generation',{type:'guide_script',requirements:'只讲当前已确认到达站点；注明来源和进入条件。',length:'short',style:'friendly'},null,null,stop.poi_id));}}
       caption={asrBusy?'正在聆听…':speechProgress?.status==='speaking'?'正在播报当前讲解':notice}
       narration={[...chatTasks].reverse().find(t=>t.campus===prefs.campus)?.answer??''}
-      voice={<><button onClick={()=>asrBusy?void stopListening():void startListening()}>{asrBusy?'停止识别':'语音输入'}</button><select aria-label="识别后的发送方式" value={voiceSend} onChange={e=>setVoiceSend(e.target.value as 'confirm'|'auto')}><option value="confirm">识别后确认发送</option><option value="auto">说完自动发送</option></select><button onClick={()=>void enableSpeech()}>开启中文播报</button><button onClick={()=>void speechControllerRef.current?.stop('user')}>停止播报</button><label className="tour-speech-input">对导游说<textarea value={chatInput} rows={2} maxLength={8000} onChange={e=>setChatInput(e.target.value)} onCompositionStart={()=>{composingRef.current=true;}} onCompositionEnd={()=>{composingRef.current=false;}} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing&&!composingRef.current){e.preventDefault();void runTask('chat',chatInput,'campus_qa',null);}}}/></label><button disabled={laneBusy.chat||!chatInput.trim()} onClick={()=>void runTask('chat',chatInput,'campus_qa',null)}>确认发送</button>{laneBusy.chat&&<button onClick={()=>void cancelLane('chat')}>取消回答</button>}</>}/>}
+      voice={<><button onClick={()=>asrBusy?void stopListening():void startListening()}>{asrBusy?'停止识别':'语音输入'}</button><select aria-label="识别后的发送方式" value={voiceSend} onChange={e=>setVoiceSend(e.target.value as 'confirm'|'auto')}><option value="confirm">识别后确认发送</option><option value="auto">说完自动发送</option></select><button onClick={()=>void enableSpeech()}>开启中文播报</button><button onClick={()=>void speechControllerRef.current?.stop('user')}>停止播报</button><label className="tour-speech-input">对导游说<textarea value={chatInput} rows={2} maxLength={8000} onChange={e=>setChatInput(e.target.value)} onCompositionStart={()=>{composingRef.current=true;}} onCompositionEnd={()=>{composingRef.current=false;}} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing&&!composingRef.current){e.preventDefault();void submitTourText(chatInput);}}}/></label><button disabled={laneBusy.chat||!chatInput.trim()} onClick={()=>void submitTourText(chatInput)}>确认发送</button>{laneBusy.chat&&<button onClick={()=>void cancelLane('chat')}>取消回答</button>}</>}/>}
     <div className={tourMode?'legacy-workspace hidden-for-tour':'legacy-workspace'}>
     <nav className="mobile-switch" aria-label="小屏视图"><button className={mobileView === 'guide' ? 'active' : ''} onClick={() => setMobileView('guide')}>地图与导览</button><button className={mobileView === 'work' ? 'active' : ''} onClick={() => setMobileView('work')}>对话与生成</button></nav>
     <main className="workspace r2-workspace" data-mobile-view={mobileView} style={{ '--panel-width': `${prefs.panelWidth}px` } as CSSProperties}>

@@ -16,8 +16,8 @@ def mutation(s,**fields):
     return dict(request_id=uuid4(),session_id=s.session_id,expected_version=s.plan.version,expected_state_version=s.state_version,**fields)
 
 async def command(service,s,action):
-    args=mutation(s,action=action)
-    if action in ('arrive','explain','complete_stop'):args['stop_id']=s.current_stop_id
+    args=mutation(s,action=action,**({'accept_unverified':True} if action in ('start','resume') else {}))
+    if action in ('arrive','explain','complete_stop','skip'):args['stop_id']=s.current_stop_id
     return (await service.command(s.tour_id,TourCommand(**args))).session
 
 async def active(service):

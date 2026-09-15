@@ -11,6 +11,9 @@ class CostService:
         for place in body.places:
             if place.kind == 'poi':
                 self.catalog.poi(place.poi_id, body.campus_id)
+        projection = getattr(self.catalog.source, 'get_tour_route_costs', None)
+        if projection:
+            return projection(body)
         return RouteCostResponse(request_id=body.request_id, costs=[
             RouteCostResult(from_ref=a, to_ref=b, distance_m=None, duration_s=None,
                 source='unknown', verification='unverified', checked_at=None,

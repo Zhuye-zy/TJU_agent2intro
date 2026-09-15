@@ -43,7 +43,7 @@ export interface SpeechController {
  playSegment(run:SpeechRun,text:string,segment_id:string):Promise<AdapterResult>;
  playFull(run:SpeechRun,text:string):Promise<AdapterResult>;
  stop(reason:'user'|'new_request'|'clear'|'campus_change'|'cancel'):Promise<void>;
- replay?():Promise<AdapterResult>; continueRemaining?():Promise<AdapterResult>;
+ replay?(run?:SpeechRun):Promise<AdapterResult>; continueRemaining?(run?:SpeechRun):Promise<AdapterResult>;
  playVerbatimUrl?(run:SpeechRun,text:string,segment_id:string,explicitRequest:boolean):Promise<AdapterResult>;
  pause():Promise<AdapterResult>; resume():Promise<AdapterResult>;
  listVoices():Promise<Voice[]>;

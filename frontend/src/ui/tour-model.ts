@@ -5,7 +5,8 @@ import { acceptsTourResult } from '../transport/r3';
 export const SAVED_PREFIX = 'ai4tju.r3.saved-tour.v1.';
 export const CAMPUS_LABEL = {weijinlu:'卫津路校区',beiyangyuan:'北洋园校区'};
 export function privateText(text:string):string {
- return text.replace(/(?:[-+]?\d{1,3}\.\d+)\s*[,，;/\s]\s*(?:[-+]?\d{1,3}\.\d+)/g,'[位置已移除，请使用地图定位]')
+ let value=text; for(let i=0;i<3;i++){try{const decoded=decodeURIComponent(value);if(decoded===value)break;value=decoded;}catch{break;}}
+ return value.replace(/[-+]?\d{1,3}\.\d{3,}/g,'[位置已移除，请使用地图定位]').replace(/(?:[-+]?\d{1,3}\.\d+)\s*[,，;/\s]\s*(?:[-+]?\d{1,3}\.\d+)/g,'[位置已移除，请使用地图定位]')
   .replace(/(?:经度|纬度|longitude|latitude|lng|lat)\s*[:：=]?\s*[-+]?\d{1,3}(?:\.\d+)?/gi,'[位置已移除，请使用地图定位]');
 }
 const str=(value:string)=>privateText(value);
@@ -15,13 +16,13 @@ export function savedSnapshot(s:TourSession):TourSession {
  return {tour_id:s.tour_id,session_id:s.session_id,state_version:s.state_version,status:s.status,
   plan:{plan_id:s.plan.plan_id,version:s.plan.version,campus_id:s.plan.campus_id,status:s.plan.status,
    request:{request_id:r.request_id,session_id:r.session_id,campus_id:r.campus_id,duration_minutes:r.duration_minutes,
-    interests:r.interests.map(str),start:place(r.start),end:place(r.end),accessibility:r.accessibility??'standard'},
+    message:str(r.message??''),must_visit:r.must_visit??[],avoid:r.avoid??[],visit_date:r.visit_date??null,max_walking_minutes:r.max_walking_minutes??null,interests:r.interests.map(str),start:place(r.start),end:place(r.end),accessibility:r.accessibility??'standard'},
    stops:s.plan.stops.map(p=>({stop_id:p.stop_id,poi_id:p.poi_id,title:str(p.title),visit_minutes:p.visit_minutes,visit_time_source:p.visit_time_source,purpose:str(p.purpose),evidence_ids:p.evidence_ids??[]})),
    legs:(s.plan.legs??[]).map(l=>({from_ref:place(l.from_ref),to_ref:place(l.to_ref),distance_m:l.distance_m,duration_s:l.duration_s,source:l.source,verification:l.verification,checked_at:l.checked_at,campus_access:l.campus_access,evidence_ids:l.evidence_ids??[],reason:l.reason})),
-   evidence:(s.plan.evidence??[]).map(e=>({evidence_id:e.evidence_id,source_ref:e.source_ref,claim:str(e.claim),relation:e.relation,verification:e.verification,checked_at:e.checked_at,valid_until:e.valid_until??null})),
+   evidence:(s.plan.evidence??[]).map(e=>({evidence_id:e.evidence_id,source_ref:str(e.source_ref),claim:str(e.claim),relation:e.relation,verification:e.verification,checked_at:e.checked_at,valid_until:e.valid_until??null})),
    warnings:(s.plan.warnings??[]).map(str),created_at:s.plan.created_at},
   progress:s.progress.map(p=>({stop_id:p.stop_id,state:p.state})),current_stop_id:s.current_stop_id,
-  remaining_minutes:s.remaining_minutes,saved:s.saved,updated_at:s.updated_at};
+  remaining_minutes:s.remaining_minutes,saved:s.saved,updated_at:s.updated_at,completion_reason:s.completion_reason??null};
 }
 export function listSaved(storage:Pick<Storage,'length'|'key'|'getItem'>):TourSession[] {
  const list:TourSession[]=[];
@@ -71,7 +72,19 @@ export class TourLifecycle {
 }
 
 
-export function tourCommand(s:TourSession,id:string,action:TourCommand['action']):TourCommand {
- return {request_id:id,session_id:s.session_id,expected_version:s.plan.version,expected_state_version:s.state_version,action,
-  ...(['arrive','explain','complete_stop'].includes(action)?{stop_id:s.current_stop_id}:{})};
+export function tourCommand(s:TourSession,id:string,action:TourCommand['action'],acceptUnverified=false):TourCommand {
+ return {request_id:id,session_id:s.session_id,expected_version:s.plan.version,expected_state_version:s.state_version,action,...(acceptUnverified&&['start','resume'].includes(action)?{accept_unverified:true}:{}),
+  ...(['arrive','explain','complete_stop','skip'].includes(action)?{stop_id:s.current_stop_id}:{})};
+}
+
+// Only explicit time adjustments become mutations; all other text remains a question.
+export function remainingTimeIntent(text:string):number|null {
+ const clean=privateText(text).replace(/\s/g,'');
+ if(!/(?:只剩|还剩|剩余|时间.*剩)/.test(clean))return null;
+ if(/半小时/.test(clean))return 30;
+ const numeric=/(\d+)(?:分钟|分)/.exec(clean);
+ if(numeric)return Number(numeric[1]);
+ const chinese:Record<string,number>={'十':10,'二十':20,'三十':30,'四十':40,'五十':50,'六十':60};
+ for(const [word,minutes] of Object.entries(chinese).reverse())if(clean.includes(word+'分钟'))return minutes;
+ return null;
 }

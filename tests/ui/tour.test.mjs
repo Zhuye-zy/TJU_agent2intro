@@ -5,7 +5,7 @@ import {spawn} from 'node:child_process';
 import {randomUUID as uuid} from 'node:crypto';
 const output=await build({configFile:false,logLevel:'silent',build:{write:false,minify:false,lib:{entry:'frontend/src/ui/tour-model.ts',formats:['es'],fileName:()=> 'tour-model.js'}}});
 const chunk=(Array.isArray(output)?output[0]:output).output.find(v=>v.type==='chunk');
-const {TourLifecycle,tourCommand,privateText,savedSnapshot,storeSaved,listSaved,SAVED_PREFIX,speechEventCurrent}=await import('data:text/javascript;base64,'+Buffer.from(chunk.code).toString('base64'));
+const {TourLifecycle,tourCommand,privateText,savedSnapshot,storeSaved,listSaved,SAVED_PREFIX,speechEventCurrent,remainingTimeIntent}=await import('data:text/javascript;base64,'+Buffer.from(chunk.code).toString('base64'));
 const sample=(version=1)=>({
  tour_id:'tour',session_id:'session',state_version:version,status:'draft',saved:false,remaining_minutes:60,current_stop_id:null,updated_at:'2026-09-15T00:00:00Z',
  plan:{plan_id:'plan',campus_id:'weijinlu',version,status:'draft',request:{request_id:'original',session_id:'session',campus_id:'weijinlu',duration_minutes:60,interests:['history'],start:{kind:'current_position'},end:{kind:'unspecified'}},stops:[{stop_id:'a',poi_id:'poi-a',title:'A',visit_minutes:10,visit_time_source:'planner_allocation',purpose:'history'}],legs:[],evidence:[],warnings:[],created_at:'2026-09-15T00:00:00Z'},progress:[{stop_id:'a',state:'pending'}]
@@ -112,4 +112,14 @@ test('N01 view changes retain M concurrency and rate guards',async()=>{
  finish(null);await pending;
  await assert.rejects(nextView.run('walking_route','route-three',true,new AbortController().signal,async()=>null),{message:'rate_limited'});
  assert.equal(nextView.snapshot().counters.walking_route.initiated,1);
+});
+
+test('M integration saves formal constraints and interprets only explicit remaining time',()=>{
+ const s=sample();Object.assign(s.plan.request,{message:'校史',must_visit:['poi-a'],avoid:['poi-b'],visit_date:'2026-09-15',max_walking_minutes:20});
+ const saved=savedSnapshot(s);
+ assert.deepEqual(saved.plan.request.must_visit,['poi-a']);assert.equal(saved.plan.request.max_walking_minutes,20);assert.equal(saved.plan.request.visit_date,'2026-09-15');
+ assert.equal(remainingTimeIntent('时间只剩半小时'),30);
+ assert.equal(remainingTimeIntent('现在还剩二十分钟'),20);
+ assert.equal(remainingTimeIntent('校史馆开放30分钟吗'),null);
+ assert.ok(!privateText('%31%31%37%2E%31%32%33%34').includes('%31'));
 });

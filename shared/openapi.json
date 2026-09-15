@@ -4782,6 +4782,18 @@
           "evidence": {
             "$ref": "#/components/schemas/Evidence"
           },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
           "claim_type": {
             "type": "string",
             "enum": [

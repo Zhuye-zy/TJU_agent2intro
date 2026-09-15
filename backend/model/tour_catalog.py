@@ -44,8 +44,11 @@ class TourCatalog:
         exact = [p for p in self.pois(campus) if name == p.id or name in [p.name, *p.aliases]]
         return exact
 
-    def evidence(self, poi_id, campus):
+    def evidence(self, poi_id, campus, visit_date=None):
         self.poi(poi_id, campus)
+        projection = getattr(self.source, 'get_tour_context', None)
+        if projection:
+            return [x.evidence.model_copy(deep=True) for x in projection(poi_id, campus, visit_date).evidence][:16]
         # Public extension point for D. Until available, read its existing typed
         # facts file, without mutating the store or treating search hits as proof.
         getter = getattr(self.source, 'tour_evidence', None)

@@ -1,5 +1,5 @@
 import type { SpeechInteractionEvent } from '../../../shared/r3';
-import type { SpeechInteractionController, SpeechInteractionOptions } from '../../../shared/r3-speech';
+import type { SpeechInteractionController, SpeechInteractionOptions, SpeechInteractionCapabilities } from '../../../shared/r3-speech';
 import { CampusSpeechController, createSpeechController, type PlaybackEvent } from './controller';
 
 export interface InteractionDependencies {
@@ -50,7 +50,7 @@ export class CampusSpeechInteractionController implements SpeechInteractionContr
     });
   }
 
-  get capabilities() {
+  get capabilities(): SpeechInteractionCapabilities {
     return { ...this.speechController.getAdapter().recognitionStatus,
       continuous: this.speechController.getAdapter().supportsContinuousRecognition, interruption: this.dependencies.automaticBargeIn ? 'headset_vad_unverified' : 'manual',
       lip_sync: 'amplitude' as const };
@@ -65,6 +65,7 @@ export class CampusSpeechInteractionController implements SpeechInteractionContr
 
   async start(options: SpeechInteractionOptions): Promise<{ status: 'started' | 'unavailable'; error_code?: string }> {
     if (this.disposed) return { status: 'unavailable', error_code: 'disposed' };
+    if (options.mode === 'push_to_talk') await this.interrupt();
     this.bind(options);
     const epoch = this.epoch, snapshot = this.options!;
     const adapter = this.speechController.getAdapter();
@@ -80,7 +81,6 @@ export class CampusSpeechInteractionController implements SpeechInteractionContr
       this.emit(snapshot, 'speech.error', { error_code: code === 'asr_not_configured' ? 'asr_not_configured' : 'recognition_failed' });
       return { status: 'unavailable', error_code: code };
     }
-    if (options.mode === 'push_to_talk') await this.interrupt();
     if (epoch !== this.epoch || this.disposed) return { status: 'unavailable', error_code: 'stopped' };
     const capture = new AbortController(); this.capture = capture;
     // Capture has its own request ID so stopping ASR cannot cancel a prefetched TTS operation.

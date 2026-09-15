@@ -99,6 +99,19 @@
         "evidence": {
           "$ref": "#/$defs/Evidence"
         },
+        "source_url": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Url"
+        },
         "claim_type": {
           "enum": [
             "stable_fact",
@@ -238,6 +251,19 @@
             },
             "evidence": {
               "$ref": "#/$defs/Evidence"
+            },
+            "source_url": {
+              "anyOf": [
+                {
+                  "maxLength": 2000,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Source Url"
             },
             "claim_type": {
               "enum": [

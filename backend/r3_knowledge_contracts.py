@@ -10,6 +10,7 @@ class ApplicableEvidence(Strict):
     poi_id: Id
     campus_id: CampusId
     evidence: Evidence
+    source_url: str | None = Field(default=None, max_length=2000)
     claim_type: Literal["stable_fact", "published_rule", "historical_event", "field_observation"]
     applicable_at: str | None = Field(default=None, max_length=500)
     audience: str | None = Field(default=None, max_length=200)
