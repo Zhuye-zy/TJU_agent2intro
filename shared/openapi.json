@@ -123,6 +123,169 @@
         }
       }
     },
+    "/api/knowledge/tour-context/{poi_id}": {
+      "get": {
+        "tags": [
+          "R3 knowledge"
+        ],
+        "summary": "Tour Context",
+        "operationId": "tour_context_api_knowledge_tour_context__poi_id__get",
+        "parameters": [
+          {
+            "name": "poi_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+              "title": "Poi Id"
+            }
+          },
+          {
+            "name": "campus_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "weijinlu",
+                "beiyangyuan"
+              ],
+              "type": "string",
+              "title": "Campus Id"
+            }
+          },
+          {
+            "name": "visit_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Visit Date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TourKnowledgeContext"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "499": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Additional Response"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Implemented"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
     "/api/tours/status": {
       "get": {
         "tags": [
@@ -4601,6 +4764,138 @@
         ],
         "title": "ApiError"
       },
+      "ApplicableEvidence": {
+        "properties": {
+          "poi_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+            "title": "Poi Id"
+          },
+          "campus_id": {
+            "type": "string",
+            "enum": [
+              "weijinlu",
+              "beiyangyuan"
+            ],
+            "title": "Campus Id"
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/Evidence"
+          },
+          "claim_type": {
+            "type": "string",
+            "enum": [
+              "stable_fact",
+              "published_rule",
+              "historical_event",
+              "field_observation"
+            ],
+            "title": "Claim Type"
+          },
+          "applicable_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applicable At"
+          },
+          "audience": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audience"
+          },
+          "valid_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid From"
+          },
+          "valid_through": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Through"
+          },
+          "source_checked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Checked At"
+          },
+          "field_checked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Checked At"
+          },
+          "current_status": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "pending",
+              "expired",
+              "conflict",
+              "unknown"
+            ],
+            "title": "Current Status"
+          },
+          "conflict_ids": {
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Conflict Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "poi_id",
+          "campus_id",
+          "evidence",
+          "claim_type",
+          "current_status"
+        ],
+        "title": "ApplicableEvidence"
+      },
       "AsrRequest": {
         "properties": {
           "request_id": {
@@ -4946,6 +5241,18 @@
       },
       "CampusMedia": {
         "properties": {
+          "poi_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poi Id"
+          },
           "id": {
             "type": "string",
             "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
@@ -7354,6 +7661,74 @@
           "action"
         ],
         "title": "TourCommand"
+      },
+      "TourKnowledgeContext": {
+        "properties": {
+          "poi_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+            "title": "Poi Id"
+          },
+          "campus_id": {
+            "type": "string",
+            "enum": [
+              "weijinlu",
+              "beiyangyuan"
+            ],
+            "title": "Campus Id"
+          },
+          "requested_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested Date"
+          },
+          "version": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Version"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/ApplicableEvidence"
+            },
+            "type": "array",
+            "maxItems": 40,
+            "title": "Evidence"
+          },
+          "route_costs": {
+            "items": {
+              "$ref": "#/components/schemas/RouteCostResult"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Route Costs"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Warnings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "poi_id",
+          "campus_id",
+          "requested_date",
+          "version"
+        ],
+        "title": "TourKnowledgeContext"
       },
       "TourPlan": {
         "properties": {
