@@ -15,7 +15,7 @@ for name in {**package["dependencies"],**package["devDependencies"]}:
         if p.is_file() and re.match(r"^(licen[cs]e|copying|notice)",p.name,re.I):
             shutil.copyfile(p,target/p.name); copied.append(str((target/p.name).relative_to(root)))
     inventory.append(dict(ecosystem="npm",name=name,version=meta["version"],license=meta.get("license"),license_files=copied))
-for name in ["fastapi","uvicorn","openai","edge-tts","langgraph","pydantic-settings","httpx","pytest","pydantic"]:
+for name in ["fastapi","uvicorn","openai","edge-tts","langgraph","pydantic-settings","httpx","pydantic"]:
     dist=md.distribution(name)
     target=dest/name; target.mkdir(exist_ok=True)
     copied=[]

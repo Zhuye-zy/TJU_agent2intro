@@ -22,4 +22,4 @@
 
 语音菜单只保留现有 Xiaoxiao 女声、Yunxi 普通话男声、HiuGaai 粤语和 Jenny 英语。继续使用现有 Edge TTS，不是角色克隆音色。浏览器操作系统音色不再混入菜单。
 
-启动：`scripts/start-app.ps1 -Build`，打开 http://127.0.0.1:8000 。修改 `.env` 后需重启本项目服务。统一离线回归：`scripts/check-r2.ps1`；真实服务验收与离线fixture分开记录。
+启动：`scripts/start-app.ps1 -Build`，打开 http://127.0.0.1:8000 。修改 `.env` 后需重启本项目服务。
