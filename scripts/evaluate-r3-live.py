@@ -8,6 +8,7 @@ import argparse
 parser=argparse.ArgumentParser(description="Explicit live R3 comparison. Quantitative outputs stay in an ignored local directory.")
 parser.add_argument('--allow-live',action='store_true',help='Authorize real model calls; no automatic retry.')
 parser.add_argument('--solutions',nargs='+',choices=['direct_glm','baseline','enhanced'],default=['direct_glm','baseline','enhanced'])
+parser.add_argument('--cases',nargs='+',help='Optional frozen case IDs for targeted repair verification')
 parser.add_argument('--output',type=Path,default=root/'.runtime/M1-R3/comparison-final')
 args=parser.parse_args()
 if not args.allow_live:parser.error('--allow-live is required; full run can call the model up to 60 times')
@@ -36,6 +37,8 @@ manifest={'dataset_id':corpus['dataset_id'],'dataset_sha256_lf':sha(dataset),'ba
  'holdout_policy':corpus['holdout_policy']}
 # Store hashes, not source or prompts, with the comparison manifest.
 manifest['solutions']=args.solutions
+manifest['cases']=args.cases or [q['id'] for q in corpus['questions']]
+if args.cases and not set(args.cases)<=set(q['id'] for q in corpus['questions']):parser.error('Unknown frozen case ID')
 (out/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
 # Full frozen retrieval set, with itinerary rows explicitly excluded from Recall.
 legacy=json.loads((root/'data/knowledge/r3/legacy-50.json').read_text(encoding='utf-8'))['questions']
@@ -62,7 +65,7 @@ async def run_case(index,q):
    req=R2ChatRequest(request_id=rid,session_id=sid,message_id=uuid4(),message=text,
      mode='content_generation' if is_tour else 'campus_qa',campus_id=campus,
      generation={'type':'visit_plan','length':'short','style':'friendly','requirements':'缺失事实或成本必须保留未知。'} if is_tour else None)
-   row={'case_id':q['id'],'solution_id':mode,'kind':q['kind'],'split':q['split'],'input_sha256':hashlib.sha256(text.encode()).hexdigest(),'status':'NOT_TESTED','first_content_ms':None,'first_audio_ms':None,'usage':None,'usage_status':'unknown','failure_retries':0,'task_completed':None,'constraint_passed':None,'fact_correctness':None}
+   row={'build_commit':manifest['build_commit'],'case_id':q['id'],'solution_id':mode,'kind':q['kind'],'split':q['split'],'input_sha256':hashlib.sha256(text.encode()).hexdigest(),'status':'NOT_TESTED','first_content_ms':None,'first_audio_ms':None,'usage':None,'usage_status':'unknown','failure_retries':0,'task_completed':None,'constraint_passed':None,'fact_correctness':None}
    start=time.monotonic()
    try:
     async with asyncio.timeout(125):
@@ -107,7 +110,7 @@ async def run_case(index,q):
    (out/(q['id']+'-'+mode+'.json')).write_text(json.dumps(row,ensure_ascii=False,indent=2),encoding='utf-8')
    print(q['id']+' '+mode+' '+row['status'],flush=True)
 async def main():
- await asyncio.gather(*(run_case(i,q) for i,q in enumerate(corpus['questions'])))
- (out/'COMPLETE').write_text('All frozen R3 cases attempted once for each selected solution. See per-case statuses.\n',encoding='utf-8')
+ await asyncio.gather(*(run_case(i,q) for i,q in enumerate(corpus['questions']) if not args.cases or q['id'] in args.cases))
+ (out/'COMPLETE').write_text('All selected frozen R3 cases attempted once for each selected solution. See per-case statuses.\n',encoding='utf-8')
  print('Comparison run complete',flush=True)
 asyncio.run(main())

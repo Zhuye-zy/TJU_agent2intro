@@ -85,3 +85,15 @@ def test_current_real_data_simulated_full_loop_and_live_restore_pauses():
         restored=await command(service,restored,'resume')
         assert restored.progress[0].state=='completed' and restored.remaining_minutes<=30
     asyncio.run(run())
+
+def test_dated_service_question_keeps_published_rule_with_scope():
+    from backend.model.service import model
+    from backend.r2_contracts import R2ChatRequest
+    for text,expected in [
+        ('评估日期：2026-09-15。校史馆团体要提前多久预约？','r3-museum-booking'),
+        ('评估日期：2026-09-15。郑东图书馆阅览区可以带奶茶吗？','r3-library-food-by')]:
+        request=R2ChatRequest(request_id=uuid4(),session_id=uuid4(),message_id=uuid4(),mode='campus_qa',
+            campus_id='beiyangyuan' if '郑东' in text else 'weijinlu',message=text)
+        hits=model._published_rule_hits(request,[])
+        assert expected in [h.id for h in hits]
+        assert all('现场未核验' in h.snippet for h in hits)
