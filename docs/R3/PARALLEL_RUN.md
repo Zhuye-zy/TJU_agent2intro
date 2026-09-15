@@ -2,7 +2,7 @@
 
 ## 唯一基线及端口
 
-M分支 `prepare/r3-m0`，基线 `git rev-parse r3-baseline`。发布后五个HEAD相同，四树BASE_COMMIT_R3相同，以M的 `.runtime/R3/parallel-state.json` 为精确回执。旧R2启动/Prepare脚本不能用于本轮。
+M分支 `prepare/r3-m0`，基线 `git rev-parse r3-launch`。发布后五个HEAD相同，四树BASE_COMMIT_R3相同，以M的 `.runtime/R3/parallel-state.json` 为精确回执。旧R2启动/Prepare脚本不能用于本轮。
 
 |窗|目录|分支|前端|真实/未配置后端|隔离fixture后端|
 |---|---|---|---|---|---|
@@ -17,7 +17,7 @@ M分支 `prepare/r3-m0`，基线 `git rev-parse r3-baseline`。发布后五个HE
 ## M发布门槛
 
 1. 主目录共享契约检查、完整现有回归、构建通过；测试夹具不进入生产。
-2. 创建不可移动r3-baseline标签，保留原分支和全部现场。
+2. 创建不可移动r3-launch标签，保留原分支和全部现场。
 3. `scripts/Prepare-R3.ps1` 对ALL树预检干净、同名分支、祖先关系、依赖普通目录、无.env，然后逐树安全快进、按锁安装和独立检查。
 4. receipt.status=R3_READY且四树同40位号，才发送启动消息。失败即R3_NOT_READY；保留已完成工作，不回滚。
 5. 共享变更以后单独COORD_COMMIT发布给四窗；各窗先提交业务再cherry-pick一次。不要各自从远端不同分支拉“最新”。

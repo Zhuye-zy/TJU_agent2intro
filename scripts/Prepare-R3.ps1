@@ -1,5 +1,5 @@
 # M-only: validate ALL original trees, fast-forward only, then isolated frozen dependency checks.
-param([string]$Baseline='r3-baseline')
+param([string]$Baseline='r3-launch')
 $ErrorActionPreference='Stop'
 $root=[IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
 Set-Location $root
@@ -50,8 +50,7 @@ try {
   Push-Location $path
   try {
    $runtime=Join-Path $path '.runtime'
-   $uv=Start-Process -FilePath (Join-Path $path '.tools\Scripts\uv.exe') -ArgumentList @('sync','--offline','--frozen','--link-mode','copy') -WorkingDirectory $path -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $runtime 'r3-sync.stdout.log') -RedirectStandardError (Join-Path $runtime 'r3-sync.stderr.log')
-   $uv.WaitForExit()
+   $uv=Start-Process -FilePath (Join-Path $path '.tools\Scripts\uv.exe') -ArgumentList @('sync','--offline','--frozen','--link-mode','copy') -WorkingDirectory $path -WindowStyle Hidden -Wait -PassThru -RedirectStandardOutput (Join-Path $runtime 'r3-sync.stdout.log') -RedirectStandardError (Join-Path $runtime 'r3-sync.stderr.log')
    if($uv.ExitCode -ne 0){throw "Frozen offline dependency sync failed: $path (see .runtime/r3-sync.stderr.log)"}
    & npm.cmd ls --depth=0 *> (Join-Path $runtime 'r3-npm.log')
    if($LASTEXITCODE -ne 0){throw "NPM dependencies mismatch: $path"}

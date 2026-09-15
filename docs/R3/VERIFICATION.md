@@ -31,3 +31,4 @@ pytest有一条现有Starlette/anyio BlockingPortal弃用警告，不影响通�
 本轮不新增模型/地图额度探针，不声称真实中文ASR、现场播放/嘴形、在线地图绘制、设备定位或完整60分钟导览通过。当前既有8000进程未重启，仍运行R3准备前的已启动版本；新R3端点由各树启动的新进程提供，M0默认返回501。无需关闭当前用户体验进程即可并行开发。
 
 本轮只本地提交/标签和原work分支安全快进，不远端推送、不合并后续PR、不代做A/B/C/D业务。
+同步脚本初次对A树出现退出码读取失败：uv日志已安装ddgs/lxml/primp，未伪报READY。使用Start-Process -Wait -PassThru复核退出码0；协调修复保留原候选标签，最终使用r3-launch。四树发布结果仍以最终parallel-state.json为准。

@@ -20,10 +20,10 @@
 
 ## 发布后的唯一共同基线
 
-共同基线为不可移动标签 `r3-baseline` 指向的完整提交，包含本文、共享代码、检查脚本。提交不能包含自身哈希，故用标签和外部本机回执，不循环改号。
+共同基线为不可移动标签 `r3-launch` 指向的完整提交，包含本文、共享代码、检查脚本。提交不能包含自身哈希，故用标签和外部本机回执，不循环改号。
 
 ```powershell
-git rev-parse refs/tags/r3-baseline
+git rev-parse refs/tags/r3-launch
 Get-Content .runtime/R3/parallel-state.json
 ```
 
@@ -56,3 +56,6 @@ Get-Content .runtime/R3/parallel-state.json
 - 浏览器与校内设备定位/扬声器/移动端现场证据（A/B/M）；IP粗略位置不代替。
 - 模型网关和高德网络可用性由M/C显式授权配置后做有限样本验证；根.env不复制，A/B/D不读取。
 - 正式比赛规则未提供，不编造评分权重、Token单价或强制技术要求。
+### 准备脚本协调
+
+初次候选标签r3-baseline=c78b8114e09eec0252089a84e0a56e855a787371保持不动。首次同步A树时uv实际安装成功，但Windows PowerShell的Start-Process后单独WaitForExit未可靠读取ExitCode，脚本保守中止，没有发布READY。改为Start-Process -Wait -PassThru并实际复核退出码0。最终四窗共同启动基线改用不可移动r3-launch标签，BASE_COMMIT_R3记录该最终启动号；所有窗口从同一个最终号开始，不把候选号混作本轮启动号。
