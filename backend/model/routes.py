@@ -8,6 +8,7 @@ from backend.r2_contracts import R2ChatRequest
 from backend.knowledge.service import knowledge
 from .service import model
 from .runtime import runtime
+from .scene import SceneIdentifyRequest, SceneIdentifyResponse, identify_scene
 router = APIRouter(prefix="/api", tags=["model-runtime"])
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: R2ChatRequest | ChatRequest):
@@ -47,6 +48,9 @@ async def chat(request: R2ChatRequest | ChatRequest):
         raise DomainError("internal_error", "请求处理失败", 500, request.request_id) from None
     finally:
         record.task = None
+@router.post("/vision/identify", response_model=SceneIdentifyResponse)
+async def vision_identify(body: SceneIdentifyRequest):
+    return await identify_scene(body)
 @router.get("/runtime/events", response_model=EventPage)
 def events(request_id: UUID, cursor: int = Query(0, ge=0)):
     return runtime.page(request_id, cursor)

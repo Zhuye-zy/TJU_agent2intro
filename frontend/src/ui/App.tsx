@@ -14,6 +14,7 @@ import { createSseParser, r2Transport } from '../transport/r2';
 import { CampusBackdrop } from './CampusBackdrop';
 import { routeNarration } from '../transport/amap-navigation';
 import { CampusExplorer } from './CampusExplorer';
+import { SceneCamera } from './scene-camera';
 import { freshUuid, mergeRuntimeEvents, safeSourceUrl, sanitizedLogExport } from './model';
 import { applyStreamEvent, consumeR2Stream, exportGeneratedText, newTask, readableParagraphs, shouldFollowLatest, StreamTaskError, type GenerationDraft, type StreamTaskView, validateGenerationDraft, responseWithDeadline } from './r2-model';
 import './theme.css';
@@ -231,6 +232,14 @@ export function App() {
     await stopListening();bindPlayback(run);
     const result = segmentId ? await speechControllerRef.current.playSegment(run, text, segmentId) : await speechControllerRef.current.playFull(run, text); if (result.status !== 'ready') setNotice('语音播放未能开始。');
   }
+  async function speakScene(text: string) {
+    if (!text.trim()) return;
+    if (!speechEnabled || !voiceId || !speechControllerRef.current) { setNotice('请先开启语音导览并选择中文音色。'); return; }
+    const run: SpeechRun = { request_id: freshUuid(), session_id: currentSession('chat', prefs.campus), campus_id: prefs.campus, generation_id: freshUuid(), voice_id: voiceId, mode: 'full', signal: new AbortController().signal };
+    await stopListening(); bindPlayback(run);
+    const result = await speechControllerRef.current.playFull(run, text);
+    if (result.status !== 'ready') setNotice('语音播放未能开始。');
+  }
   async function continueSpeech(){
     const previous=lastSpeechRunRef.current;
     if(!previous||previous.campus_id!==prefs.campus){setNotice('没有本校区可继续的内容。');return;}
@@ -306,7 +315,7 @@ export function App() {
       onExplain={stop=>{void cancelLane('chat').then(()=>runTask('chat','请简短讲解'+stop.title+'，说明值得观察的细节；缺少资料时明确说明。','content_generation',{type:'guide_script',requirements:'只讲当前已确认到达站点；注明来源和进入条件。',length:'short',style:'friendly'},null,null,stop.poi_id));}}
       caption={asrBusy?'正在聆听…':speechProgress?.status==='speaking'?'正在播报当前讲解':notice}
       narration={[...chatTasks].reverse().find(t=>t.campus===prefs.campus)?.answer??''}
-      voice={<><div className="tour-dock-input"><label className="tour-speech-input">对导游说<textarea value={chatInput} rows={2} maxLength={8000} onChange={e=>setChatInput(e.target.value)} onCompositionStart={()=>{composingRef.current=true;}} onCompositionEnd={()=>{composingRef.current=false;}} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing&&!composingRef.current){e.preventDefault();void submitTourText(chatInput);}}}/></label><div className="tour-dock-actions"><button className={asrBusy?'tour-danger':''} onClick={()=>asrBusy?void stopListening():void startListening()}>{asrBusy?'停止识别':'语音输入'}</button><button className="tour-primary" disabled={laneBusy.chat||!chatInput.trim()} onClick={()=>void submitTourText(chatInput)}>发送</button>{laneBusy.chat&&<button className="tour-danger" onClick={()=>void cancelLane('chat')}>取消</button>}</div></div><details className="tour-voice-more"><summary>语音设置</summary><div><select aria-label="识别后的发送方式" value={voiceSend} onChange={e=>setVoiceSend(e.target.value as 'confirm'|'auto')}><option value="confirm">识别后确认发送</option><option value="auto">说完自动发送</option></select><button onClick={()=>void enableSpeech()}>开启中文播报</button><button onClick={()=>void speechControllerRef.current?.stop('user')}>停止播报</button></div></details></>}/>}
+      voice={<><SceneCamera campus={prefs.campus} onSpeak={(text) => void speakScene(text)}/><div className="tour-dock-input"><label className="tour-speech-input">对导游说<textarea value={chatInput} rows={2} maxLength={8000} onChange={e=>setChatInput(e.target.value)} onCompositionStart={()=>{composingRef.current=true;}} onCompositionEnd={()=>{composingRef.current=false;}} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing&&!composingRef.current){e.preventDefault();void submitTourText(chatInput);}}}/></label><div className="tour-dock-actions"><button className={asrBusy?'tour-danger':''} onClick={()=>asrBusy?void stopListening():void startListening()}>{asrBusy?'停止识别':'语音输入'}</button><button className="tour-primary" disabled={laneBusy.chat||!chatInput.trim()} onClick={()=>void submitTourText(chatInput)}>发送</button>{laneBusy.chat&&<button className="tour-danger" onClick={()=>void cancelLane('chat')}>取消</button>}</div></div><details className="tour-voice-more"><summary>语音设置</summary><div><select aria-label="识别后的发送方式" value={voiceSend} onChange={e=>setVoiceSend(e.target.value as 'confirm'|'auto')}><option value="confirm">识别后确认发送</option><option value="auto">说完自动发送</option></select><button onClick={()=>void enableSpeech()}>开启中文播报</button><button onClick={()=>void speechControllerRef.current?.stop('user')}>停止播报</button></div></details></>}/>}
     <div className={tourMode?'legacy-workspace hidden-for-tour':'legacy-workspace'}>
     <nav className="mobile-switch" aria-label="小屏视图"><button className={mobileView === 'guide' ? 'active' : ''} onClick={() => setMobileView('guide')}>地图与导览</button><button className={mobileView === 'work' ? 'active' : ''} onClick={() => setMobileView('work')}>对话与生成</button></nav>
     <main className="workspace r2-workspace" data-mobile-view={mobileView} style={{ '--panel-width': `${prefs.panelWidth}px` } as CSSProperties}>

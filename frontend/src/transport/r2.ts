@@ -1,7 +1,7 @@
 // M-owned same-origin interface; A consumes stream records and owns UI state.
 import { api } from './api';
 import type {CampusId} from '../../../shared/contracts';
-import type {R2ChatRequest,POICategory,POIPage,POI,Coverage,CampusAssets,MapStatus,MapPublicConfig,ExternalNavigation,GenerationRendered,RenderReceipt,RouteRequest,RouteResponse,RouteCancelResponse} from '../../../shared/r2';
+import type {R2ChatRequest,POICategory,POIPage,POI,Coverage,CampusAssets,MapStatus,MapPublicConfig,ExternalNavigation,GenerationRendered,RenderReceipt,RouteRequest,RouteResponse,RouteCancelResponse,SceneIdentifyRequest,SceneIdentifyResponse} from '../../../shared/r2';
 export {createParser as createSseParser} from 'eventsource-parser';
 const json=(body:unknown):RequestInit=>({method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
 export const r2Transport={
@@ -19,4 +19,5 @@ export const r2Transport={
  mapConfig:()=>api<MapPublicConfig>('/maps/config'),
  externalNavigation:(id:string)=>api<ExternalNavigation>('/maps/external-navigation/'+encodeURIComponent(id)),
  generationRendered:(body:GenerationRendered)=>api<RenderReceipt>('/runtime/generation-rendered',json(body)),
+ visionIdentify:(body:SceneIdentifyRequest,signal?:AbortSignal)=>api<SceneIdentifyResponse>('/vision/identify',{...json(body),signal}),
 };

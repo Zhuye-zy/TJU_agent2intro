@@ -50,6 +50,10 @@ export interface SpeechController {
  subscribe(callback:(state:SpeechProgress)=>void):()=>void;
  dispose():void;
 }
+export interface SceneCandidate {id:string;name:string;category:POICategory;score:number;reason:string;description:string}
+export interface SceneIdentifyRequest {request_id:string;session_id:string;campus_id:CampusId;ocr_text:string;lng?:number|null;lat?:number|null;poi_id?:string|null}
+export interface SceneIdentifyResponse {request_id:string;status:'matched'|'candidates'|'not_found';poi:SceneCandidate|null;candidates:SceneCandidate[];ocr_text:string;narration:string;model:string|null;usage:{prompt_tokens:number;completion_tokens:number;total_tokens:number}|null}
+
 export const CAMPUS_ALIASES:Record<CampusId,readonly string[]> = {weijinlu:['卫津路','卫津路校区','老校区'],beiyangyuan:['北洋园','北洋园校区','新校区']};
 
 export interface UserPosition {lng:number;lat:number;crs:'GCJ02';source:'amap_geolocation'|'manual';accuracy_m:number|null;timestamp:string}
