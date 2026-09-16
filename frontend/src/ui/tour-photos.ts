@@ -54,3 +54,9 @@ export function tourPhotoFor(poiId: string, title: string): TourPhoto {
   if (photo && photo.src) return photo;
   return { src: placeholderImage(title), caption: title, placeholder: true };
 }
+
+export function registeredPhotos(): Array<{ poiId: string; src: string; caption: string }> {
+  return Object.entries(PHOTOS)
+    .filter(([, photo]) => Boolean(photo.src))
+    .map(([poiId, photo]) => ({ poiId, src: photo.src, caption: photo.caption }));
+}

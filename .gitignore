@@ -16,6 +16,3 @@ __pycache__/
 coverage/
 frontend/public/assets/kelaita/
 frontend/public/vendor/
-
-# Tesseract OCR worker cache artifacts
-*.traineddata

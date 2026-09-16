@@ -60,7 +60,7 @@ export class RoamController {
     this.overlay.dataset.avatarRoam = 'true';
     Object.assign(this.overlay.style, {
       position: 'fixed', left: '0', bottom: '0', width: `${OVERLAY_WIDTH}px`, height: `${OVERLAY_HEIGHT}px`,
-      zIndex: '20', pointerEvents: 'none', transition: 'none',
+      zIndex: '9999', pointerEvents: 'none', transition: 'none',
     } satisfies Partial<CSSStyleDeclaration>);
 
     this.stage = document.createElement('div');
