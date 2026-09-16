@@ -1,27 +1,41 @@
+import type { TourSession, TourStop } from '../../../shared/r3';
+import type { CampusId } from '../../../shared/contracts';
+import { navigateTourStop } from '../transport/tour-navigation';
 import type { MapPublicConfig, POI, RouteRequest, RouteResponse, UserPosition } from '../../../shared/r2';
 import { AmapNavigation, type AmapSdk, type MapDestination, type InternalRouteRequest } from '../transport/amap-navigation';
 import { MapBudget } from '../transport/map-budget';
 
 type AMapApi = AmapSdk & Record<string, new (...args: any[]) => any>;
 
+export interface TourStopMarker { stop_id: string; title: string; lng: number; lat: number; index: number }
+
+// GCJ02 campus centers; the online map re-centers here when the campus changes.
+export const CAMPUS_MAP_VIEW: Record<CampusId, { center: [number, number]; zoom: number }> = {
+  weijinlu: { center: [117.175, 39.108], zoom: 15 },
+  beiyangyuan: { center: [117.3138, 38.9978], zoom: 15 },
+};
+
 export interface OnlineMapHandle {
   setPois(pois: POI[], selectedId: string | null): void;
-  showPosition(position: UserPosition): void;
+  showTourStops(stops: TourStopMarker[]): void;
+  showPosition(position: UserPosition): void; clearPosition():void;
   showDestination(destination:MapDestination|null):void;
   showRoute(polyline: [number, number][][]): void;
   highlightStep(polyline:[number,number][]):void;
   pickStart(callback:((position:UserPosition)=>void)|null):void;
   clearRoute(): void;
+  focusCampus(center: [number, number], zoom: number): void;
   resize(): void;
   locate(operationId: string, signal: AbortSignal): Promise<UserPosition>;
   locateCity(operationId: string, signal: AbortSignal): Promise<UserPosition>;
   findDestination(poi:POI,operationId:string,signal:AbortSignal):Promise<MapDestination[]>;
   walk(request: RouteRequest, poi: POI, signal: AbortSignal, matched?:MapDestination): Promise<RouteResponse>;
   navigate(request:InternalRouteRequest,poi:POI,signal:AbortSignal,matched?:MapDestination):Promise<{route:RouteResponse;origin:UserPosition;destination?:MapDestination}>;
+  navigateTour(session:TourSession,stop:TourStop,poi:POI,routeId:string,origin:UserPosition|null,signal:AbortSignal,matched?:MapDestination):ReturnType<typeof navigateTourStop>;
   destroy(): void;
 }
 // Pure classification remains testable; the M controller validates navigation origins.
-export async function createOnlineMap(host: HTMLElement, config: MapPublicConfig, budget: MapBudget, operationId: string, signal: AbortSignal, onSelect: (poiId: string) => void): Promise<OnlineMapHandle> {
+export async function createOnlineMap(host: HTMLElement, config: MapPublicConfig, budget: MapBudget, operationId: string, signal: AbortSignal, onSelect: (poiId: string) => void, view: { center: [number, number]; zoom: number }): Promise<OnlineMapHandle> {
   let namespace: AMapApi | null = null;
   // This loader is invoked only inside M's reserved map_load budget operation.
   const navigation = new AmapNavigation(config, budget, async (settings) => {
@@ -32,10 +46,10 @@ export async function createOnlineMap(host: HTMLElement, config: MapPublicConfig
     namespace = await loader.default.load({key:settings.js_key!,version:'2.0',plugins:['AMap.Geolocation','AMap.CitySearch','AMap.Scale']}) as AMapApi;
     return namespace;
   });
-  const map = await navigation.createMap(host, operationId, signal, true, {viewMode:'2D',center:[117.17,39.11],zoom:15}) as any;
+  const map = await navigation.createMap(host, operationId, signal, true, {viewMode:'2D',center:view.center,zoom:view.zoom}) as any;
   const AMap = namespace! as AMapApi;
   if (AMap.Scale) map.addControl(new AMap.Scale());
-  let markers:any[] = [], locationMarker:any = null, accuracyCircle:any = null, routeLines:any[] = [];
+  let markers:any[] = [], locationMarker:any = null, accuracyCircle:any = null, routeLines:any[] = [], tourMarkers:any[] = [];
   let activeStep:any=null,destinationMarker:any=null,startPicker:((position:UserPosition)=>void)|null=null;
   map.on('click',(event:any)=>{
     if(!startPicker||!event.lnglat)return;
@@ -74,11 +88,18 @@ export async function createOnlineMap(host: HTMLElement, config: MapPublicConfig
     routeLines=lines.filter(line=>line.length>1).map(path=>new AMap.Polyline({path,strokeColor:'#08779d',strokeWeight:7,showDir:true}));
     if(routeLines.length){map.add(routeLines);map.setFitView(routeLines);}
   }
+  function showTourStops(stops:TourStopMarker[]){
+    if(tourMarkers.length)map.remove(tourMarkers);tourMarkers=[];
+    if(!stops.length)return;
+    tourMarkers=stops.map(item=>new AMap.Marker({position:[item.lng,item.lat],title:item.title,zIndex:130,label:{content:String(item.index+1),direction:'top'}}));
+    map.add(tourMarkers);
+    if(!routeLines.length)map.setFitView(tourMarkers,false,[48,48,48,48],15);
+  }
   function showDestination(destination:MapDestination|null){
     if(destinationMarker)map.remove(destinationMarker);destinationMarker=null;
     if(!destination)return;
     destinationMarker=new AMap.Marker({position:[destination.lng,destination.lat],title:destination.name,zIndex:190});
     map.add(destinationMarker);map.setZoomAndCenter(17,[destination.lng,destination.lat]);
   }
-  return {setPois,showPosition,showDestination,showRoute,highlightStep,pickStart(callback){startPicker=callback;},clearRoute,resize(){map.resize?.();},locate:(id,abort)=>navigation.locate(id,abort,true),locateCity:(id,abort)=>navigation.locateCity(id,abort,true),findDestination:(poi,id,abort)=>navigation.findDestination(poi,id,abort),walk:(request,poi,abort,matched)=>navigation.walk(request,poi,abort,matched),navigate:(request,poi,abort,matched)=>navigation.navigate(request,poi,abort,matched),destroy(){startPicker=null;clearRoute();map.destroy();}};
+  return {focusCampus(center,zoom){map.setZoomAndCenter(zoom,center);},setPois,showTourStops,showPosition,clearPosition(){if(locationMarker)map.remove(locationMarker);if(accuracyCircle)map.remove(accuracyCircle);locationMarker=null;accuracyCircle=null;},showDestination,showRoute,highlightStep,pickStart(callback){startPicker=callback;},clearRoute,resize(){map.resize?.();},locate:(id,abort)=>navigation.locate(id,abort,true),locateCity:(id,abort)=>navigation.locateCity(id,abort,true),findDestination:(poi,id,abort)=>navigation.findDestination(poi,id,abort),walk:(request,poi,abort,matched)=>navigation.walk(request,poi,abort,matched),navigate:(request,poi,abort,matched)=>navigation.navigate(request,poi,abort,matched),navigateTour:(session,stop,poi,id,origin,abort,matched)=>navigateTourStop(navigation,session,stop,poi,id,origin,abort,matched),destroy(){startPicker=null;clearRoute();if(tourMarkers.length){map.remove(tourMarkers);tourMarkers=[];}map.destroy();}};
 }
