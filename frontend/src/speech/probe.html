@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>B speech playback probe</title><style>body{font:16px sans-serif;margin:20px}button{margin:4px;padding:8px}#avatar{width:360px;height:420px;background:#eef}pre{white-space:pre-wrap}</style></head>
+<body>
+  <h1>B 真实播放与 amplitude 嘴形探针</h1>
+  <p id="state" data-status="new_session">新页面：尚未激活语音</p>
+  <button id="precheck">未激活检查</button><button id="activate">点击开启/恢复语音</button><button id="five">连续播报 5 次</button><button id="long">长段</button><button id="pause">暂停</button><button id="resume">继续</button><button id="campus">切校区打断</button><button id="failure">TTS 失败</button><button id="stop">停止播报</button>
+  <div id="avatar"></div><pre id="result"></pre>
+  <script type="module">
+    import { createSpeechController } from './controller.ts';
+    import { createAvatarAdapter } from '../avatar/adapter.ts';
+    const state = document.querySelector('#state');
+    const result = document.querySelector('#result');
+    const avatar = createAvatarAdapter();
+    await avatar.mount(document.querySelector('#avatar'));
+    const progress = [];
+    const controller = createSpeechController();
+    controller.getAdapter().subscribeAudioLevel(level => avatar.setAudioLevel(level));
+    controller.subscribe((event) => {
+      progress.push({...event, at: performance.now()});
+      state.dataset.status = event.status;
+      state.textContent = `${event.status}${event.code ? ` · ${event.code}` : ''}`;
+      avatar.setState(event.status === 'speaking' ? 'speaking' : event.status === 'error' ? 'error' : 'idle');
+      result.textContent = JSON.stringify({progress, trace:controller.getTrace()}, null, 2);
+    });
+    const run = (index) => ({request_id:crypto.randomUUID(),session_id:crypto.randomUUID(),campus_id:'weijinlu',generation_id:crypto.randomUUID(),voice_id:'edge:zh-CN-XiaoxiaoNeural',mode:'full',signal:new AbortController().signal,index});
+    const waitIdle = (generationId) => new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => { unsubscribe(); reject(new Error('timeout')); }, 45000);
+      const unsubscribe = controller.subscribe((event) => { if(event.generation_id===generationId && event.status==='idle'){clearTimeout(timeout);unsubscribe();resolve();} if(event.generation_id===generationId && event.status==='error'){clearTimeout(timeout);unsubscribe();reject(new Error(event.code));} });
+    });
+    document.querySelector('#precheck').onclick = async () => { const r=run(0); const check=await controller.begin(r); state.dataset.status=check.error_code; state.textContent=`未激活结果：${check.error_code}`; };
+    document.querySelector('#activate').onclick = async () => { const check=await controller.enable(true); state.dataset.status=check.status; state.textContent=`激活结果：${check.status}${check.error_code?` · ${check.error_code}`:''}`; };
+    document.querySelector('#five').onclick = async () => {
+      const started=performance.now();
+      window.__speechProbe.fiveStarted=started;
+      try { for(let i=1;i<=5;i++){const r=run(i);const waiting=waitIdle(r.generation_id);await controller.playSegment(r,`这是珂莱塔第${i}次中文播放测试。本段只检查声音，不陈述校园事实。`,`answer-${i}`);await waiting;} state.dataset.status='five_complete'; state.textContent='连续 5 次播放完成'; result.dataset.elapsed=String(performance.now()-started); result.dataset.firstSpeaking=String(progress.find((event)=>event.status==='speaking'&&event.at>=started)?.at-started); }
+      catch(error){state.dataset.status='failed';state.textContent=`播放失败：${error.message}`;}
+    };
+    document.querySelector('#stop').onclick = () => controller.stop('user');
+    document.querySelector('#long').onclick = () => { const r=run(20); window.__speechProbe.currentRun=r; controller.playSegment(r,'现在开始一段较长的中文播放，用来实际检查暂停和继续能力。本段仅为声音测试文本，不描述真实建筑、营业时间或校园服务。再次说明，暂停时声音应立即停止，继续后从同一音频位置恢复。最后一句用于留出足够的操作时间。','long'); };
+    document.querySelector('#pause').onclick = () => controller.pause();
+    document.querySelector('#resume').onclick = () => controller.resume();
+    document.querySelector('#campus').onclick = async () => { await controller.stop('campus_change'); const r={...run(21),campus_id:'beiyangyuan'}; window.__speechProbe.currentRun=r; await controller.playSegment(r,'已切换到北洋园校区，这是新的播报。','fresh-campus'); };
+    document.querySelector('#failure').onclick = () => { const r={...run(22),voice_id:'edge:en-US-Invalid'}; window.__speechProbe.currentRun=r; controller.playSegment(r,'这段应返回中文音色不可用。','failure'); };
+    window.__speechProbe={controller,avatar,progress,currentRun:null};
+  </script>
+</body></html>

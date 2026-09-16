@@ -1,4 +1,4 @@
-﻿"""Validate reviewed offline bundles and replace with rollback; never fetch URLs."""
+"""Validate reviewed offline bundles and replace with rollback; never fetch URLs."""
 from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
