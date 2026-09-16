@@ -1,4 +1,5 @@
 // Tour stop photo registry. Generated from data/reference_photos/manifest.csv (source=user).
+import type { CampusId } from '../../../shared/contracts';
 // Regenerate with the association script after adding photos; unreferenced stops fall back to placeholders.
 export interface TourPhoto {
   src: string;
@@ -55,8 +56,8 @@ export function tourPhotoFor(poiId: string, title: string): TourPhoto {
   return { src: placeholderImage(title), caption: title, placeholder: true };
 }
 
-export function registeredPhotos(): Array<{ poiId: string; src: string; caption: string }> {
+export function registeredPhotos(): Array<{ poiId: string; src: string; caption: string; campus: CampusId }> {
   return Object.entries(PHOTOS)
     .filter(([, photo]) => Boolean(photo.src))
-    .map(([poiId, photo]) => ({ poiId, src: photo.src, caption: photo.caption }));
+    .map(([poiId, photo]) => ({ poiId, src: photo.src, caption: photo.caption, campus: poiId.startsWith('beiyangyuan-') ? 'beiyangyuan' : 'weijinlu' }));
 }

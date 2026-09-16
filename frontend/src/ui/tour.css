@@ -116,8 +116,8 @@
 .tour-carousel-arrow.next{right:12px}
 
 /* Keep carousel controls clickable even when the roaming avatar passes over them. */
-.tour-carousel-arrow{z-index:32}
-.tour-carousel-caption{z-index:30}
+.tour-carousel-arrow{z-index:24}
+.tour-carousel-caption{z-index:24}
 
 /* Suggestion 2: fewer nested frames inside the map card */
 .tour-map .location-panel{border:0;border-top:1px solid var(--line);border-radius:0;background:transparent;margin-top:6px}
@@ -140,3 +140,131 @@
 /* Hide the avatar strip when no renderer is mounted there (VRM roam mode). */
 .guide-character:has(.guide-character-host:empty){display:none}
 .tour-workspace{padding-top:18px}
+
+/* Balanced topbar: time + weather left, voice + logs right */
+.topbar{gap:12px}
+.topbar-left,.topbar-right{display:flex;align-items:center;gap:8px;min-width:0}
+.topbar-left{margin-right:auto}
+.topbar-pill{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:#f9fbfc;font-size:12px;color:var(--muted);white-space:nowrap}
+.topbar-pill strong{font-size:14px;color:var(--ink)}
+.topbar-clock span{font-size:11px}
+.speech-menu{position:relative}
+.speech-menu>summary{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:#f9fbfc;font-size:12px;color:var(--muted);cursor:pointer;list-style:none}
+.speech-menu>summary::-webkit-details-marker{display:none}
+.speech-menu>summary small{font-size:11px;color:var(--brand)}
+.speech-menu[open]>summary{border-color:var(--brand);background:#fff}
+.speech-menu-body{position:absolute;right:0;top:46px;z-index:45;display:flex;flex-wrap:wrap;gap:8px;align-items:center;max-width:min(560px,90vw);padding:10px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-2)}
+.guide-character{cursor:pointer}
+
+/* Tour side panel replacing the bottom dock */
+.tour-panel{position:fixed;top:64px;bottom:0;right:0;width:min(400px,92vw);z-index:30;display:flex;flex-direction:column;background:#fff;border-left:1px solid var(--line);box-shadow:-18px 0 48px rgba(15,43,65,.14);transform:translateX(105%);visibility:hidden;transition:transform .28s cubic-bezier(.2,.8,.2,1),visibility .28s}
+.tour-panel.open{transform:translateX(0);visibility:visible}
+.tour-panel-head{display:flex;align-items:flex-start;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.tour-panel-head>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.tour-panel-head small{font-size:11px;color:var(--muted)}
+.tour-panel-head strong{font-size:17px;line-height:1.35}
+.tour-panel-head span{font-size:12px;color:var(--muted)}
+.tour-panel-head>button{margin-left:auto;flex:none;width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:18px;line-height:1;color:var(--muted)}
+.tour-panel-body{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:12px 16px 16px;overflow:hidden}
+.tour-panel .tour-actions{flex:none;max-height:38%;overflow:auto}
+.tour-panel .tour-voice{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px}
+.tour-panel .tour-chat-history{flex:1;min-height:120px;max-height:none;border:0;padding:0}
+.tour-panel .tour-chat-meta{padding:0}
+.tour-panel .tour-dock-input{flex:none}
+.tour-panel .tour-caption,.tour-panel .tour-narration,.tour-panel .tour-next-step{margin:0;flex:none}
+@media(prefers-reduced-motion:reduce){.tour-panel{transition:none}}
+
+/* Map column no longer reserves dock height */
+@media(min-width:900px){.tour-map{top:84px;max-height:calc(100dvh - 100px)}}
+@media(max-width:899px){.speech-menu{display:none}}
+
+/* Composer: one wide input with icons inside (mic left, send/cancel right) */
+.tour-composer{position:relative;display:flex;align-items:flex-end;min-height:64px;border:1px solid var(--line);border-radius:14px;background:#fff;padding:10px 54px 10px 50px}
+.tour-composer:focus-within{border-color:var(--brand);box-shadow:0 0 0 3px rgba(37,167,192,.14)}
+.tour-composer-input{flex:1;min-width:0;border:0;outline:0;resize:none;min-height:44px;max-height:132px;padding:11px 0;font:inherit;font-size:15px;line-height:1.5;background:transparent}
+.composer-icon{position:absolute;bottom:8px;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:10px;background:transparent;color:var(--brand);cursor:pointer}
+.composer-icon.mic{left:6px}
+.composer-icon.recording{background:var(--danger-soft);color:var(--danger)}
+.composer-icon.send{right:6px;background:var(--brand);color:#fff}
+.composer-icon.send:disabled{opacity:.4;cursor:not-allowed}
+.composer-icon.send.cancel{background:var(--danger-soft);color:var(--danger)}
+.tour-composer-foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.tour-composer-foot .tour-chat-note{font-size:11px;color:var(--muted)}
+.tour-composer-foot .tour-voice-more{margin-left:auto}
+.tour-chat-clear{border:1px solid var(--line);background:#fff;border-radius:8px;padding:3px 8px;font-size:12px;color:var(--muted)}
+.tour-chat-clear:hover{color:var(--danger);border-color:var(--danger)}
+
+/* Composer icon buttons: strip legacy button chrome, keep icons centered */
+.tour-workspace .composer-icon{border:0;padding:0;min-height:0;display:grid;place-items:center;background:transparent}
+.tour-workspace .composer-icon svg{display:block}
+.tour-workspace .composer-icon.mic:hover{background:var(--brand-tint)}
+.tour-workspace .composer-icon.send{border-radius:50%;background:var(--brand);color:#fff}
+.tour-workspace .composer-icon.send:disabled{opacity:.4}
+.tour-workspace .composer-icon.send.cancel{border-radius:50%;background:var(--danger-soft);color:var(--danger)}
+.tour-chat-clear:disabled{opacity:.45;cursor:not-allowed}
+.context-chip.empty{color:var(--muted)}
+
+/* Composer card: single border, label top-left, text from top-left, actions at bottom corners */
+.tour-workspace .tour-composer{flex-direction:column;align-items:stretch;gap:6px;min-height:136px;padding:10px 12px 10px}
+.tour-composer-label{font-size:12px;font-weight:600;color:var(--muted)}
+.tour-workspace .tour-composer-input{width:100%;min-height:48px;max-height:160px;padding:0;font-size:15px;line-height:1.6}
+.tour-composer-actions{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tour-workspace .composer-icon{position:static;width:44px;height:44px}
+.tour-workspace .composer-icon.mic{border-radius:12px}
+
+.tour-panel .tour-voice{align-items:stretch}
+
+/* The card itself is the input: no nested textarea chrome, placeholder hint top-left */
+.tour-workspace .tour-composer{cursor:text;padding:12px 12px 8px}
+.tour-workspace .tour-composer-input{flex:1;width:100%;min-height:56px;max-height:none;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;font-size:15px;line-height:1.7}
+.tour-workspace .tour-composer-input:focus{outline:none;box-shadow:none}
+.tour-composer-input::placeholder{color:#9aa9b6}
+.tour-composer-input:focus::placeholder{color:transparent}
+.tour-composer-actions{margin-top:auto}
+
+.tour-workspace .composer-icon.send{width:38px;height:38px}
+.tour-workspace .composer-icon.mic{width:42px;height:42px}
+
+/* Chip above the input, compressed footer row */
+.tour-panel .context-chip{margin:0 0 6px;align-self:flex-start}
+.tour-composer-foot .tour-voice-more{margin-left:0}
+.tour-workspace .tour-chat-clear{border:0;background:transparent;padding:0;font-size:12px;font-weight:600;color:var(--muted)}
+.tour-workspace .tour-chat-clear:hover{color:var(--brand);text-decoration:underline}
+.tour-workspace .tour-chat-clear:disabled{opacity:.5;text-decoration:none}
+/* POI directory items must not shrink (content was clipped) */
+.tour-map .poi-list>button{flex:none}
+
+/* Footer alignment: 语音设置 left, 清空对话 right, identical typography */
+.tour-composer-foot{align-items:center}
+.tour-composer-foot .tour-voice-more>summary{display:inline-flex;align-items:center;min-height:24px;line-height:24px}
+.tour-workspace .tour-chat-clear{margin-left:auto;display:inline-flex;align-items:center;min-height:24px;line-height:24px}
+.tour-workspace .tour-chat-clear:disabled{opacity:1;color:var(--muted);cursor:not-allowed}
+
+/* Left planner and map card share the same top and bottom edges */
+.tour-columns{align-items:stretch}
+.tour-planning{display:flex;flex-direction:column}
+.tour-planning>*:last-child{flex:1;margin-bottom:0}
+.tour-input[open]{display:flex;flex-direction:column}
+.tour-input[open]>summary{flex:none}
+.tour-input[open]>form{flex:1;display:flex;flex-direction:column;gap:16px}
+.tour-input[open]>form>.tour-primary{margin-top:auto}
+
+/* Voice settings popover: floats above the footer so 清空对话 stays aligned */
+.tour-voice-more{position:relative}
+.tour-voice-more>div.tour-voice-menu{position:absolute;bottom:calc(100% + 8px);left:0;z-index:6;display:flex;flex-direction:column;gap:10px;min-width:252px;padding:12px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-2)}
+.tour-voice-field{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)}
+.tour-voice-field select{height:34px;border:1px solid var(--line);border-radius:8px;padding:0 8px;font-size:13px;background:#fff}
+.tour-voice-buttons{display:flex;gap:8px}
+.tour-workspace .tour-voice-action{flex:1;min-height:34px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:12px;color:var(--brand);white-space:nowrap}
+.tour-workspace .tour-voice-action:hover{background:var(--brand-tint)}
+.tour-workspace .tour-voice-action.danger{color:var(--danger);border-color:#e6c9c6}
+.tour-workspace .tour-voice-action.danger:hover{background:var(--danger-soft)}
+
+/* Location actions share one row; give the directory more room */
+.tour-map .location-actions{gap:6px}
+.tour-map .poi-directory{height:260px;max-height:260px}
+/* Planner textareas resize vertically only, never past the card edge */
+.tour-input textarea{resize:vertical;max-width:100%}
+.tour-input input,.tour-input select{max-width:100%}
+
+.tour-map .location-actions .live-follow{margin-top:0}

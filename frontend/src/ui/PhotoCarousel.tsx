@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { CampusId } from '../../../shared/contracts';
 import { registeredPhotos } from './tour-photos';
 
 const AUTO_MS = 7000;
@@ -12,8 +13,8 @@ function shuffled<T>(items: T[]): T[] {
   return result;
 }
 
-export function PhotoCarousel() {
-  const photos = useMemo(() => shuffled(registeredPhotos()), []);
+export function PhotoCarousel({ campus }: { campus: CampusId }) {
+  const photos = useMemo(() => shuffled(registeredPhotos().filter((photo) => photo.campus === campus)), [campus]);
   const [index, setIndex] = useState(0);
   const dragStart = useRef<number | null>(null);
   const paused = useRef(false);

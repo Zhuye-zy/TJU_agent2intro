@@ -30,6 +30,9 @@ const CAMPUS_NAMES: Record<CampusId, string> = { weijinlu: '卫津路校区', be
 const PHASE_LABELS: Record<StreamTaskView['phase'], string> = { pending: '待开始', running: '执行中', has_content: '正在接收', complete: '已完成', error: '失败', cancelled: '已取消' };
 const STAGE_LABELS: Record<string, string> = { request: '请求已受理', knowledge: '检索中', model: '模型生成中', generation: '内容生成中' };
 const AVATAR_LABELS: Record<AvatarState, string> = { idle: '随时为你导览', listening: '正在听你说', thinking: '正在回答', speaking: '正在播报', error: '暂时无法响应' };
+const WEATHER_LABELS: Record<number, string> = {0:'晴',1:'少云',2:'多云',3:'阴',45:'雾',48:'雾凇',51:'毛毛雨',53:'毛毛雨',55:'毛毛雨',56:'冻毛毛雨',57:'冻毛毛雨',61:'小雨',63:'中雨',65:'大雨',66:'冻雨',67:'冻雨',71:'小雪',73:'中雪',75:'大雪',77:'雪粒',80:'阵雨',81:'阵雨',82:'强阵雨',85:'阵雪',86:'阵雪',95:'雷阵雨',96:'雷暴',99:'雷暴'};
+function weatherLabel(code: number | undefined): string { return WEATHER_LABELS[code ?? -1] ?? '天气'; }
+
 const DEFAULT_DRAFT: GenerationDraft = { prompt: '', type: 'guide_script', requirements: '', length: 'medium', style: 'friendly' };
 
 function readPreferences(): Preferences {
@@ -47,6 +50,16 @@ function safeInline(text: string) {
     if (link) return href ? <a key={index} href={href} target="_blank" rel="noreferrer">{link[1]}</a> : <Fragment key={index}>{link[1]}</Fragment>;
     return <Fragment key={index}>{part}</Fragment>;
   });
+}
+
+function MicIcon() {
+  return <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>;
+}
+function StopIcon() {
+  return <svg viewBox="0 0 24 24" width="21" height="21" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>;
+}
+function SendIcon() {
+  return <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg>;
 }
 
 function RichText({ text, onReadParagraph }: { text: string; onReadParagraph?: (text: string, index: number) => void }) {
@@ -98,11 +111,44 @@ export function App() {
   const [asrBusy, setAsrBusy] = useState(false);
   const [laneBusy, setLaneBusy] = useState<Record<Lane, boolean>>({ chat: false, generation: false });
   const [showLatest, setShowLatest] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [now, setNow] = useState(() => new Date());
+  const [weather, setWeather] = useState<{ temp: number; label: string } | null>(null);
+  useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 30000); return () => window.clearInterval(timer); }, []);
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=39.109&longitude=117.157&current=temperature_2m,weather_code&timezone=Asia%2FShanghai');
+        if (!response.ok) return;
+        const data = await response.json();
+        const temp = Math.round(data?.current?.temperature_2m);
+        if (active && Number.isFinite(temp)) setWeather({ temp, label: weatherLabel(data?.current?.weather_code) });
+      } catch { /* Weather is decorative; failures keep the fallback. */ }
+    };
+    void load();
+    const timer = window.setInterval(load, 900000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, []);
+  useEffect(() => {
+    let downX = 0, downY = 0, hitAtDown = false;
+    const onDown = (event: PointerEvent) => { const target = event.target as HTMLElement | null; hitAtDown = Boolean(target?.closest?.('[data-avatar-hit]')); downX = event.clientX; downY = event.clientY; };
+    const onClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      const onAvatar = hitAtDown || Boolean(target?.closest?.('.guide-character'));
+      if (!onAvatar) return;
+      if (Math.hypot(event.clientX - downX, event.clientY - downY) > 6) return;
+      setPanelOpen((value) => !value);
+    };
+    document.addEventListener('pointerdown', onDown, true);
+    document.addEventListener('click', onClick, true);
+    return () => { document.removeEventListener('pointerdown', onDown, true); document.removeEventListener('click', onClick, true); };
+  }, []);
   const avatarHostRef = useRef<HTMLDivElement>(null); const avatarRef = useRef<AvatarAdapter | null>(null); const asrRef = useRef<SpeechAdapter | null>(null); const speechControllerRef = useRef<SpeechController | null>(null);
   const sessionsRef = useRef<Record<Lane, Record<CampusId, string>>>({ chat: { weijinlu: freshUuid(), beiyangyuan: freshUuid() }, generation: { weijinlu: freshUuid(), beiyangyuan: freshUuid() } });
   const laneAbortRef = useRef<Record<Lane, AbortController | null>>({ chat: null, generation: null }); const laneGenerationRef = useRef<Record<Lane, number>>({ chat: 0, generation: 0 }); const runningRef = useRef<Record<Lane, boolean>>({ chat: false, generation: false }); const requestRef = useRef<Record<Lane, string | null>>({ chat: null, generation: null });
   const requestSessionRef=useRef<Record<Lane,string|null>>({chat:null,generation:null});
-  const composingRef = useRef(false); const messageListRef = useRef<HTMLDivElement>(null); const autoFollowRef = useRef(true); const previousCampusRef = useRef(prefs.campus); const campusRef = useRef(prefs.campus);
+  const composingRef = useRef(false); const composerRef = useRef<HTMLTextAreaElement|null>(null); const messageListRef = useRef<HTMLDivElement>(null); const autoFollowRef = useRef(true); const previousCampusRef = useRef(prefs.campus); const campusRef = useRef(prefs.campus);
   const speechProgressRef = useRef<SpeechProgress | null>(null); const renderReceiptsRef = useRef(new Set<string>());
   const selectedPoiRef = useRef<POI | null>(null); const speechRunRequestRef = useRef<string | null>(null);
   const asrAbortRef = useRef<AbortController | null>(null); const asrGenerationRef = useRef(0); const asrRequestRef = useRef<string | null>(null);
@@ -291,24 +337,29 @@ export function App() {
   function goLatest() { const node = messageListRef.current; if (!node) return; autoFollowRef.current = true; node.scrollTop = node.scrollHeight; setShowLatest(false); }
   function resizeStart(event: React.PointerEvent<HTMLDivElement>) { if (window.innerWidth < 900) return; const startX = event.clientX; const startWidth = prefs.panelWidth; const move = (next: PointerEvent) => setPrefs((current) => ({ ...current, panelWidth: Math.min(760, Math.max(420, startWidth + startX - next.clientX)) })); const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); }; window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); }
   function showLogs(requestId?: string) { setLogRequest(requestId ?? null); setLogsOpen(true); }
+  const timeText = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
+  const dateText = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', month: 'numeric', day: 'numeric', weekday: 'short' }).format(now);
+  const speechSummary = !speechEnabled ? '未开启' : speechProgress?.status === 'speaking' ? '播报中' : speechProgress?.status === 'buffering' ? '准备中' : speechProgress?.status === 'error' ? '播报失败' : speechProgress?.status === 'paused' ? '已暂停' : '已开启';
   const shownEvents = logRequest ? events.filter((event) => event.request_id === logRequest) : events;
   const campusChatTasks = chatTasks.filter((task) => task.campus === prefs.campus);
   const serviceTone = serviceError ? 'off' : health ? 'ready' : 'pending'; const modelTone = health?.model.verified ? 'ready' : health?.model.configured ? 'pending' : 'off';
 
   return <div className="app-shell r2-shell">
-    <header className="topbar"><div className="brand"><span className="brand-mark">珂</span><div><strong>珂莱塔</strong><span>天津大学数字人校园导游</span></div></div><details className="system-status"><summary>技术详情</summary><span className={`status-pill ${serviceTone}`}><i/>{serviceError ? '应用离线' : health ? '应用在线' : '连接中'}</span><span className={`status-pill ${modelTone}`}><i/>{health?.model.verified ? '模型已连通' : health?.model.configured ? '模型待验证' : '模型未配置'}</span></details><div className="speech-controls">{!speechEnabled ? <button onClick={() => void enableSpeech()}>开启语音导览</button> : <><select aria-label="自动播报方式" value={prefs.speechMode} onChange={(event) => { setPrefs({ ...prefs, speechMode: event.target.value as SpeechMode }); if (event.target.value === 'off') void speechControllerRef.current?.stop('user'); }}><option value="off">自动播报关闭</option><option value="brief">自动简述</option><option value="full">自动全文</option></select><select aria-label="导览语音" value={voiceId} onChange={(event) => setVoiceId(event.target.value)}>{voices.map((voice) => <option key={voice.id} value={voice.id}>{voice.name}</option>)}</select><button onClick={() => void enableSpeech()}>刷新音色</button><button onClick={() => void speechControllerRef.current?.enable(true).then((result) => setNotice(result.status === 'ready' ? '已请求恢复声音。' : '声音恢复失败，请检查浏览器权限。'))}>恢复声音</button>{speechControllerRef.current?.continueRemaining && <button onClick={() => void continueSpeech()}>继续讲</button>}<span>{speechProgress?.status === 'speaking' ? '正在播报' : speechProgress?.status === 'buffering' ? '准备播报' : speechProgress?.status === 'error' ? '播报失败，请恢复或重读' : speechProgress?.status === 'paused' ? '播报已暂停' : '语音已开启'}</span>{(speechProgress?.status === 'speaking' || speechProgress?.status === 'buffering') && <button onClick={() => void speechControllerRef.current?.stop('user')}>停止播报</button>}</>}</div><button className="logs-button" onClick={() => showLogs()}><span>运行日志</span>{events.length > 0 && <b>{events.length}</b>}</button></header>
+    <header className="topbar"><div className="topbar-left"><div className="topbar-pill topbar-clock" title="北京时间（Asia/Shanghai）"><strong>{timeText}</strong><span>{dateText}</span></div><div className="topbar-pill topbar-weather" title={weather ? `天津 · ${weather.label}` : '天津天气暂不可用'}><strong>{weather ? `${weather.temp}°C` : '--'}</strong><span>{weather ? weather.label : '天气 --'}</span></div></div><div className="topbar-right"><details className="speech-menu"><summary>语音讲解<small>{speechSummary}</small></summary><div className="speech-menu-body"><div className="speech-controls">{!speechEnabled ? <button onClick={() => void enableSpeech()}>开启语音导览</button> : <><select aria-label="自动播报方式" value={prefs.speechMode} onChange={(event) => { setPrefs({ ...prefs, speechMode: event.target.value as SpeechMode }); if (event.target.value === 'off') void speechControllerRef.current?.stop('user'); }}><option value="off">自动播报关闭</option><option value="brief">自动简述</option><option value="full">自动全文</option></select><select aria-label="导览语音" value={voiceId} onChange={(event) => setVoiceId(event.target.value)}>{voices.map((voice) => <option key={voice.id} value={voice.id}>{voice.name}</option>)}</select><button onClick={() => void enableSpeech()}>刷新音色</button><button onClick={() => void speechControllerRef.current?.enable(true).then((result) => setNotice(result.status === 'ready' ? '已请求恢复声音。' : '声音恢复失败，请检查浏览器权限。'))}>恢复声音</button>{speechControllerRef.current?.continueRemaining && <button onClick={() => void continueSpeech()}>继续讲</button>}<span>{speechProgress?.status === 'speaking' ? '正在播报' : speechProgress?.status === 'buffering' ? '准备播报' : speechProgress?.status === 'error' ? '播报失败，请恢复或重读' : speechProgress?.status === 'paused' ? '播报已暂停' : '语音已开启'}</span>{(speechProgress?.status === 'speaking' || speechProgress?.status === 'buffering') && <button onClick={() => void speechControllerRef.current?.stop('user')}>停止播报</button>}</>}</div></div></details><button className="logs-button" onClick={() => showLogs()}><span>运行日志</span>{events.length > 0 && <b>{events.length}</b>}</button></div></header>
     <aside className="guide-character" aria-label="数字人导游"><div ref={avatarHostRef} className="guide-character-host" style={{transform: `scale(${prefs.avatarScale})`}}/></aside>
-    <TourWorkspace key={prefs.campus} campus={prefs.campus} memory={tourMemoryRef.current[prefs.campus]} onMemory={value=>{tourMemoryRef.current[prefs.campus]=value;}} registerCancel={handler=>{tourCancelRef.current=handler;}} registerText={handler=>{tourTextRef.current=handler;}} registerMapFocus={handler=>{mapFocusRef.current=handler;}} onCampus={campus=>setPrefs(current=>({...current,campus}))}
+    <TourWorkspace key={prefs.campus} campus={prefs.campus} memory={tourMemoryRef.current[prefs.campus]} onMemory={value=>{tourMemoryRef.current[prefs.campus]=value;}} registerCancel={handler=>{tourCancelRef.current=handler;}} registerText={handler=>{tourTextRef.current=handler;}} registerMapFocus={handler=>{mapFocusRef.current=handler;}} onSelectPoi={onSelectPoi} onCampus={campus=>setPrefs(current=>({...current,campus}))}
       onReadRoute={route=>{const task:TaskRecord={...newTask(freshUuid(),freshUuid()),lane:'chat',prompt:'路线讲解',mode:'campus_qa',campus:prefs.campus,poiId:null,generation:null};void playTask(task,privateText(routeNarration(route)));}}
       onStop={async()=>{await stopListening();await cancelLane('chat');await cancelLane('generation');await speechControllerRef.current?.stop('user');}}
-      onExplain={stop=>{void cancelLane('chat').then(()=>runTask('chat','请简短讲解'+stop.title+'，说明值得观察的细节；缺少资料时明确说明。','content_generation',{type:'guide_script',requirements:'只讲当前已确认到达站点；注明来源和进入条件。',length:'short',style:'friendly'},null,null,stop.poi_id));}}
+      panelOpen={panelOpen} onPanelClose={()=>setPanelOpen(false)} onExplain={stop=>{void cancelLane('chat').then(()=>runTask('chat','请简短讲解'+stop.title+'，说明值得观察的细节；缺少资料时明确说明。','content_generation',{type:'guide_script',requirements:'只讲当前已确认到达站点；注明来源和进入条件。',length:'short',style:'friendly'},null,null,stop.poi_id));}}
       caption={asrBusy?'正在聆听…':speechProgress?.status==='speaking'?'正在播报当前讲解':notice}
       narration={[...chatTasks].reverse().find(t=>t.campus===prefs.campus)?.answer??''}
       voice={<>
-<div className="tour-dock-input"><label className="tour-speech-input">对导游说<textarea value={chatInput} rows={2} maxLength={8000} onChange={e=>setChatInput(e.target.value)} onCompositionStart={()=>{composingRef.current=true;}} onCompositionEnd={()=>{composingRef.current=false;}} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing&&!composingRef.current){e.preventDefault();void submitTourText(chatInput);}}}/></label><div className="tour-dock-actions"><button className={asrBusy?'tour-danger':''} onClick={()=>asrBusy?void stopListening():void startListening()}>{asrBusy?'停止识别':'语音输入'}</button><button className="tour-primary" disabled={laneBusy.chat||!chatInput.trim()} onClick={()=>void submitTourText(chatInput)}>发送</button>{laneBusy.chat&&<button className="tour-danger" onClick={()=>void cancelLane('chat')}>取消</button>}</div></div>
-<div className="tour-chat-meta"><strong className="tour-chat-title">校园对话</strong>{campusChatTasks.length>0&&<span className="tour-chat-count">{campusChatTasks.length} 条</span>}{selectedPoi&&<div className="context-chip">当前点位：{selectedPoi.name}<button onClick={()=>onSelectPoi(null)}>×</button></div>}<button type="button" onClick={clearChat}>清空本校区对话</button></div>
-<details className="tour-chat-log"><summary>对话记录{campusChatTasks.length>0?`（${campusChatTasks.length}）`:''}</summary><div className="task-scroll tour-chat-history" ref={messageListRef} onScroll={onMessageScroll}>{campusChatTasks.length===0&&<p className="tour-chat-empty">问点校园的事，也可以直接说想去哪；流式正文会写入同一条消息。</p>}{campusChatTasks.map(task=><TaskCard key={task.requestId} task={task} currentCampus={prefs.campus} canStop={laneBusy.chat&&requestRef.current.chat===task.requestId} onStop={()=>void cancelLane('chat')} onRetry={()=>retryTask(task)} onLogs={()=>showLogs(task.requestId)} onCopy={()=>copyTask(task)} onExport={()=>undefined} onRead={(text,id)=>void playTask(task,text,id)} onReadFull={()=>void playTask(task,task.answer)} onContinue={()=>setChatInput(`请基于刚才的回答展开讲讲：${task.prompt}`)} onMap={()=>focusMap(task.poiId)}/>)}</div>{showLatest&&<button className="latest-button" onClick={goLatest}>回到最新</button>}</details>
-<details className="tour-voice-more"><summary>语音设置</summary><div><select aria-label="识别后的发送方式" value={voiceSend} onChange={e=>setVoiceSend(e.target.value as 'confirm'|'auto')}><option value="confirm">识别后确认发送</option><option value="auto">说完自动发送</option></select><button onClick={()=>void enableSpeech()}>开启中文播报</button><button onClick={()=>void speechControllerRef.current?.stop('user')}>停止播报</button></div></details></>}/>
+<div className="task-scroll tour-chat-history" ref={messageListRef} onScroll={onMessageScroll}>{campusChatTasks.length===0&&<p className="tour-chat-empty">问点校园的事，也可以直接说想去哪；流式正文会写入同一条消息。</p>}{campusChatTasks.map(task=><TaskCard key={task.requestId} task={task} currentCampus={prefs.campus} canStop={laneBusy.chat&&requestRef.current.chat===task.requestId} onStop={()=>void cancelLane('chat')} onRetry={()=>retryTask(task)} onLogs={()=>showLogs(task.requestId)} onCopy={()=>copyTask(task)} onExport={()=>undefined} onRead={(text,id)=>void playTask(task,text,id)} onReadFull={()=>void playTask(task,task.answer)} onContinue={()=>setChatInput(`请基于刚才的回答展开讲讲：${task.prompt}`)} onMap={()=>focusMap(task.poiId)}/>)}</div>
+
+{showLatest&&<button className="latest-button" onClick={goLatest}>回到最新</button>}
+
+{selectedPoi&&<div className="context-chip">当前点位：{selectedPoi.name}<button onClick={()=>onSelectPoi(null)}>×</button></div>}<div className="tour-composer" onClick={(event)=>{const el=event.target as HTMLElement;if(el.closest('button'))return;composerRef.current?.focus();}}><textarea ref={composerRef} id="tour-composer-input" className="tour-composer-input" value={chatInput} rows={2} maxLength={8000} placeholder="对导游说" aria-label="对导游说" onChange={e=>setChatInput(e.target.value)} onCompositionStart={()=>{composingRef.current=true;}} onCompositionEnd={()=>{composingRef.current=false;}} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing&&!composingRef.current){e.preventDefault();void submitTourText(chatInput);}}}/><div className="tour-composer-actions"><button type="button" className={'composer-icon mic'+(asrBusy?' recording':'')} aria-label={asrBusy?'停止识别':'语音输入'} title={asrBusy?'停止识别':'语音输入'} onClick={()=>asrBusy?void stopListening():void startListening()}>{asrBusy?<StopIcon/>:<MicIcon/>}</button>{laneBusy.chat?<button type="button" className="composer-icon send cancel" aria-label="取消本次回答" title="取消本次回答" onClick={()=>void cancelLane('chat')}><StopIcon/></button>:<button type="button" className="composer-icon send" aria-label="发送" title="发送" disabled={!chatInput.trim()} onClick={()=>void submitTourText(chatInput)}><SendIcon/></button>}</div></div>
+<div className="tour-composer-foot"><details className="tour-voice-more"><summary>语音设置</summary><div className="tour-voice-menu"><label className="tour-voice-field"><span>识别后的发送方式</span><select aria-label="识别后的发送方式" value={voiceSend} onChange={e=>setVoiceSend(e.target.value as 'confirm'|'auto')}><option value="confirm">识别后确认发送</option><option value="auto">说完自动发送</option></select></label><div className="tour-voice-buttons"><button type="button" className="tour-voice-action" onClick={()=>void enableSpeech()}>开启中文播报</button><button type="button" className="tour-voice-action danger" onClick={()=>void speechControllerRef.current?.stop('user')}>停止播报</button></div></div></details><button type="button" className="tour-chat-clear" onClick={clearChat} disabled={campusChatTasks.length===0}>清空对话</button></div></>}/>
     <div className={`drawer-backdrop ${logsOpen ? 'open' : ''}`} onClick={() => setLogsOpen(false)}/><aside className={`log-drawer ${logsOpen ? 'open' : ''}`} inert={!logsOpen} aria-hidden={!logsOpen}><header><div><strong>{logRequest ? `请求 ${logRequest.slice(0, 8)} 的日志` : '当前会话日志'}</strong><span>仅显示服务返回的真实事件</span></div><button onClick={() => setLogsOpen(false)}>关闭</button></header><div className="drawer-tools"><button disabled={!shownEvents.length} onClick={() => { const blob = new Blob([sanitizedLogExport(shownEvents)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'ai4tju-runtime-events.json'; anchor.click(); URL.revokeObjectURL(url); }}>脱敏导出</button></div><div className="log-list">{shownEvents.length === 0 ? <p>尚无实际运行事件。</p> : shownEvents.map((event) => <article key={`${event.origin}:${event.event_id}`}><i className={event.status}/><div><strong>{event.origin === 'backend' ? '后端' : '浏览器'} · {event.stage}</strong><span>{event.status} · {event.duration_ms == null ? '耗时未返回' : `${Math.round(event.duration_ms)} ms`}</span><time>{new Date(event.timestamp).toLocaleTimeString('zh-CN', { hour12: false })}</time></div></article>)}</div></aside>
   </div>;
 }
