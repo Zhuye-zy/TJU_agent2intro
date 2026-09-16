@@ -2,6 +2,8 @@ import type { Application } from 'pixi.js';
 import type { Live2DModel } from 'pixi-live2d-display/cubism4';
 import type { AdapterResult, AvatarAdapter, AvatarState } from '../../../shared/contracts';
 import { kelaitaManifest } from './manifest';
+import { VrmAvatarAdapter } from './vrm/adapter';
+import { vrmAvatarEnabled } from './vrm/flag';
 
 type CoreModel = {
   setParameterValueById(id: string, value: number, weight?: number): void;
@@ -218,7 +220,9 @@ export class KelaitaAvatarAdapter implements AvatarAdapter {
   }
 }
 
-export function createAvatarAdapter(): KelaitaAvatarAdapter {
+export function createAvatarAdapter(): AvatarAdapter {
+  // Plug-and-play VRM renderer (external module); Live2D stays the default and untouched.
+  if (vrmAvatarEnabled()) return new VrmAvatarAdapter();
   return new KelaitaAvatarAdapter();
 }
 

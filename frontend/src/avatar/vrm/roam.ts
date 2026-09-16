@@ -1,0 +1,191 @@
+// In-page roaming controller for the external VRM avatar (Tianxuanji-style walk).
+// Lives entirely in this module: a fixed overlay appended to <body>, no app CSS/JS changes.
+export function roamEnabled(): boolean {
+  try {
+    const param = new URLSearchParams(window.location.search).get('roam');
+    if (param === '0' || param === 'off') return false;
+    if (param === '1' || param === 'on') return true;
+    return window.localStorage.getItem('campus.avatar.roam') !== '0';
+  } catch {
+    return true;
+  }
+}
+
+export function setRoamEnabled(enabled: boolean): void {
+  try {
+    if (enabled) window.localStorage.removeItem('campus.avatar.roam');
+    else window.localStorage.setItem('campus.avatar.roam', '0');
+  } catch { /* ignore */ }
+}
+
+const OVERLAY_WIDTH = 190;
+const OVERLAY_HEIGHT = 260;
+const MARGIN = 10;
+const WALK_SPEED = 78;
+
+export class RoamController {
+  readonly stage: HTMLDivElement;
+  motion: 'idle' | 'walk' = 'idle';
+  facing: 1 | -1 = 1;
+  /** World-space yaw target (radians) for the current movement direction. */
+  heading = Math.PI;
+  x = 0;
+  y = 48;
+
+  private overlay: HTMLDivElement;
+  private bubble: HTMLDivElement;
+  private hit!: HTMLDivElement;
+  private targetX: number;
+  private targetY: number;
+  private idleUntil = 0;
+  private dragging = false;
+  private moved = false;
+  private dragStartX = 0;
+  private dragStartY = 0;
+  private dragStartClientX = 0;
+  private dragStartClientY = 0;
+  private readonly onGreet: () => void;
+  private readonly onResize = () => this.clampPosition();
+  private readonly onPointerMove = (event: PointerEvent) => this.pointerMove(event);
+  private readonly onPointerUp = (event: PointerEvent) => this.pointerUp(event);
+
+  constructor(onGreet: () => void) {
+    this.onGreet = onGreet;
+    const width = typeof window === 'undefined' ? 1200 : window.innerWidth;
+    this.x = Math.max(MARGIN, width - OVERLAY_WIDTH - 24);
+    this.targetX = this.x;
+    this.targetY = this.y;
+
+    this.overlay = document.createElement('div');
+    this.overlay.dataset.avatarRoam = 'true';
+    Object.assign(this.overlay.style, {
+      position: 'fixed', left: '0', bottom: '0', width: `${OVERLAY_WIDTH}px`, height: `${OVERLAY_HEIGHT}px`,
+      zIndex: '20', pointerEvents: 'none', transition: 'none',
+    } satisfies Partial<CSSStyleDeclaration>);
+
+    this.stage = document.createElement('div');
+    Object.assign(this.stage.style, { width: '100%', height: '100%', pointerEvents: 'none', touchAction: 'none' });
+    this.overlay.appendChild(this.stage);
+
+    // Only the character body is interactive; the rest of the overlay is click-through.
+    const hit = document.createElement('div');
+    hit.dataset.avatarHit = 'true';
+    Object.assign(hit.style, {
+      position: 'absolute', left: '50%', bottom: '0', width: '96px', height: '220px',
+      transform: 'translateX(-50%)', pointerEvents: 'auto', cursor: 'grab',
+    } satisfies Partial<CSSStyleDeclaration>);
+    this.overlay.appendChild(hit);
+    this.hit = hit;
+
+    this.bubble = document.createElement('div');
+    Object.assign(this.bubble.style, {
+      position: 'absolute', top: '-6px', left: '50%', transform: 'translate(-50%, -100%)', maxWidth: '180px',
+      padding: '6px 10px', borderRadius: '10px', background: 'rgba(255,255,255,.95)', border: '1px solid #d8e3ec',
+      boxShadow: '0 4px 14px rgba(24,58,86,.12)', fontSize: '12px', color: '#132b46', whiteSpace: 'nowrap',
+      opacity: '0', transition: 'opacity .25s ease', pointerEvents: 'none',
+    } satisfies Partial<CSSStyleDeclaration>);
+    this.overlay.appendChild(this.bubble);
+
+    document.body.appendChild(this.overlay);
+    window.addEventListener('resize', this.onResize);
+    hit.addEventListener('pointerdown', (event) => this.pointerDown(event));
+    hit.addEventListener('click', () => { if (!this.moved) this.greet(); });
+    this.applyPosition();
+  }
+
+  update(now: number): void {
+    if (this.dragging) return;
+    if (this.motion === 'walk') {
+      const step = (WALK_SPEED / 1000) * 16;
+      const dx = this.targetX - this.x;
+      const dy = this.targetY - this.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance <= step) {
+        this.x = this.targetX;
+        this.y = this.targetY;
+        this.motion = 'idle';
+        this.idleUntil = now + 2600 + Math.random() * 4200;
+      } else {
+        this.x += (dx / distance) * step;
+        this.y += (dy / distance) * step;
+        this.facing = dx < 0 ? -1 : 1;
+        // Screen up = away from camera; derive the yaw that points the model along the path.
+        this.heading = Math.atan2(-dx, dy);
+      }
+      this.applyPosition();
+    } else if (now >= this.idleUntil) {
+      this.targetX = MARGIN + Math.random() * Math.max(1, window.innerWidth - OVERLAY_WIDTH - MARGIN * 2);
+      this.targetY = MARGIN + Math.random() * Math.max(1, window.innerHeight - OVERLAY_HEIGHT - MARGIN * 2);
+      this.motion = 'walk';
+    }
+  }
+
+  showBubble(text: string, ms = 2200): void {
+    this.bubble.textContent = text;
+    this.bubble.style.opacity = '1';
+    window.setTimeout(() => { this.bubble.style.opacity = '0'; }, ms);
+  }
+
+  dispose(): void {
+    window.removeEventListener('resize', this.onResize);
+    window.removeEventListener('pointermove', this.onPointerMove);
+    window.removeEventListener('pointerup', this.onPointerUp);
+    this.overlay.remove();
+  }
+
+  private greet(): void {
+    this.onGreet();
+    this.showBubble('你好呀～我是珂莱塔');
+    this.idleUntil = performance.now() + 3200;
+  }
+
+  private pointerDown(event: PointerEvent): void {
+    this.dragging = true;
+    this.moved = false;
+    this.dragStartX = this.x;
+    this.dragStartY = this.y;
+    this.dragStartClientX = event.clientX;
+    this.dragStartClientY = event.clientY;
+    this.hit.style.cursor = 'grabbing';
+    window.addEventListener('pointermove', this.onPointerMove);
+    window.addEventListener('pointerup', this.onPointerUp);
+  }
+
+  private pointerMove(event: PointerEvent): void {
+    if (!this.dragging) return;
+    const dx = event.clientX - this.dragStartClientX;
+    const dy = event.clientY - this.dragStartClientY;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) this.moved = true;
+    this.x = this.dragStartX + dx;
+    this.y = this.dragStartY - dy;
+    this.clampPosition();
+    this.applyPosition();
+  }
+
+  private pointerUp(event: PointerEvent): void {
+    if (!this.dragging) return;
+    this.dragging = false;
+    this.hit.style.cursor = 'grab';
+    window.removeEventListener('pointermove', this.onPointerMove);
+    window.removeEventListener('pointerup', this.onPointerUp);
+    this.targetX = this.x;
+    this.targetY = this.y;
+    this.moved = Math.abs(event.clientX - this.dragStartClientX) > 4 || Math.abs(event.clientY - this.dragStartClientY) > 4;
+    this.motion = 'idle';
+    this.idleUntil = performance.now() + 1800 + Math.random() * 2200;
+  }
+
+  private clampPosition(): void {
+    const maxX = Math.max(MARGIN, window.innerWidth - OVERLAY_WIDTH - MARGIN);
+    const maxY = Math.max(MARGIN, window.innerHeight - OVERLAY_HEIGHT - MARGIN);
+    this.x = Math.min(maxX, Math.max(MARGIN, this.x));
+    this.y = Math.min(maxY, Math.max(MARGIN, this.y));
+    this.targetX = Math.min(maxX, Math.max(MARGIN, this.targetX));
+    this.targetY = Math.min(maxY, Math.max(MARGIN, this.targetY));
+    this.applyPosition();
+  }
+
+  private applyPosition(): void {
+    this.overlay.style.transform = `translate(${Math.round(this.x)}px, ${-Math.round(this.y)}px)`;
+  }
+}
