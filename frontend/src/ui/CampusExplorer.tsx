@@ -1,4 +1,5 @@
 import type { TourSession } from '../../../shared/r3';
+import {PoiSources} from './PoiSources';
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { CampusId } from '../../../shared/contracts';
 import type { CampusAssets, ExternalNavigation, MapPublicConfig, POI, POICategory, RouteResponse, UserPosition } from '../../../shared/r2';
@@ -9,10 +10,14 @@ import { DestinationSelectionRequired, type MapDestination } from '../transport/
 import { r2Transport } from '../transport/r2';
 import { freshUuid } from './model';
 import { mergePoiPages } from './r2-model';
-import { navigationFor, routeFor, OperationScope } from './navigation-model';
+import { preciseOrigin, planSegments, mapCooldown } from '../transport/interaction';
+import { navigationFor, OperationScope } from './navigation-model';
 
 const CATEGORY_LABELS: Record<POICategory|'all',string>={all:'全部',teaching:'教学',library:'图书馆',gate:'校门',dining:'餐饮',dorm_area:'宿舍区',sports:'体育',culture:'文化',service:'服务',other:'其他'};
 interface Props {
+  onRouteApplied?(route:RouteResponse|null):void;
+  speechStatus?: import('react').ReactNode;
+  selected:POI|null; routeTarget:{poiId:string;revision:number}|null; onRouteChange():void; onStop():Promise<void>;
   resetEpoch?:number; tourSession?:TourSession|null; onInstruction?(text:string):void;
   campus:CampusId; sessionId:string; focusPoiId:string|null; focusRevision:number;
   onSelect(poi:POI|null):void; onAssets(assets:CampusAssets|null):void;
@@ -68,10 +73,10 @@ function followDistanceMeters(from:UserPosition,to:UserPosition):number{
   const a=Math.sin(dLat/2)**2+Math.cos(rad(from.lat))*Math.cos(rad(to.lat))*Math.sin(dLng/2)**2;
   return 6371000*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
-export function CampusExplorer({campus,sessionId,focusPoiId,focusRevision,onSelect,onAssets,onAsk,onReadRoute,tourSession,onInstruction,resetEpoch}:Props) {
+export function CampusExplorer({campus,sessionId,focusPoiId,focusRevision,onSelect,onAssets,onAsk,onReadRoute,tourSession,onInstruction,resetEpoch,selected,routeTarget,onRouteChange,onStop,speechStatus,onRouteApplied}:Props) {
   const [items,setItems]=useState<POI[]>([]),[total,setTotal]=useState<number|null>(null),[nextCursor,setNextCursor]=useState<string|null>(null);
   const [queryDraft,setQueryDraft]=useState(''),[query,setQuery]=useState(''),[category,setCategory]=useState<POICategory|'all'>('all'),[loading,setLoading]=useState(false),[directoryError,setDirectoryError]=useState('');
-  const [selected,setSelected]=useState<POI|null>(null),[assets,setAssets]=useState<CampusAssets|null>(null),[view,setView]=useState<'local'|'online'>('local');
+  const [assets,setAssets]=useState<CampusAssets|null>(null),[view,setView]=useState<'local'|'online'>('local');
   const [mapConfig,setMapConfig]=useState<MapPublicConfig|null>(null),[onlineError,setOnlineError]=useState(''),[onlineRequested,setOnlineRequested]=useState(false),[onlineReady,setOnlineReady]=useState(false);
   const [position,setPosition]=useState<UserPosition|null>(null),[locationMessage,setLocationMessage]=useState('尚未请求定位'),[locating,setLocating]=useState(false);
   const [tracking,setTracking]=useState(false);const [mapRetry,setMapRetry]=useState(0);
@@ -79,6 +84,13 @@ export function CampusExplorer({campus,sessionId,focusPoiId,focusRevision,onSele
   const [tourMarkerNote,setTourMarkerNote]=useState('');
   const lastFollowAt=useRef(0),lastFollowOrigin=useRef<UserPosition|null>(null);
   const [destinations,setDestinations]=useState<MapDestination[]>([]),[destination,setDestination]=useState<MapDestination|null>(null),[destinationBusy,setDestinationBusy]=useState(false),[activeStep,setActiveStep]=useState(0),[pickingStart,setPickingStart]=useState(false);
+  const selectionScope=useRef(new OperationScope());
+  const selectionEpoch=useRef(0);
+  const selectionCallbacks=useRef({onSelect,onRouteChange});selectionCallbacks.current={onSelect,onRouteChange};
+  const [selectionMessage,setSelectionMessage]=useState('');
+  const autoRouteKey=useRef('');
+  const confirmedDestinations=useRef(new Map<string,MapDestination>());
+  const pendingRoutePoi=useRef<POI|null>(null);
   const pendingMapFocus=useRef<string|null>(null);
   const pendingDestinationRoute=useRef(false);
   const [routeOriginNote,setRouteOriginNote]=useState('');
@@ -86,7 +98,7 @@ export function CampusExplorer({campus,sessionId,focusPoiId,focusRevision,onSele
   const [manualLng,setManualLng]=useState(''),[manualLat,setManualLat]=useState(''),[externalNav,setExternalNav]=useState<ExternalNavigation|null>(null),[route,setRoute]=useState<RouteResponse|null>(null),[routeBusy,setRouteBusy]=useState(false),[routeError,setRouteError]=useState('');
   const [budgetText,setBudgetText]=useState('地图加载 0 / 定位 0 / POI搜索 0 / 步行规划 0');
   const operationRef=useRef(0),selectedRef=useRef<POI|null>(null),itemsRef=useRef(items),campusRef=useRef(campus);
-  itemsRef.current=items;campusRef.current=campus;
+  itemsRef.current=items;campusRef.current=campus;selectedRef.current=selected;
   const onlineHostRef=useRef<HTMLDivElement>(null),onlineRef=useRef<OnlineMapHandle|null>(null),budgetRef=useRef<MapBudget|null>(null),mapAttemptedRef=useRef(false);
   const viewportRef=useRef<HTMLDivElement|null>(null),layerRef=useRef<HTMLDivElement|null>(null);
   const viewRef=useRef({z:1,x:0,y:0,iw:1024,ih:724,dragging:false,moved:false,sx:0,sy:0,lx:0,ly:0});
@@ -94,8 +106,15 @@ export function CampusExplorer({campus,sessionId,focusPoiId,focusRevision,onSele
   const routeScope=useRef(new OperationScope()),locationScope=useRef(new OperationScope()),routeBusyRef=useRef(false);
   const activeMap=assets?.maps.find(map=>map.campus_id===campus)??null;
   const updateBudget=()=>{const counters=budgetRef.current?.snapshot().counters;if(counters)setBudgetText('地图加载 '+counters.map_load.initiated+' / 定位 '+counters.geolocation.initiated+' / POI搜索 '+counters.poi_search.initiated+' / 步行规划 '+counters.walking_route.initiated);};
-  const clearRoute=useCallback(()=>{routeScope.current.cancel();routeBusyRef.current=false;setRouteBusy(false);setDestinationBusy(false);setRoute(null);setActiveStep(0);setRouteError('');onlineRef.current?.clearRoute();},[]);
-  const choose=useCallback((poi:POI|null)=>{pendingDestinationRoute.current=false;selectedRef.current=poi;setSelected(poi);setExternalNav(null);setDestinations([]);setDestination(null);setPickingStart(false);onlineRef.current?.pickStart(null);onlineRef.current?.showDestination(null);clearRoute();},[clearRoute]);
+  const clearRoute=useCallback(()=>{onRouteApplied?.(null);selectionCallbacks.current.onRouteChange();routeScope.current.cancel();routeBusyRef.current=false;setRouteBusy(false);setDestinationBusy(false);setRoute(null);setActiveStep(0);setRouteError('');onlineRef.current?.clearRoute();onlineRef.current?.showTourStops([]);},[]);
+  const choose=useCallback((poi:POI|null)=>{
+    if(selectedRef.current?.id===poi?.id)return;
+    selectionEpoch.current++;
+    selectionScope.current.cancel();pendingDestinationRoute.current=false;selectedRef.current=poi;selectionCallbacks.current.onSelect(poi);
+    setExternalNav(null);setDestinations([]);setDestination(null);setDestinationBusy(false);setSelectionMessage('');
+    onlineRef.current?.showDestination(null);
+    if(poi){setView('online');setOnlineRequested(true);}
+  },[]);
   const viewportMetrics=useCallback(()=>{
     const viewport=viewportRef.current,state=viewRef.current;
     if(!viewport)return null;
@@ -152,22 +171,20 @@ export function CampusExplorer({campus,sessionId,focusPoiId,focusRevision,onSele
     window.addEventListener('pointermove',move);window.addEventListener('pointerup',finish);window.addEventListener('pointercancel',finish);
   },[view,applyView]);
   useEffect(()=>{
-    choose(null);locationScope.current.cancel();if(locationTimer.current)clearTimeout(locationTimer.current);
-    setPosition(null);setLocating(false);setTracking(false);setManualLng('');setManualLat('');setRouteOriginNote('');
-    onlineRef.current?.clearPosition();onInstruction?.('');setLocationMessage('请确认起点，或在开始步行时取得 IP 粗略位置。');
+    clearRoute();locationScope.current.cancel();if(locationTimer.current)clearTimeout(locationTimer.current);setTracking(false);setLocating(false);
+    onInstruction?.('');
   },[resetEpoch,choose]);
-  useEffect(()=>{onSelect(selected?.campus_id===campus?selected:null);},[selected,campus,onSelect]);
   useEffect(()=>{
-    let active=true;
+    let active=true;const epoch=selectionEpoch.current;
     if(!focusPoiId)return;
     pendingMapFocus.current=focusPoiId;setView('online');setOnlineRequested(true);
     const known=items.find(item=>item.id===focusPoiId);
     if(known){choose(known);return;}
-    void r2Transport.poi(focusPoiId).then(poi=>{if(active&&poi.campus_id===campus){setItems(current=>mergePoiPages(current,[poi]));choose(poi);}}).catch(()=>undefined);
+    void r2Transport.poi(focusPoiId).then(poi=>{if(active&&epoch===selectionEpoch.current&&poi.campus_id===campus){setItems(current=>mergePoiPages(current,[poi]));choose(poi);}}).catch(()=>undefined);
     return()=>{active=false;};
   },[focusPoiId,focusRevision,campus,choose]);
   useEffect(()=>{
-    const revision=++operationRef.current;setItems([]);setTotal(null);setNextCursor(null);choose(null);setLoading(true);setDirectoryError('');
+    const revision=++operationRef.current;setItems([]);setTotal(null);setNextCursor(null);setLoading(true);setDirectoryError('');
     const options={...(category!=='all'?{category}:{}),...(query?{query}:{}),limit:100};
     // Local directory settles independently of map configuration and image downloads.
     void (async()=>{try{let all:POI[]=[];let cursor:string|undefined;let page:{items:POI[];total:number|null;next_cursor:string|null}|null=null;do{page=await r2Transport.pois(campus,{...options,limit:100,...(cursor?{cursor}:{})});if(operationRef.current!==revision)return;all=mergePoiPages(all,page.items);cursor=page.next_cursor??undefined;}while(cursor);setItems(all);setTotal(page?page.total??all.length:all.length);setNextCursor(null);}catch{if(operationRef.current===revision)setDirectoryError('点位目录暂不可用，请重试。');}finally{if(operationRef.current===revision)setLoading(false);}})();
@@ -218,7 +235,7 @@ export function CampusExplorer({campus,sessionId,focusPoiId,focusRevision,onSele
     mapAttemptedRef.current=true;
     const controller=new AbortController();let handle:OnlineMapHandle|null=null;
     try{budgetRef.current??=productionMapBudget();updateBudget();}catch(error){setOnlineError(operationError(error));return;}
-    void createOnlineMap(onlineHostRef.current,mapConfig,budgetRef.current,freshUuid(),controller.signal,id=>{const poi=itemsRef.current.find(item=>item.id===id);if(poi)choose(poi);},CAMPUS_MAP_VIEW[campus]).then(value=>{
+    void createOnlineMap(onlineHostRef.current,mapConfig,budgetRef.current,freshUuid(),controller.signal,id=>{const poi=itemsRef.current.find(item=>item.id===id);if(poi)choose(poi);else {const operation=selectionScope.current.begin();void r2Transport.poi(id).then(found=>{if(operation.current()&&found.campus_id===campusRef.current)choose(found);}).catch(()=>undefined);}},CAMPUS_MAP_VIEW[campus]).then(value=>{
       if(controller.signal.aborted){value.destroy();return;}
       handle=value;onlineRef.current=value;setOnlineReady(true);setOnlineError('');value.setPois(itemsRef.current,selectedRef.current?.id??null);
     }).catch(error=>{if(!controller.signal.aborted)setOnlineError(operationError(error));}).finally(updateBudget);
@@ -227,60 +244,55 @@ export function CampusExplorer({campus,sessionId,focusPoiId,focusRevision,onSele
   useEffect(()=>{onlineRef.current?.setPois(items,selected?.id??null);},[items,selected,onlineReady]);
   useEffect(()=>{if(view==='online')onlineRef.current?.resize();},[view,onlineReady]);
   useEffect(()=>{if(!onlineReady)return;const target=CAMPUS_MAP_VIEW[campus];onlineRef.current?.focusCampus(target.center,target.zoom);},[campus,onlineReady]);
-  useEffect(()=>{if(position)onlineRef.current?.showPosition(position);},[position,onlineReady]);
+  useEffect(()=>{if(position)onlineRef.current?.showPosition(position,!tracking);},[position,onlineReady,tracking]);
+  // Plan versions, not selection/chat renders, own route replacement.
   useEffect(()=>{
-    if(!onlineReady||!onlineRef.current)return;
-    const handle=onlineRef.current;
+    if(!onlineReady)return;
     const session=tourSession;
-    if(!session||view!=='online'){handle.showTourStops([]);setTourMarkerNote('');return;}
-    let live=true;const controller=new AbortController();const points:TourStopMarker[]=[];
-    const sleep=(ms:number)=>new Promise<void>(resolve=>{const timer=setTimeout(resolve,ms);controller.signal.addEventListener('abort',()=>{clearTimeout(timer);resolve();},{once:true});});
-    const codeOf=(error:unknown)=>(error as {code?:string})?.code??(error as {error?:{code?:string}})?.error?.code??'';
-    const retryable=new Set(['rate_limited','operation_in_progress','map_timeout','NETWORK_ERROR','UPSTREAM_TIMEOUT','TRANSPORT_TIMEOUT']);
-    const pickMatch=(matches:MapDestination[],title:string)=>{
-      const core=title.replace(/（[^）]*）/g,'').replace(/天津大学|北洋园校区|卫津路校区|校区/g,'').trim();
-      let best=matches[0],bestScore=-1;
-      for(const match of matches){
-        const score=[...new Set(core)].filter(character=>/[\u3400-\u9fff]/.test(character)&&match.name.includes(character)).length;
-        if(score>bestScore){best=match;bestScore=score;}
-      }
-      return best;
-    };
-    void (async()=>{
-      const stops=session.plan.stops.slice(0,8);
-      if(live)setTourMarkerNote('正在逐个匹配站点位置…（地图接口限速，约 5 秒/站）');
-      for(const [index,stop] of stops.entries()){
-        if(!live||controller.signal.aborted)return;
-        for(let attempt=0;attempt<4&&live;attempt++){
-          try{
-            const poi=itemsRef.current.find(item=>item.id===stop.poi_id)??await r2Transport.poi(stop.poi_id);
-            const matches=await handle.findDestination(poi,freshUuid(),controller.signal);
-            const first=matches.length?pickMatch(matches,stop.title):undefined;
-            if(first){points.push({stop_id:stop.stop_id,title:stop.title,lng:first.lng,lat:first.lat,index});handle.showTourStops([...points]);if(live)setTourMarkerNote(`已标注 ${points.length} / ${stops.length} 站`);}
-            break;
-          }catch(error){
-            const code=codeOf(error);
-            if(retryable.has(code)){await sleep(5200);continue;}
-            break;/* 未匹配、额度用尽或定位类错误：跳过该站标记 */
-          }
-        }
-        if(index<stops.length-1)await sleep(5200);
-      }
-      if(live&&points.length<stops.length)setTourMarkerNote(`已标注 ${points.length} / ${stops.length} 站，其余暂未匹配（可能被限速或超时，切换本地图再回在线地图可重试）`);
-    })();
-    return()=>{live=false;controller.abort();};
-  },[onlineReady,view,tourSession?.tour_id,tourSession?.plan.version,campus]);
+    if(session?.status==='paused'&&!routeTarget){autoRouteKey.current='';clearRoute();return;}
+    const key=routeTarget?`chat:${routeTarget.revision}`:session?`${session.tour_id}:${session.plan.version}`:'';
+    if(session&&['cancelled','completed','infeasible'].includes(session.status)&&!routeTarget){clearRoute();onlineRef.current?.showTourStops([]);autoRouteKey.current=key;return;}
+    if(!key||autoRouteKey.current===key)return;
+    if(!preciseOrigin(position)){clearRoute();setRouteError('请先在地图选择起点或输入 GCJ-02 坐标；IP 城市位置需要确认。');return;}
+    autoRouteKey.current=key;
+    if(routeTarget){void routeToId(routeTarget.poiId);return;}
+    if(session)void planItinerary(session,position);
+  },[onlineReady,tourSession?.tour_id,tourSession?.plan.version,tourSession?.status,routeTarget,position]);
   useEffect(()=>{
-    if(!liveFollow||!tracking||tourSession?.status!=='active'||!position)return;
+    if(!liveFollow||!tracking||!route||!preciseOrigin(position)||routeBusyRef.current)return;
     const last=lastFollowOrigin.current;
     if(last&&(Date.now()-lastFollowAt.current<60000||followDistanceMeters(last,position)<80))return;
-    void planRoute();
-  },[position,liveFollow,tracking,tourSession?.status]);
+    void routeToId(route.destination_poi_id,position);
+  },[position,liveFollow,tracking]);
   useEffect(()=>{if(route)onlineRef.current?.highlightStep(route.steps[activeStep]?.polyline??[]);},[route,activeStep]);
   useEffect(()=>{
-    if(onlineReady&&selected&&selectedRef.current?.id===selected.id&&pendingMapFocus.current===selected.id){pendingMapFocus.current=null;if(tourSession?.status==='active')void planRoute();else if(!tourSession)void viewOnMap();}
-  },[selected,onlineReady,focusRevision]);
-  useEffect(()=>()=>{routeScope.current.cancel();locationScope.current.cancel();if(locationTimer.current)clearTimeout(locationTimer.current);},[]);
+    selectionScope.current.cancel();setDestinationBusy(false);setDestination(null);setDestinations([]);setSelectionMessage('');onlineRef.current?.showDestination(null);
+    if(onlineReady&&selected)void viewOnMap();
+    return()=>selectionScope.current.cancel();
+  },[selected?.id,onlineReady,focusRevision]);
+  useEffect(()=>()=>{selectionScope.current.cancel();routeScope.current.cancel();locationScope.current.cancel();if(locationTimer.current)clearTimeout(locationTimer.current);},[]);
+  async function routeToId(id:string,origin?:UserPosition){
+    clearRoute();selectionScope.current.cancel();setDestinationBusy(false);setRouteBusy(true);routeBusyRef.current=true;
+    const request=routeScope.current.begin();
+    try{const poi=itemsRef.current.find(p=>p.id===id)??await r2Transport.poi(id);await mapCooldown(request.controller.signal);if(!request.current())return;await planRoute(undefined,origin,poi);}
+    catch{if(request.current())setRouteError('路线目标资料暂不可用，请重试。');}
+    finally{if(request.current()){setRouteBusy(false);routeBusyRef.current=false;}}
+  }
+  async function planItinerary(session:TourSession,origin:UserPosition){
+    clearRoute();selectionScope.current.cancel();setDestinationBusy(false);
+    const operation=routeScope.current.begin();routeBusyRef.current=true;setRouteBusy(true);setView('online');
+    try{
+      const pois:POI[]=[];
+      for(const stop of session.plan.stops){const poi=itemsRef.current.find(p=>p.id===stop.poi_id)??await r2Transport.poi(stop.poi_id);if(!operation.current())return;if(poi.campus_id!==campus)throw Error('invalid_coordinates');pois.push(poi);}
+      // Each leg is an actual provider path. No straight-line fallback or retries.
+      const result=await planSegments(pois,origin,freshUuid(),operation.controller.signal,(poi,from,id,signal)=>onlineRef.current!.navigate({route_id:id,session_id:session.session_id,campus_id:campus,destination_poi_id:poi.id,entrance_id:null,origin:from,user_initiated:true},poi,signal,confirmedDestinations.current.get(poi.id)),async()=>{});
+      if(!operation.current())return;
+      onlineRef.current!.showRoute(result.route.steps.map(step=>step.polyline));
+      onlineRef.current!.showTourStops(result.stops.map((stop,index)=>({stop_id:session.plan.stops[index].stop_id,poiId:stop.poi.id,title:stop.poi.name,lng:stop.lng,lat:stop.lat,index})));
+      setRoute(result.route);onRouteApplied?.(result.route);setRouteOriginNote('行程路线已显示；各站使用实际步行路径，入口通行仍需现场确认。');
+    }catch(error){if(operation.current())setRouteError(error instanceof DestinationSelectionRequired?'行程存在多个同名候选，请先选中对应站点并确认地图候选，再重新规划行程路线。':'行程路线未显示：'+operationError(error));}
+    finally{if(operation.current()){routeBusyRef.current=false;setRouteBusy(false);}updateBudget();}
+  }
   async function loadMore(){
     if(!nextCursor||loading)return;const revision=operationRef.current;setLoading(true);
     try{const page=await r2Transport.pois(campus,{...(category!=='all'?{category}:{}),...(query?{query}:{}),limit:20,cursor:nextCursor});if(operationRef.current===revision){setItems(current=>mergePoiPages(current,page.items));setTotal(page.total);setNextCursor(page.next_cursor);}}
@@ -291,7 +303,7 @@ export function CampusExplorer({campus,sessionId,focusPoiId,focusRevision,onSele
     if(!onlineRef.current||locating)return;
     onlineRef.current.pickStart(null);setPickingStart(false);
     if(locationTimer.current)clearTimeout(locationTimer.current);
-    const operation=locationScope.current.begin();clearRoute();setTracking(continuous);
+    const operation=locationScope.current.begin();setTracking(continuous);
     async function update(){
       if(!operation.current()||!onlineRef.current)return;
       if(continuous&&document.visibilityState==='hidden'){locationTimer.current=setTimeout(()=>void update(),30000);return;}
@@ -299,8 +311,8 @@ export function CampusExplorer({campus,sessionId,focusPoiId,focusRevision,onSele
       try{
         const result=await (ipOnly?onlineRef.current.locateCity(freshUuid(),operation.controller.signal):onlineRef.current.locate(freshUuid(),operation.controller.signal));
         if(operation.current()){
-          setPosition(result);clearRoute();
-          const label=result.accuracy_m===null?'IP 区域中心，可作为粗略路线起点，不代表设备实际位置。':'设备定位，精度约 '+Math.round(result.accuracy_m)+' 米。';
+          setPosition(result);
+          const label=result.accuracy_m===null?'IP 城市粗略位置；请在地图选点或输入坐标确认步行起点。':'设备定位，精度约 '+Math.round(result.accuracy_m)+' 米。';
           setLocationMessage(label+(continuous?' 每30秒更新，切到后台暂停。':''));
         }
       }catch(error){if(operation.current())setLocationMessage(operationError(error)+' 可尝试“IP 城市定位”。');}
@@ -317,48 +329,50 @@ export function CampusExplorer({campus,sessionId,focusPoiId,focusRevision,onSele
     if(!manualLng.trim()||!manualLat.trim()||!Number.isFinite(lng)||!Number.isFinite(lat)||Math.abs(lng)>180||Math.abs(lat)>90){setLocationMessage('请输入有效 GCJ-02 经度和纬度。');return;}
     const manual:UserPosition={lng,lat,crs:'GCJ02',source:'manual',accuracy_m:null,timestamp:new Date().toISOString()};
     stopLocation();onlineRef.current?.pickStart(null);setPickingStart(false);clearRoute();setPosition(manual);setLocationMessage('手动起点（GCJ-02），可随时重新规划，不代表设备实际位置。');
-    if(tourSession?.status==='active')void planRoute(undefined,manual);
+
   }
   function pickMapStart(){
     if(!onlineRef.current)return;
     stopLocation();clearRoute();setView('online');setPickingStart(true);setLocationMessage('请点击在线地图，选择步行起点。');
-    onlineRef.current.pickStart(result=>{if(campusRef.current!==campus)return;setPosition(result);setPickingStart(false);setLocationMessage('已选择地图起点，可随时规划步行路线。');if(tourSession?.status==='active')void planRoute(undefined,result);});
+    onlineRef.current.pickStart(result=>{if(campusRef.current!==campus)return;setPosition(result);setPickingStart(false);setLocationMessage('已选择地图起点，可随时规划步行路线。');});
   }
   async function viewOnMap(){
     const poi=selectedRef.current;if(!poi||poi.campus_id!==campus)return;
-    setView('online');setOnlineRequested(true);document.querySelector('.map-surface')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+    setView('online');setOnlineRequested(true);
     if(!onlineRef.current){pendingMapFocus.current=poi.id;return;}
     if(destination?.poiId===poi.id&&Date.now()-destination.matchedAt<600000){onlineRef.current.showDestination(destination);return;}
-    clearRoute();setDestination(null);onlineRef.current.showDestination(null);const operation=routeScope.current.begin();setDestinationBusy(true);setDestinations([]);
+    setDestination(null);onlineRef.current.showDestination(null);const operation=selectionScope.current.begin();setDestinationBusy(true);setDestinations([]);
     try{
+      if(poi.location?.crs==='GCJ02'&&poi.location.quality!=='pending'){
+        onlineRef.current.showDestination({poiId:poi.id,providerId:'local',name:poi.name,address:'已有地点坐标，通行入口未核验',lng:poi.location.lng,lat:poi.location.lat,matchedAt:Date.now()});setSelectionMessage('已显示已有地点坐标；入口通行情况另行核验。');return;
+      }
       const matches=await onlineRef.current.findDestination(poi,freshUuid(),operation.controller.signal);
       if(!operation.current()||selectedRef.current?.id!==poi.id||campusRef.current!==campus)return;
-      setDestinations(matches);onlineRef.current.showDestination(matches[0]);
-    }catch(error){if(operation.current())setRouteError('目的地匹配失败：'+operationError(error));}
+      setDestinations(matches);if(matches.length===1){setDestination(matches[0]);confirmedDestinations.current.set(poi.id,matches[0]);onlineRef.current.showDestination(matches[0]);setSelectionMessage('已定位当前地点，通行入口未核验。');}else setSelectionMessage('有多个候选，请选择当前地点；尚未高亮任何候选。');
+    }catch(error){if(operation.current())setSelectionMessage('当前地点暂未定位：'+operationError(error));}
     finally{if(operation.current())setDestinationBusy(false);updateBudget();}
   }
-  function confirmDestination(match:MapDestination){const resume=pendingDestinationRoute.current;pendingDestinationRoute.current=false;clearRoute();setDestination(match);setView('online');onlineRef.current?.showDestination(match);if(resume)void planRoute(match);}
-  async function planRoute(confirmed?:MapDestination,originOverride?:UserPosition){
-    const poi=selectedRef.current;if(!poi||poi.campus_id!==campus||!onlineRef.current||routeBusyRef.current)return;
+  function confirmDestination(match:MapDestination){const resume=pendingDestinationRoute.current;pendingDestinationRoute.current=false;confirmedDestinations.current.set(match.poiId,match);setDestination(match);setSelectionMessage('已确认当前地点，通行入口未核验。');setView('online');onlineRef.current?.showDestination(match);if(resume)void planRoute(match,undefined,pendingRoutePoi.current??undefined);}
+  async function planRoute(confirmed?:MapDestination,originOverride?:UserPosition,poiOverride?:POI){
+    const poi=poiOverride??selectedRef.current;if(!poi||poi.campus_id!==campus||!onlineRef.current)return;
     const origin=originOverride??position;
-    pendingDestinationRoute.current=false;
-    if(tracking||locating)stopLocation();onlineRef.current.pickStart(null);setPickingStart(false);setView('online');setActiveStep(0);
+    if(!preciseOrigin(origin)){setRouteError('请先通过地图选点或坐标确认精确起点；IP 城市中心不能作为校园步行起点。');return;}
+    clearRoute();pendingDestinationRoute.current=false;pendingRoutePoi.current=poi;
+    onlineRef.current.pickStart(null);setPickingStart(false);setView('online');setActiveStep(0);
     const operation=routeScope.current.begin();routeBusyRef.current=true;setRouteBusy(true);setRoute(null);setRouteError('');onlineRef.current.clearRoute();
     try{
-      const tourStop=tourSession?.plan.stops.find(s=>s.stop_id===tourSession.current_stop_id&&s.poi_id===poi.id);
-      if(tourSession&&(!tourStop||tourSession.status!=='active'))throw Error('tour_navigation_context_mismatch');
-      const planned=tourSession&&tourStop?await onlineRef.current.navigateTour(tourSession,tourStop,poi,freshUuid(),origin,operation.controller.signal,confirmed??destination??undefined):await onlineRef.current.navigate({route_id:freshUuid(),session_id:sessionId,campus_id:campus,destination_poi_id:poi.id,entrance_id:null,origin,user_initiated:true},poi,operation.controller.signal,confirmed??destination??undefined);
-      if(!operation.current()||selectedRef.current?.id!==poi.id||campusRef.current!==campus)return;
+      const planned=await onlineRef.current.navigate({route_id:freshUuid(),session_id:sessionId,campus_id:campus,destination_poi_id:poi.id,entrance_id:null,origin,user_initiated:true},poi,operation.controller.signal,confirmed??confirmedDestinations.current.get(poi.id));
+      if(!operation.current()||campusRef.current!==campus)return;
       const result=planned.route;
       const note=planned.origin.source==='manual'?'路线起点：地图手动选点。':planned.origin.accuracy_m===null?'路线起点：IP 所属区域的中心点，可能偏离实际位置；可在地图重新选点以获得更准确的路线。':'路线起点：设备定位。';
       setPosition(planned.origin);setLocationMessage(note);setRouteOriginNote(note);
       lastFollowOrigin.current=planned.origin;lastFollowAt.current=Date.now();
-      if(planned.destination){setDestination(planned.destination);setDestinations([planned.destination]);onlineRef.current.showDestination(planned.destination);}
+      if(planned.destination&&selectedRef.current?.id===poi.id){setDestination(planned.destination);setDestinations([planned.destination]);onlineRef.current.showDestination(planned.destination);}
       setRoute(result);
-      try{onlineRef.current.showRoute(result.steps.map(step=>step.polyline));}
+      try{onlineRef.current.showRoute(result.steps.map(step=>step.polyline));const end=result.steps.at(-1)?.polyline.at(-1);if(end)onlineRef.current.showTourStops([{stop_id:result.route_id,poiId:poi.id,title:poi.name,lng:end[0],lat:end[1],index:0}]);setRouteOriginNote(note+' 路线已显示。');}
       catch{setRouteError('路线已取得，但地图绘制失败；下方可查看实际分步指引。（map_render_failed）');}
     }catch(error){if(operation.current()){
-      if(error instanceof DestinationSelectionRequired){if(error.origin)setPosition(error.origin);setDestinations(error.matches);pendingDestinationRoute.current=true;onlineRef.current.showDestination(error.matches[0]);setRouteError('找到了多个同名地点，请在下方选择目的地，随后自动继续应用内步行规划。');}
+      if(error instanceof DestinationSelectionRequired){if(error.origin)setPosition(error.origin);setDestinations(error.matches);pendingDestinationRoute.current=true;onlineRef.current.showDestination(null);setRouteError('找到了多个同名地点，请在下方选择目的地，随后自动继续应用内步行规划。');}
       else setRouteError('步行规划失败：'+operationError(error));
     }}
     finally{if(operation.current()){routeBusyRef.current=false;setRouteBusy(false);}updateBudget();}
@@ -366,16 +380,20 @@ export function CampusExplorer({campus,sessionId,focusPoiId,focusRevision,onSele
   useEffect(()=>{onInstruction?.(route?.steps[activeStep]?.instruction??'');},[route,activeStep,onInstruction]);
   const filteredSchematic=useMemo(()=>activeMap?items.filter(item=>item.campus_id===campus&&item.schematic_position?.map_id===activeMap.id):[],[items,activeMap,campus]);
   const externalUrl=navigationFor(externalNav,selected?.campus_id===campus?selected:null);
-  const visibleRoute=routeFor(route,selected?.campus_id===campus?selected:null);
-  return <section className="explorer" aria-label="校园地图与点位目录">
+  const visibleRoute=route;
+  return <section className="explorer" aria-label="校园地图与点位目录" data-route-id={route?.route_id??''} data-route-status={routeBusy?'route_pending':routeError?'failed':route?'ready':'draft'}>
     <div className="explorer-toolbar"><form onSubmit={(event) => { event.preventDefault(); setQuery(queryDraft.trim()); }}><input value={queryDraft} maxLength={100} onChange={(event) => setQueryDraft(event.target.value)} placeholder="搜索点位或别名" aria-label="搜索点位"/><button type="submit">搜索</button></form><select value={category} onChange={(event) => setCategory(event.target.value as POICategory | 'all')} aria-label="点位分类">{Object.entries(CATEGORY_LABELS).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select><div className="map-kind-tabs"><button className={view === 'local' ? 'active' : ''} onClick={() => setView('local')}>本地图</button><button className={view === 'online' ? 'active' : ''} onClick={() => { setView('online'); setOnlineRequested(true); }}>在线地图</button></div></div>
     <div className="map-directory"><div className="map-surface">
       <div className="schematic-viewport" ref={viewportRef} onPointerDown={beginPan} hidden={view !== 'local'}><div className="map-zoom"><button aria-label="放大本地图" onClick={() => zoomByButton(1.35)}>＋</button><button aria-label="缩小本地图" onClick={() => zoomByButton(1/1.35)}>−</button></div>{activeMap && activeMap.local_path.startsWith('/assets/campus/') ? <div className="schematic-layer" ref={layerRef} style={{ width: 0, height: 0, transform: 'translate(0px, 0px) scale(1)', backgroundImage: `url(${JSON.stringify(activeMap.local_path).slice(1, -1)})` }}>{filteredSchematic.map((poi) => <button key={poi.id} style={{ left: `${poi.schematic_position!.x * 100}%`, top: `${poi.schematic_position!.y * 100}%` }} className={selected?.id === poi.id ? 'selected' : ''} title={poi.name} onClick={() => chooseFromMap(poi)}><span>{poi.name}</span></button>)}</div> : <div className="map-empty"><strong>暂无可用校园图面</strong><span>点位目录仍可独立浏览；不会用其他学校或生成图片替代。</span></div>}<div className="map-attribution">{activeMap ? `图面：${activeMap.creator} · ${activeMap.usage_basis} · 资料年代 ${activeMap.data_as_of ?? '未知'} · 非精确导航` : '图面来源未返回'}</div></div><div className="online-map-wrap" hidden={view !== 'online'}><div ref={onlineHostRef} className="online-map-host"/>{onlineError && <div className="map-empty overlay"><strong>{onlineError}</strong><button onClick={()=>{mapAttemptedRef.current=false;setOnlineError('');setMapRetry(v=>v+1);}}>重新加载地图</button><button onClick={() => setView('local')}>返回本地图</button></div>}</div>
       {view==='online'&&tourMarkerNote&&<p className="tour-marker-note" role="status">{tourMarkerNote}</p>}
-      <div className="location-panel"><div><strong>我的起点</strong><span>{locationMessage}{position && ` 更新时间 ${new Date(position.timestamp).toLocaleTimeString('zh-CN', { hour12: false })}`}</span></div><div className="location-actions"><button disabled={!onlineReady||locating||tracking} onClick={() => void beginLocation()}>定位一次</button><button disabled={!onlineReady||locating||tracking} onClick={() => void beginLocation(true)}>持续定位</button><button disabled={!onlineReady||locating||tracking} onClick={() => void beginLocation(false,true)}>IP 城市定位</button><button disabled={!onlineReady||locating||tracking} onClick={() => void beginLocation(true,true)}>持续 IP 定位</button>{(locating||tracking)&&<button onClick={stopLocation}>停止定位</button>}<button disabled={!onlineReady} onClick={pickMapStart}>在地图选择起点</button>{pickingStart&&<button onClick={()=>{onlineRef.current?.pickStart(null);setPickingStart(false);setLocationMessage('已取消选点。');}}>取消选点</button>}<button type="button" className={`live-follow ${liveFollow?'active':''}`} aria-pressed={liveFollow} disabled={!onlineReady} title="开启后随“持续定位”检查位置；移动超过约80米且距上次重算超过1分钟才自动重算当前路段" onClick={() => { const next=!liveFollow; setLiveFollow(next); setLocationMessage(next ? '实时跟随已开启：位置变化时将自动重算当前路段；每次重算计一次应用内步行调用。' : '实时跟随已关闭，路线只在手动操作时更新。'); }}>实时跟随路线{liveFollow?'：开':'：关'}</button></div><details><summary>输入起点坐标</summary><div><input value={manualLng} onChange={(event) => setManualLng(event.target.value)} inputMode="decimal" placeholder="GCJ-02 经度" aria-label="手动起点经度"/><input value={manualLat} onChange={(event) => setManualLat(event.target.value)} inputMode="decimal" placeholder="GCJ-02 纬度" aria-label="手动起点纬度"/><button onClick={applyManualStart}>应用</button></div></details></div>
+      <div className="location-panel"><div><strong>我的起点</strong><span>{locationMessage}{position && ` 更新时间 ${new Date(position.timestamp).toLocaleTimeString('zh-CN', { hour12: false })}`}</span></div><div className="location-actions"><button disabled={!onlineReady||locating||tracking} onClick={() => void beginLocation()}>定位一次</button><button disabled={!onlineReady||locating||tracking} onClick={() => void beginLocation(true)}>持续定位</button><button disabled={!onlineReady||locating||tracking} onClick={() => void beginLocation(false,true)}>IP 城市定位</button><button disabled={!onlineReady||locating||tracking} onClick={() => void beginLocation(true,true)}>持续 IP 定位</button>{(locating||tracking)&&<button onClick={stopLocation}>停止定位</button>}<button disabled={!onlineReady} onClick={pickMapStart}>在地图选择起点</button>{pickingStart&&<button onClick={()=>{onlineRef.current?.pickStart(null);setPickingStart(false);setLocationMessage('已取消选点。');}}>取消选点</button>}<button type="button" className={`live-follow ${liveFollow?'active':''}`} aria-pressed={liveFollow} disabled={!onlineReady} title="开启后随“持续定位”检查位置；移动超过约80米且距上次重算超过1分钟才自动重算当前路段" onClick={() => { const next=!liveFollow; setLiveFollow(next); setLocationMessage(next ? '实时跟随已开启：配合持续设备定位，移动超过80米且间隔1分钟重算当前路段；每次重算计一次应用内步行调用。' : '实时跟随已关闭，路线只在手动操作时更新。'); }}>实时跟随路线{liveFollow?'：开':'：关'}</button></div><details><summary>输入起点坐标</summary><div><input value={manualLng} onChange={(event) => setManualLng(event.target.value)} inputMode="decimal" placeholder="GCJ-02 经度" aria-label="手动起点经度"/><input value={manualLat} onChange={(event) => setManualLat(event.target.value)} inputMode="decimal" placeholder="GCJ-02 纬度" aria-label="手动起点纬度"/><button onClick={applyManualStart}>应用</button></div></details></div>
     </div><aside className="poi-directory"><div className="directory-summary"><strong>点位目录</strong><span>{total == null ? `${items.length} 项已加载` : `${items.length} / ${total}`}</span></div>{directoryError && <p className="inline-error">{directoryError}</p>}<div className="poi-list">{items.map((poi) => <button key={poi.id} className={selected?.id === poi.id ? 'selected' : ''} onClick={() => choose(poi)}><span>{CATEGORY_LABELS[poi.category]}</span><strong>{poi.name}</strong><small>{poi.verification_status === 'verified' ? '资料已核验' : '资料待核验'}</small></button>)}</div>{!loading && !items.length && !directoryError && <p className="directory-empty">没有符合条件的点位。</p>}</aside></div>
-    {selected?.campus_id === campus && <article className="poi-card" data-poi-id={selected.id}><div><span>{CATEGORY_LABELS[selected.category]}</span><h3>{selected.name}</h3><p>{selected.description}</p><details><summary>地点技术详情</summary><small>稳定 ID：{selected.id} · {selected.location ? `${selected.location.quality} / ${selected.location.coordinate_source}` : '无导航坐标'}</small></details></div><div className="poi-actions"><button onClick={() => onAsk(`请展开讲讲${selected.name}。`, selected)}>展开讲讲</button><button disabled={destinationBusy} onClick={() => void viewOnMap()}>{destinationBusy?'匹配中…':'在在线地图查看'}</button>{externalUrl ? <a href={externalUrl} target="_blank" rel="noreferrer">外部导航{externalNav?.precision === 'name_search' ? '（按名称）' : ''}</a> : <span title={externalNav?.kind === 'unavailable' ? '该点位不满足已核验导航条件' : '导航入口未返回'}>外部导航未提供</span>}<button disabled={!onlineReady||routeBusy||destinationBusy} onClick={() => void planRoute()}>{routeBusy?'获取起点并规划…':position?'从起点步行到这里':'从 IP 位置步行到这里'}</button>{routeBusy&&<button onClick={clearRoute}>停止规划</button>}</div></article>}
+    {selectionMessage&&<p role="status">{selectionMessage}</p>}
+    {selected?.campus_id === campus && <article className="poi-card" data-poi-id={selected.id}><div><span>{CATEGORY_LABELS[selected.category]}</span><h3>{selected.name}</h3><p>{selected.description}</p><details><summary>地点技术详情</summary><small>稳定 ID：{selected.id} · {selected.location ? `${selected.location.quality} / ${selected.location.coordinate_source}` : '无导航坐标'}</small></details></div><div className="poi-actions"><button onClick={() => onAsk(`请展开讲讲${selected.name}。`, selected)}>开始讲解</button><button onClick={()=>void onStop()}>停止讲解</button><button disabled={destinationBusy} onClick={() => void viewOnMap()}>{destinationBusy?'匹配中…':'在在线地图查看'}</button>{externalUrl ? <a href={externalUrl} target="_blank" rel="noreferrer">外部导航{externalNav?.precision === 'name_search' ? '（按名称）' : ''}</a> : <span title={externalNav?.kind === 'unavailable' ? '该点位不满足已核验导航条件' : '导航入口未返回'}>外部导航未提供</span>}<button disabled={!onlineReady||routeBusy||destinationBusy} onClick={() => void planRoute()}>{routeBusy?'获取起点并规划…':preciseOrigin(position)?'从起点步行到这里':'先确认步行起点'}</button>{routeBusy&&<button onClick={clearRoute}>停止规划</button>}</div></article>}
+    {selected&&<><PoiSources poi={selected}/>{speechStatus}</>}
     {destinations.length>0&&<section className="destination-matches" aria-label="高德目的地匹配"><strong>{destination?'已确认目的地：'+destination.name:'请选择与当前校区对应的地点'}</strong><p>以下为高德匹配结果；点击地点可在在线地图查看并设为步行目的地。</p>{destinations.map(match=><button key={match.providerId} className={destination===match?'selected':''} aria-pressed={destination===match} onClick={()=>confirmDestination(match)}><strong>{match.name}</strong><span>{match.address}</span>{destination===match&&<small>已选为目的地</small>}</button>)}</section>}
+    {tourSession&&preciseOrigin(position)&&<button disabled={routeBusy} onClick={()=>void planItinerary(tourSession,position)}>重新规划行程路线</button>}
+    {(route||routeBusy)&&<button onClick={clearRoute}>清空路线</button>}
     {routeError && <p className="inline-error route-error">{routeError}</p>}{visibleRoute && <details className="route-result" open><summary>步行方案 · {Math.round(visibleRoute.distance_m)} 米{visibleRoute.duration_s == null ? '' : ` · 约 ${Math.ceil(visibleRoute.duration_s / 60)} 分钟`}</summary><p>{routeOriginNote}</p><p>{visibleRoute.campus_access === 'verified' ? '校园通行信息有资料依据。' : '校内门禁与道路通行尚未核验，请以现场为准。'}</p><div className="route-step-guide" aria-live="polite"><strong>第 {activeStep+1} / {visibleRoute.steps.length} 步</strong><p>{visibleRoute.steps[activeStep]?.instruction} · {Math.round(visibleRoute.steps[activeStep]?.distance_m??0)} 米</p><button disabled={activeStep===0} onClick={()=>setActiveStep(value=>value-1)}>上一步</button><button disabled={activeStep>=visibleRoute.steps.length-1} onClick={()=>setActiveStep(value=>value+1)}>下一步</button><button onClick={()=>{setView('online');onlineRef.current?.showRoute(visibleRoute.steps.map(step=>step.polyline));}}>查看整条路线</button></div><ol>{visibleRoute.steps.map((step, index) => <li key={`${index}-${step.instruction}`}><button aria-current={activeStep===index?'step':undefined} onClick={()=>{setView('online');setActiveStep(index);onlineRef.current?.highlightStep(step.polyline);}}>{step.instruction} · {Math.round(step.distance_m)} 米</button></li>)}</ol><button onClick={() => onReadRoute(visibleRoute)}>朗读实际路线</button><p>偏航时请确认起点，手动重新规划；不会自动判断到达。</p><button disabled={routeBusy} onClick={()=>void planRoute()}>确认偏航并重新规划</button></details>}
     <details className="map-budget"><summary>地图用量与配置</summary><p>{budgetText}</p><p>这是应用发起次数，不是高德配额扣减。每日上限：地图加载100、定位3000、POI搜索100、路线200；持续定位每30秒更新，失败和取消也计数。校园目录搜索不调用高德。</p><p>在线地图：{mapConfig?.status.online_map??'未取得状态'}；路线方案来自高德，校园通行另行核验。</p></details>
   </section>;

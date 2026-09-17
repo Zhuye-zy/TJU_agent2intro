@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     web_search_enabled: bool = True
     web_search_timeout: float = 12.0
     web_search_backend: str = "bing,duckduckgo,brave"
+    tour_model_suggestions: bool = False
     @property
     def sdk_base_url(self) -> str:
         suffix = "/chat/completions"

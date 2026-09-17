@@ -112,6 +112,8 @@ class Planner:
         req.avoid = list(dict.fromkeys([*body.avoid, *req.avoid]))
         for poi_id in [*req.must_visit, *req.avoid]:
             self.catalog.poi(poi_id, body.campus_id)
+        if set(req.must_visit) & set(req.avoid):
+            raise DomainError('TOUR_CONSTRAINT_CONFLICT', '同一地点不能同时必去和避开，请修改选项。', 422, body.request_id)
         if body.max_walking_minutes is not None:
             req.questions = [q for q in req.questions if '步行时长' not in q]
         warnings = list(req.questions)
@@ -140,7 +142,8 @@ class Planner:
         required = list(dict.fromkeys(req.must_visit + [p.poi_id for p in (body.start, body.end) if p.kind == 'poi']))
         if set(required) & set(req.avoid):
             warnings.append('必去/起终点与避开要求冲突。')
-        selected = list(dict.fromkeys(required + [p.id for p in pois]))[:3 if len(required) <= 3 else 5]
+        count = 2 if len(body.must_visit)==2 and len(required)==2 else 3 if len(required)<=3 else 5
+        selected = list(dict.fromkeys(required + [p.id for p in pois]))[:count]
         pool_ids = list(dict.fromkeys(required + [p.id for p in pois[:24]]))
         previous_ids = list(dict.fromkeys(pid for plan_ids in (previous_plans or []) for pid in plan_ids))
         usage = None
@@ -148,7 +151,8 @@ class Planner:
         if service is None:
             from .service import model
             service = model
-        if not warnings and len(selected) >= 3:
+        use_model=getattr(getattr(service,'settings',None),'tour_model_suggestions',self.model_service is not None)
+        if use_model and not body.must_visit and not body.avoid and not warnings and len(selected) >= 3:
             # Exactly one bounded suggestion call. Never sends all-campus distances,
             # coordinates, prompts in logs, or a second conversation history.
             pool = [self.catalog.safe_candidate(self.catalog.poi(i, body.campus_id)) for i in pool_ids]
@@ -178,7 +182,7 @@ class Planner:
             selected.remove(body.start.poi_id); selected.insert(0, body.start.poi_id)
         if body.end.kind == 'poi' and body.end.poi_id in selected:
             selected.remove(body.end.poi_id); selected.append(body.end.poi_id)
-        impossible = len(selected) < 3 or len(required) > 5 or bool(set(required) & set(req.avoid))
+        impossible = len(selected) < 2 or len(required) > 5 or bool(set(required) & set(req.avoid))
         if impossible:
             warnings.append('无法满足单校区3—5站与必去/避开约束。')
         stops, evidence = [], []

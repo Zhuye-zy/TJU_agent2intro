@@ -20,7 +20,7 @@ export interface MapPublicConfig {route_backend:'js_api';js_key:string|null;serv
 export interface ExternalNavigation {poi_id:string;url:string|null;kind:'coordinate'|'search'|'unavailable';precision:'verified_destination'|'name_search'|'unknown'}
 type Payloads = {
  accepted:{session_id:string;message_id:string;campus_id:CampusId;mode:Mode};
- status:{stage:'request'|'knowledge'|'model'|'generation';status:'started'};
+ status:{stage:'request'|'knowledge'|'model'|'generation';status:'started';query_state?:'success'|'partial'|'no_evidence'|'timeout'|'unavailable'|'cancelled'|'error'|null;parts?:Record<string,string>|null};
  answer_delta:{text:string};
  sources:{sources:Source[];kind:'retrieved'|'cited'};
  poi_action:{action:SceneAction};
@@ -29,7 +29,7 @@ type Payloads = {
  error:{code:string;message:string;retryable:boolean;partial:boolean;answer:string;reason:'timeout'|'disconnect'|'length'|'empty'|'upstream'|'validation'|'not_implemented'};
  cancelled:{local_task_stopped:boolean;upstream_stop:'not_started'|'unconfirmed'|'confirmed'};
 };
-export type StreamEvent = {[K in keyof Payloads]:{event_id:string;request_id:string;seq:number;type:K;timestamp:string;payload:Payloads[K]}}[keyof Payloads];
+export type StreamEvent = {[K in keyof Payloads]:{event_id:string;request_id:string;seq:number;type:K;timestamp:string;payload:Payloads[K];channel?:string|null;requestId?:string|null;generation?:string|null;campusId?:CampusId|null;poiId?:string|null;routeId?:string|null}}[keyof Payloads];
 export interface GenerationRendered {event_id:string;request_id:string;session_id:string;message_id:string;campus_id:CampusId;answer_chars:number}
 export interface RenderReceipt {event_id:string;request_id:string;status:'recorded'|'duplicate';origin:'frontend'}
 export interface SpeechRun {request_id:string;session_id:string;campus_id:CampusId;generation_id:string;voice_id:string;mode:'brief'|'full';signal:AbortSignal}

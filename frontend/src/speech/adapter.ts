@@ -194,6 +194,7 @@ export class CampusSpeechAdapter implements SpeechAdapter {
   private player?: HTMLAudioElement;
   private audioContext?: AudioContext;
   private prepared = new Set<PreparedSpeech>();
+  private audioCache = new Map<string, Blob>();
   private preparing = new Map<AbortController, string>();
   private captureGeneration = 0;
   private playbackGeneration = 0;
@@ -601,6 +602,12 @@ export class CampusSpeechAdapter implements SpeechAdapter {
     text: string,
     voiceId: string,
   ): Promise<PreparedSpeech | AdapterResult> {
+    const cacheKey=JSON.stringify([text,voiceId,'+0%']);
+    const cached=this.audioCache.get(cacheKey);
+    if(cached&&!context.signal.aborted){
+      const item:PreparedSpeech={requestId:context.request_id,utteranceId,context,text,voiceId,kind:'server',objectUrl:URL.createObjectURL(cached),released:false};
+      this.prepared.add(item);return item;
+    }
     const controller = new AbortController();
     this.preparing.set(controller, context.request_id);
     const abort = () => controller.abort();
@@ -659,6 +666,9 @@ export class CampusSpeechAdapter implements SpeechAdapter {
       });
       if (context.signal.aborted || controller.signal.aborted) return { status: 'failed', error_code: 'stopped' };
       const blob = new Blob([audioBytes], { type: audioType });
+      // Only decoded, nonempty successful responses are reusable. Bound memory.
+      this.audioCache.set(cacheKey,blob);
+      while(this.audioCache.size>24)this.audioCache.delete(this.audioCache.keys().next().value!);
       const item: PreparedSpeech = {
         requestId: context.request_id,
         utteranceId,
@@ -736,7 +746,7 @@ export class CampusSpeechAdapter implements SpeechAdapter {
         blocked = code === 'playback_permission_denied';
         this.trace('error', prepared.requestId, prepared.utteranceId, { elapsed_ms: elapsed(startedAt), code });
         callbacks.onFailure(prepared.utteranceId, code);
-        if (!blocked) cleanup();
+        if (!blocked) { this.audioCache.delete(JSON.stringify([prepared.text,prepared.voiceId,'+0%'])); cleanup(); }
         return { status: 'failed', error_code: code };
       }
     };
@@ -763,6 +773,7 @@ export class CampusSpeechAdapter implements SpeechAdapter {
     };
     audio.onerror = () => {
       if (generation !== this.playbackGeneration || blocked) return;
+      this.audioCache.delete(JSON.stringify([prepared.text,prepared.voiceId,'+0%']));
       this.trace('error', prepared.requestId, prepared.utteranceId, { elapsed_ms: elapsed(startedAt), code: 'playback_failed' });
       cleanup();
       callbacks.onFailure(prepared.utteranceId, 'playback_failed');

@@ -14,7 +14,7 @@ function fakeSdk(){
   const url=new URL(path,'http://local.test');requests.push(url);
   assert.ok(url.pathname.startsWith('/maps/amap/_AMapService/'));
   assert.equal(url.searchParams.has('key'),false);assert.equal(url.searchParams.has('jscode'),false);
-  if(url.pathname.endsWith('/place/text'))return {status:'1',pois:[{id:'amap-fixture',name:'Fixture Library',address:'Fixture campus',location:'1.02,1.03'}]};
+  if(url.pathname.endsWith('/place/text'))return {status:'1',pois:[{id:'amap-fixture',name:'Fixture Library',address:'Fixture campus',location:'117.175,39.108'}]};
   if(url.pathname.endsWith('/v3/ip'))return {status:'1',rectangle:'0.9,0.9;1.1,1.1'};
   calls.walk++;return {status:'1',route:{paths:[{distance:'120',duration:'90',steps:[{instruction:'沿测试步道前行',distance:'120',polyline:'1,1;1.01,1.01'}]}]}};
  },sdk:{
@@ -135,7 +135,7 @@ test('live place matches enable walking for a directory POI without coordinates'
  await assert.rejects(nav.walk(request(),local,sig(),{...match}),{code:'destination_match_expired'});
  await assert.rejects(nav.walk({...request(),origin:{...position(),accuracy_m:-1}},local,sig(),match),{code:'location_expired_or_inaccurate'});
  const route=await nav.walk({...request(),origin:{...position(),source:'manual',accuracy_m:null}},local,sig(),match);
- assert.equal(route.steps.length,1);assert.equal(f.requests[1].searchParams.get('destination'),'1.020000,1.030000');
+ assert.equal(route.steps.length,1);assert.equal(f.requests[1].searchParams.get('destination'),'117.175000,39.108000');
  assert.equal(local.location,null);assert.equal(local.verification_status,'pending');assert.equal(f.calls.walk,1);
 });
 
@@ -193,12 +193,12 @@ test('stale IP is refreshed automatically and old manual points remain usable',a
 });
 
 test('ambiguous destinations request selection and resume using the selected live match',async()=>{
- const f=fakeSdk();const read=f.readJson;f.readJson=async(path)=>path.includes('/place/text')?{status:'1',pois:[{id:'a',name:'Candidate A',location:'1,1'},{id:'b',name:'Candidate B',location:'2,2'}]}:read(path);
+ const f=fakeSdk();const read=f.readJson;f.readJson=async(path)=>path.includes('/place/text')?{status:'1',pois:[{id:'a',name:'Library Candidate A',location:'117.175,39.108'},{id:'b',name:'Library Candidate B',location:'117.176,39.109'}]}:read(path);
  const nav=new AmapNavigation(config,new MapBudget({limits}),undefined,f.readJson);
  const local={...poi(),name:'Library',location:null};let matches,origin;
  await assert.rejects(nav.navigate({...request(),origin:null},local,sig()),error=>{assert.ok(error instanceof DestinationSelectionRequired);matches=error.matches;origin=error.origin;return true});
  assert.equal(f.calls.walk,0);
- const result=await nav.navigate({...request(),origin},local,sig(),matches[1]);assert.equal(result.destination.name,'Candidate B');assert.equal(f.calls.walk,1);
+ const result=await nav.navigate({...request(),origin},local,sig(),matches[1]);assert.equal(result.destination.name,'Library Candidate B');assert.equal(f.calls.walk,1);
  assert.equal(f.requests.filter(url=>url.pathname.endsWith('/v3/ip')).length,1);
 });
 
@@ -211,6 +211,6 @@ test('M R3 real museum query avoids duplicated university and campus names',asyn
  const f=fakeSdk();const b=new MapBudget({limits,minIntervalMs:0});
  const nav=new AmapNavigation(config,b,async()=>f.sdk,f.readJson);
  const target={...poi(),name:'天津大学校史博物馆',location:null};
- await nav.findDestination(target,'query-museum',sig());
+ await assert.rejects(nav.findDestination(target,'query-museum',sig()),{code:'destination_not_found'}); // Fixture returns an unrelated library, which must now be rejected.
  assert.equal(f.requests[0].searchParams.get('keywords'),'天津大学卫津路校区校史博物馆');
 });

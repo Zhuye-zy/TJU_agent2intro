@@ -27,6 +27,8 @@ settings = get_settings()
 app = FastAPI(title="AI4TJU campus guide", version=CONTRACT_VERSION,
     responses={status: {"model": ApiError} for status in (400,404,409,413,422,429,499,500,501,503)})
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
+from backend.knowledge.query_routes import router as campus_query_router
+app.include_router(campus_query_router)
 def error_response(code, message, status, request_id=None, retryable=False):
     return JSONResponse(status_code=status, content=ApiError(error=ErrorDetail(
         code=code, message=message, request_id=request_id, retryable=retryable)).model_dump(mode="json"))

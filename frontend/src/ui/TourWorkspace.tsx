@@ -5,7 +5,9 @@ import type { TourCommand, TourRequest, TourSession, TourStop, PlanRevision, Tou
 import { api, transport } from '../transport/api';
 import { r3Transport } from '../transport/r3';
 import { r2Transport } from '../transport/r2';
+import { routeIntent } from '../transport/interaction';
 import { CampusExplorer } from './CampusExplorer';
+import { TripBrief } from './TripBrief';
 import { PhotoCarousel } from './PhotoCarousel';
 import { freshUuid, safeSourceUrl } from './model';
 import { CAMPUS_LABEL, tourCommand, TourLifecycle, listSaved, storeSaved, SAVED_PREFIX, privateText, remainingTimeIntent } from './tour-model';
@@ -20,9 +22,11 @@ export interface TourMemory {
  draft?:{duration:string;interests:string;start:string;end:string;must:string;avoid:string;access:boolean;date?:string;maxWalk?:string};
 }
 interface Props {
+ speechStatus?:ReactNode;
  registerText(handler:((text:string)=>Promise<boolean>)|null):void;
  registerMapFocus?(handler:((poiId:string|null)=>void)|null):void;
- onSelectPoi?(poi:POI|null):void;
+ selectedPoi:POI|null; onExplainPoi(poi:POI):void; onRouteChange():void;
+ onSelectPoi(poi:POI|null):void;
  panelOpen:boolean; onPanelClose():void;
  memory?:TourMemory; onMemory(value:TourMemory):void; registerCancel(handler:(()=>void)|null):void;
  campus:CampusId; voice:ReactNode; caption:string; narration:string;
@@ -30,7 +34,7 @@ interface Props {
 }
 const STATUS={draft:'行程草稿',checked:'已完成条件检查',active:'参观进行中',paused:'已暂停',completed:'参观已完成',cancelled:'已结束',infeasible:'条件暂不满足'};
 const PROGRESS={pending:'待参观',navigating:'前往本站',arrived:'已确认到达',explaining:'正在讲解',completed:'已完成',skipped:'已跳过'};
-export function TourWorkspace({campus,voice,caption,narration,onStop,onExplain,onCampus,onReadRoute,memory,onMemory,registerCancel,registerText,registerMapFocus,onSelectPoi,panelOpen,onPanelClose}:Props){
+export function TourWorkspace({campus,voice,caption,narration,onStop,onExplain,onCampus,onReadRoute,memory,onMemory,registerCancel,registerText,registerMapFocus,selectedPoi,onExplainPoi,onRouteChange,onSelectPoi,panelOpen,onPanelClose,speechStatus}:Props){
  const lifecycle=useRef(new TourLifecycle(r3Transport,(id,sid)=>transport.cancel(id,sid).catch(()=>null)));
  const [session,setSession]=useState<TourSession|null>(memory?.session??null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const actionEpoch=useRef(0);
@@ -41,11 +45,14 @@ export function TourWorkspace({campus,voice,caption,narration,onStop,onExplain,o
  const [resultMeta,setResultMeta]=useState<TourResult|null>(null),[usage,setUsage]=useState<TourResult['usage']>(null);
  const [contexts,setContexts]=useState<Record<string,TourKnowledgeContext>>({});
  const [instruction,setInstruction]=useState('');
+ const [appliedRoute,setAppliedRoute]=useState<RouteResponse|null>(null);
  const [viewer,setViewer]=useState<TourPhoto|null>(null);
  const [replanArmed,setReplanArmed]=useState(false);
+ const [routeTarget,setRouteTarget]=useState<{poiId:string;revision:number}|null>(null);
  const [mapFocus,setMapFocus]=useState<string|null>(null),[mapRevision,setMapRevision]=useState(0),[navigationEpoch,setNavigationEpoch]=useState(0);
  const initialSession=useRef(memory?.session?.session_id??freshUuid());
  const initialized=useRef(false);if(!initialized.current){lifecycle.current.session=memory?.session??null;initialized.current=true;}
+ useEffect(()=>{setRouteTarget(null);},[session?.tour_id,session?.plan.version]);
  const draftRef=useRef({duration,interests,start,end,must,avoid,access,date,maxWalk});draftRef.current={duration,interests,start,end,must,avoid,access,date,maxWalk};
  const refreshSaved=()=>{try{setSaved(listSaved(localStorage));}catch{setNotice('浏览器无法读取保存的行程。');}};
  useEffect(()=>{
@@ -65,6 +72,7 @@ export function TourWorkspace({campus,voice,caption,narration,onStop,onExplain,o
  },[session?.tour_id,session?.plan.version,campus]);
  useEffect(()=>{
   registerText(async text=>{
+   const target=routeIntent(text,pois);if(target){onSelectPoi(target);setMapFocus(target.id);setMapRevision(v=>v+1);setRouteTarget({poiId:target.id,revision:Date.now()});return true;}
    const minutes=remainingTimeIntent(text);if(minutes===null)return false;
    if(!lifecycle.current.session){setError('请先创建行程，再调整剩余时间。');return true;}
    setRemaining(String(minutes));await revise('set_remaining_time',undefined,minutes);return true;
@@ -99,10 +107,10 @@ export function TourWorkspace({campus,voice,caption,narration,onStop,onExplain,o
    // Invalidate before waiting for B or the remote cancellation acknowledgement.
    actionEpoch.current++;await lifecycle.current.invalidate();busyRef.current=false;setBusy(false);
   }
-  await stopLocal();
+  if(['cancel','end','pause'].includes(action))await stopLocal();else await onStop();
   const result=await perform((id,sid,signal)=>r3Transport.command(s.tour_id,tourCommand(s,id,action,confirmed),signal));
   if(result&&['start','resume','next','skip'].includes(action)){
-   setNavigationEpoch(v=>v+1);const target=result.plan.stops.find(p=>p.stop_id===result.current_stop_id);setMapFocus(target?.poi_id??null);setMapRevision(v=>v+1);
+   const target=result.plan.stops.find(p=>p.stop_id===result.current_stop_id);setMapFocus(target?.poi_id??null);setMapRevision(v=>v+1);
   }
   if(result&&action==='explain'){const target=result.plan.stops.find(p=>p.stop_id===result.current_stop_id);if(target)onExplain(target);}
  }
@@ -161,14 +169,15 @@ export function TourWorkspace({campus,voice,caption,narration,onStop,onExplain,o
  const totalVisit=session?.plan.stops.filter(s=>!session.progress.some(p=>p.stop_id===s.stop_id&&['completed','skipped'].includes(p.state))).reduce((n,s)=>n+s.visit_minutes,0)??0;
  const legs=session?.plan.legs??[],knownWalk=legs.length>=Math.max(1,(session?.plan.stops.length??0)-1)&&legs.every(l=>l.duration_s!==null)&&!(session?.plan.warnings??[]).length;
  const photo=campusMediaFor(assets,campus),photoUrl=photo?safeSourceUrl(photo.source_url):null;
- const usageNote=usage?.total_tokens!=null?String(usage.total_tokens):!resultMeta?'刷新或恢复后不保留（用量仅在创建时返回）':(session?.plan.warnings??[]).some(w=>w.includes('模型候选未通过'))?'网关未返回用量':'未调用模型（输入触发了待确认项，已按目录候选草稿生成）';
+ const usageNote=usage?.total_tokens!=null?String(usage.total_tokens):!resultMeta?'刷新或恢复后不保留（用量仅在创建时返回）':(session?.plan.warnings??[]).some(w=>w.includes('模型候选未通过'))?'网关未返回用量':'未调用模型（已按地点选项生成草稿）';
+ const walkSeconds=appliedRoute?.duration_s??(knownWalk?legs.reduce((n,l)=>n+(l.duration_s??0),0):null);
  const editable=session&&['draft','checked','active','paused'].includes(session.status);
  const placeName=(p:TourRequest['start'])=>p.kind==='current_position'?'当前位置（仅导航时定位）':p.kind==='unspecified'?'请导游建议':pois.find(x=>x.id===p.poi_id)?.name??p.poi_id;
  const hasPhotos=registeredPhotos().some(p=>p.campus===campus);
  return <main className={'tour-workspace '+(walking?'walking':'')} aria-label="校园行程">
   <div className={hasPhotos?'tour-hero':undefined}>
-  <PhotoCarousel campus={campus}/>
-  <header className="tour-heading"><div><small>AI4TJU · 校园漫游</small><h1>{walking?'跟着行程，慢慢认识天大':'留一点时间，认识天大'}</h1><p>3—5 站校园参观 · {CAMPUS_LABEL[campus]}</p></div><label>浏览校区<select value={campus} onChange={e=>onCampus(e.target.value as CampusId)}><option value="weijinlu">卫津路校区</option><option value="beiyangyuan">北洋园校区</option></select></label></header>
+  <PhotoCarousel campus={campus} selectedPoi={selectedPoi}/>
+  <header className="tour-heading"><div><small>AI4TJU · 校园漫游</small><h1>{walking?'跟着行程，慢慢认识天大':'留一点时间，认识天大'}</h1><p>2—5 站校园参观 · {CAMPUS_LABEL[campus]}</p></div><label>浏览校区<select value={campus} onChange={e=>onCampus(e.target.value as CampusId)}><option value="weijinlu">卫津路校区</option><option value="beiyangyuan">北洋园校区</option></select></label></header>
   </div>
   {fixture&&<p className="fixture-banner" role="status">开发测试数据 · 合成站点，仅验证页面流程，不是真实校园行程。</p>}
   {error&&<div className="tour-alert" role="alert"><strong>需要处理</strong><p>{error}</p>{session&&<button disabled={busy} onClick={()=>{void lifecycle.current.refresh().then(s=>{if(s)publish(s);}).catch(()=>setError('未能重新读取行程，请稍后再试。'));}}>重新读取行程</button>}</div>}
@@ -180,25 +189,27 @@ export function TourWorkspace({campus,voice,caption,narration,onStop,onExplain,o
    <label>感兴趣的内容<textarea value={interests} maxLength={160} onChange={e=>setInterests(e.target.value)} placeholder="校园历史、建筑、图书馆…" rows={2}/></label>
    <div className="tour-form-row">{(['start','end'] as const).map((kind)=><label key={kind}>{kind==='start'?'从哪里出发':'最后到哪里'}<select value={kind==='start'?start:end} onChange={e=>(kind==='start'?setStart:setEnd)(e.target.value)}><option value="unspecified">请导游建议</option><option value="current_position">当前位置（仅导航使用）</option>{pois.map(p=><option value={p.id} key={p.id}>{p.name}</option>)}</select></label>)}</div>
    {poiError&&<p>地点目录未加载，可先选择“请导游建议”。</p>}
-   <div className="tour-form-row"><label>必去地点<input value={must} maxLength={60} onChange={e=>setMust(e.target.value)} placeholder="如：图书馆"/></label><label>避开地点<input value={avoid} maxLength={60} onChange={e=>setAvoid(e.target.value)} placeholder="如：施工区域"/></label></div>
+   <div className="tour-form-row"><label>必去地点（最多5处）<select multiple value={must.split(',').filter(Boolean)} onChange={e=>setMust(Array.from(e.target.selectedOptions,o=>o.value).join(','))}>{pois.map(p=><option key={p.id} value={p.id}>{p.name}{!p.location?'（步行匹配待确认）':''}</option>)}</select></label><label>避开参观点（不安排停留）<select multiple value={avoid.split(',').filter(Boolean)} onChange={e=>setAvoid(Array.from(e.target.selectedOptions,o=>o.value).join(','))}>{pois.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label></div>
+   <p>可按住 Ctrl 多选；避开只表示不安排停留，不能保证步行路线绕开该区域。</p>
+   {must.split(',').some(id=>id&&avoid.split(',').includes(id))&&<p role="alert">同一地点不能同时必去和避开，请解除冲突后规划。</p>}
    <div className="tour-form-row"><label>参观日期（选填）<input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label><label>步行上限（分钟，选填）<input type="number" min="0" max="240" value={maxWalk} onChange={e=>setMaxWalk(e.target.value)}/></label></div>
    <label className="tour-check"><input type="checkbox" checked={access} onChange={e=>setAccess(e.target.checked)}/>需要无台阶路线</label>
-   <button className="tour-primary" disabled={busy||!!session&&!['completed','cancelled'].includes(session.status)}>安排我的行程</button>
+   <button className="tour-primary" disabled={busy||must.split(',').some(id=>id&&avoid.split(',').includes(id))||!!session&&!['completed','cancelled'].includes(session.status)}>安排我的行程</button>
   </form></details>
   {session&&<section className="tour-plan" aria-label="结构化行程卡"><header><div><small>{CAMPUS_LABEL[session.plan.campus_id]}</small><h2>{STATUS[session.status]}</h2></div><strong>{session.plan.stops.length} 站</strong></header>
-   <p className="tour-total">剩余停留 {totalVisit} 分钟 · 步行 {knownWalk?Math.ceil(legs.reduce((n,l)=>n+(l.duration_s??0),0)/60)+' 分钟':'待核实'}<br/>计划内总时间：{knownWalk?totalVisit+Math.ceil(legs.reduce((n,l)=>n+(l.duration_s??0),0)/60)+' 分钟（不含临时绕行）':'暂不能确定'} · 时间预算 {session.plan.request.duration_minutes} 分钟</p>
+   <p className="tour-total">剩余停留 {totalVisit} 分钟 · 步行 {walkSeconds!=null?Math.ceil(walkSeconds/60)+' 分钟':'待核实'}<br/>计划内总时间：{walkSeconds!=null?totalVisit+Math.ceil(walkSeconds/60)+' 分钟（不含临时绕行）':'暂不能确定'} · 时间预算 {session.plan.request.duration_minutes} 分钟</p>
    <p>本次规划 Token：{usageNote} · 已完成 {session.progress.filter(p=>p.state==='completed').length} 站 / 跳过 {session.progress.filter(p=>p.state==='skipped').length} 站{session.completion_reason==='user_ended'?' · 用户提前结束':''}</p>
    {resultMeta?.clarification_required&&<section role="alert"><h3>请补充这些信息</h3>{resultMeta.clarifications?.map(q=><p key={q.question_id}>{q.prompt}</p>)}<p>取消当前草稿，修正输入后重新规划。</p></section>}
    <details><summary>本次输入快照</summary><p>{CAMPUS_LABEL[session.plan.request.campus_id]} · {session.plan.request.duration_minutes} 分钟</p><p>{session.plan.request.interests.join(' / ')}</p><p>{placeName(session.plan.request.start)} → {placeName(session.plan.request.end)}</p></details>
-   <section className="tour-warnings"><h3>出发前，确认一下</h3>{!knownWalk&&<p>缺少可核实的步行耗时，总时间和通行条件请以现场为准。</p>}{(session.plan.warnings??[]).map((w,i)=><p key={i}>{privateText(w)}</p>)}<p>必去、避开及无障碍要求请对照站点与资料确认。</p></section>
-   <ol className="tour-stops">{session.plan.stops.map((stop,index)=>{const state=session.progress.find(p=>p.stop_id===stop.stop_id)?.state??'pending';const locked=['completed','skipped'].includes(state)||(state==='explaining'&&session.status!=='paused');const leg=legs.find(l=>l.to_ref.poi_id===stop.poi_id);return <li key={stop.stop_id} aria-current={stop.stop_id===session.current_stop_id?'step':undefined}><span className="tour-number">{index+1}</span><div><small>{PROGRESS[state]}</small><h3>{stop.title}</h3><p>{stop.purpose}</p><strong>停留 {stop.visit_minutes} 分钟</strong><small> · {stop.visit_time_source==='user_preference'?'你的偏好':'规划分配'}</small><p>步行：{leg?.duration_s!=null?Math.ceil(leg.duration_s/60)+' 分钟':'耗时待核实'}{leg?.distance_m!=null?' · '+Math.round(leg.distance_m)+' 米':''} · {leg?.source==='amap'?'高德':leg?.source==='campus_evidence'?'校园资料':'来源待核实'}</p>{(()=>{const preview=tourPhotoFor(stop.poi_id,stop.title);return <button type="button" className="tour-stop-photo" onClick={()=>setViewer(preview)} aria-label={'查看实景图：'+stop.title}><img src={preview.src} alt={preview.caption+(preview.placeholder?'（实景图待补充）':'')} loading="lazy"/><span>{preview.placeholder?'实景图待补充 · 点击查看预留位':'查看实景图'}</span></button>;})()}{(stop.evidence_ids??[]).length>0&&<details><summary>本站依据与进入条件</summary>{(stop.evidence_ids??[]).map(id=>{const evidence=session.plan.evidence?.find(e=>e.evidence_id===id);const scoped=contexts[stop.poi_id]?.evidence?.find(e=>e.evidence.evidence_id===id);const url=safeSourceUrl(scoped?.source_url??'');return evidence&&<p key={id}>{evidence.claim}<br/><small>依据 {id} · {evidence.verification} · 当日适用：{scoped?.current_status??'未核实'}</small>{url&&<> · <a href={url} target="_blank" rel="noreferrer">查看原始来源</a></>}</p>;})}</details>}{editable&&!locked&&<div className="tour-actions"><button className="tour-danger" disabled={busy} onClick={()=>void revise('remove_stop',stop.stop_id)}>删除本站</button><button disabled={busy} onClick={()=>{setEditStop(editStop===stop.stop_id?null:stop.stop_id);setReplacement('');}}>替换本站</button></div>}{editStop===stop.stop_id&&editable&&!locked&&<div className="tour-replace"><label>同校区替换地点<select value={replacement} onChange={e=>setReplacement(e.target.value)}><option value="">请选择</option>{pois.filter(p=>!session.plan.stops.some(s=>s.poi_id===p.id)).map(p=><option value={p.id} key={p.id}>{p.name}</option>)}</select></label><button disabled={busy||!replacement} onClick={()=>void revise('replace_stop',stop.stop_id)}>确认替换</button></div>}</div></li>;})}</ol>
+   <TripBrief session={session} route={appliedRoute}/>
+   <ol className="tour-stops">{session.plan.stops.map((stop,index)=>{const state=session.progress.find(p=>p.stop_id===stop.stop_id)?.state??'pending';const locked=['completed','skipped'].includes(state)||(state==='explaining'&&session.status!=='paused');const leg=legs.find(l=>l.to_ref.poi_id===stop.poi_id);return <li key={stop.stop_id} aria-current={stop.stop_id===session.current_stop_id?'step':undefined}><span className="tour-number">{index+1}</span><div><small>{PROGRESS[state]}</small><h3><button type="button" onClick={()=>{setMapFocus(stop.poi_id);setMapRevision(v=>v+1);}}>{stop.title}</button></h3><p>{stop.purpose}</p><strong>停留 {stop.visit_minutes} 分钟</strong><small> · {stop.visit_time_source==='user_preference'?'你的偏好':'规划分配'}</small><p>步行：{leg?.duration_s!=null?Math.ceil(leg.duration_s/60)+' 分钟':'耗时待核实'}{leg?.distance_m!=null?' · '+Math.round(leg.distance_m)+' 米':''} · {leg?.source==='amap'?'高德':leg?.source==='campus_evidence'?'校园资料':'来源待核实'}</p>{(()=>{const preview=tourPhotoFor(stop.poi_id,stop.title);return <button type="button" className="tour-stop-photo" onClick={()=>{setMapFocus(stop.poi_id);setMapRevision(v=>v+1);setViewer(preview);}} aria-label={'查看实景图：'+stop.title}><img src={preview.src} alt={preview.caption+(preview.placeholder?'（实景图待补充）':'')} loading="lazy"/><span>{preview.placeholder?'实景图待补充 · 点击查看预留位':'查看实景图'}</span></button>;})()}{(stop.evidence_ids??[]).length>0&&<details><summary>本站依据与进入条件</summary>{(stop.evidence_ids??[]).map(id=>{const evidence=session.plan.evidence?.find(e=>e.evidence_id===id);const scoped=contexts[stop.poi_id]?.evidence?.find(e=>e.evidence.evidence_id===id);const url=safeSourceUrl(scoped?.source_url??'');return evidence&&<p key={id}>{evidence.claim}<br/><small>依据 {id} · {evidence.verification} · 当日适用：{scoped?.current_status??'未核实'}</small>{url&&<> · <a href={url} target="_blank" rel="noreferrer">查看原始来源</a></>}</p>;})}</details>}{editable&&!locked&&<div className="tour-actions"><button className="tour-danger" disabled={busy} onClick={()=>void revise('remove_stop',stop.stop_id)}>删除本站</button><button disabled={busy} onClick={()=>{setEditStop(editStop===stop.stop_id?null:stop.stop_id);setReplacement('');}}>替换本站</button></div>}{editStop===stop.stop_id&&editable&&!locked&&<div className="tour-replace"><label>同校区替换地点<select value={replacement} onChange={e=>setReplacement(e.target.value)}><option value="">请选择</option>{pois.filter(p=>!session.plan.stops.some(s=>s.poi_id===p.id)).map(p=><option value={p.id} key={p.id}>{p.name}</option>)}</select></label><button disabled={busy||!replacement} onClick={()=>void revise('replace_stop',stop.stop_id)}>确认替换</button></div>}</div></li>;})}</ol>
    {editable&&<div className="tour-shorten"><label>剩余时间（分钟）<input type="number" min="1" max="240" value={remaining} onChange={e=>setRemaining(e.target.value)}/></label><button disabled={busy} onClick={()=>void revise('set_remaining_time')}>调整剩余行程</button></div>}
    <div className="tour-actions">{session.status==='draft'&&<button className="tour-primary" disabled={busy} onClick={()=>void command('check')}>检查行程条件</button>}{session.status==='checked'&&<><label className="tour-check"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>我已了解待核实条件</label><button className="tour-primary" disabled={busy||!confirmed} onClick={()=>void command('start')}>开始参观</button></>}<button disabled={busy} onClick={()=>void command(session.saved?'forget':'save')}>{session.saved?'取消保存并删除本机记录':'保存行程与进度到本机'}</button>{editable&&<button className="tour-danger" onClick={()=>void command('cancel')}>取消行程</button>}{!['completed','cancelled'].includes(session.status)?(!replanArmed?<button disabled={busy} onClick={()=>setReplanArmed(true)}>换一批站点</button>:<><button className="tour-primary" disabled={busy} onClick={()=>void replan()}>确认换一批（先取消当前行程）</button><button disabled={busy} onClick={()=>setReplanArmed(false)}>放弃</button></>):<button disabled={busy} onClick={()=>void replan()}>换一批（同样输入）</button>}</div>
    <details className="tour-technical"><summary>技术详情</summary><p>行程版本 {session.plan.version} / 状态版本 {session.state_version}</p><p>tour_id: {session.tour_id}</p><p>request_id: {session.plan.request.request_id}</p><p>环境：{fixture===true?'fixture':fixture===false?'服务端':'未确认'} · 仅 C 返回快照作为行程状态</p></details>
   </section>}
   {photo&&<figure className="tour-photo"><img src={photo.local_path} alt={photo.caption} onError={e=>{e.currentTarget.hidden=true;}}/><figcaption>{photo.caption} · {photo.creator??'作者未署名'} · {photo.usage_basis} {photoUrl&&<a href={photoUrl} target="_blank" rel="noreferrer">图源</a>}</figcaption></figure>}
   </section><section className="tour-map" aria-label="行程地图">
-   <CampusExplorer resetEpoch={navigationEpoch} campus={campus} sessionId={session?.session_id??initialSession.current} focusPoiId={mapFocus} focusRevision={mapRevision} tourSession={session} onInstruction={setInstruction} onSelect={onSelectPoi??(()=>undefined)} onAssets={setAssets} onReadRoute={onReadRoute} onAsk={(_,poi)=>{const stop=session?.plan.stops.find(s=>s.poi_id===poi.id);if(stop)onExplain(stop);else setNotice('请先从行程中选择当前站点。');}}/>
+   <CampusExplorer onRouteApplied={setAppliedRoute} speechStatus={speechStatus} resetEpoch={navigationEpoch} campus={campus} sessionId={session?.session_id??initialSession.current} focusPoiId={mapFocus} focusRevision={mapRevision} tourSession={session} onInstruction={setInstruction} selected={selectedPoi} routeTarget={routeTarget} onRouteChange={onRouteChange} onStop={onStop} onSelect={onSelectPoi} onAssets={setAssets} onReadRoute={onReadRoute} onAsk={(_,poi)=>onExplainPoi(poi)}/>
   </section></div>
   <aside className={'tour-panel'+(panelOpen?' open':'')} aria-label="导览与对话" aria-hidden={!panelOpen}>
   <header className="tour-panel-head"><div><small>{session?STATUS[session.status]:'准备好就出发'}</small><strong>{current?.title??'你的校园参观'}</strong><span>{session?'剩余 '+session.remaining_minutes+' 分钟（服务端预算）':'填写兴趣和时间，安排一次参观'}</span></div><button type="button" aria-label="收起面板" onClick={onPanelClose}>×</button></header>

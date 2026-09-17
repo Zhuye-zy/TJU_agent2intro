@@ -7,7 +7,7 @@ import { MapBudget } from '../transport/map-budget';
 
 type AMapApi = AmapSdk & Record<string, new (...args: any[]) => any>;
 
-export interface TourStopMarker { stop_id: string; title: string; lng: number; lat: number; index: number }
+export interface TourStopMarker { stop_id: string; poiId: string; title: string; lng: number; lat: number; index: number }
 
 // GCJ02 campus centers; the online map re-centers here when the campus changes.
 export const CAMPUS_MAP_VIEW: Record<CampusId, { center: [number, number]; zoom: number }> = {
@@ -18,7 +18,7 @@ export const CAMPUS_MAP_VIEW: Record<CampusId, { center: [number, number]; zoom:
 export interface OnlineMapHandle {
   setPois(pois: POI[], selectedId: string | null): void;
   showTourStops(stops: TourStopMarker[]): void;
-  showPosition(position: UserPosition): void; clearPosition():void;
+  showPosition(position: UserPosition, focus?:boolean): void; clearPosition():void;
   showDestination(destination:MapDestination|null):void;
   showRoute(polyline: [number, number][][]): void;
   highlightStep(polyline:[number,number][]):void;
@@ -50,6 +50,8 @@ export async function createOnlineMap(host: HTMLElement, config: MapPublicConfig
   const AMap = namespace! as AMapApi;
   if (AMap.Scale) map.addControl(new AMap.Scale());
   let markers:any[] = [], locationMarker:any = null, accuracyCircle:any = null, routeLines:any[] = [], tourMarkers:any[] = [];
+  const poiMarkers=new Map<string,{marker:any;key:string}>();
+  let previousPois:POI[]|null=null,previousSelected:string|null=null;
   let activeStep:any=null,destinationMarker:any=null,startPicker:((position:UserPosition)=>void)|null=null;
   map.on('click',(event:any)=>{
     if(!startPicker||!event.lnglat)return;
@@ -64,20 +66,38 @@ export async function createOnlineMap(host: HTMLElement, config: MapPublicConfig
     map.add(activeStep);map.setFitView([activeStep],false,[60,60,60,60],18);
   }
   function setPois(pois: POI[], selectedId: string | null) {
-    if (markers.length) map.remove(markers);
-    markers = pois.filter(poi => poi.location?.crs==='GCJ02' && poi.verification_status==='verified' && poi.location.verified_at && !['pending','approximate'].includes(poi.location.quality)).map(poi => {
-      const marker = new AMap.Marker({position:[poi.location!.lng,poi.location!.lat],title:poi.name,zIndex:poi.id===selectedId?140:100});
-      marker.on('click',()=>onSelect(poi.id)); return marker;
-    });
-    if (markers.length) {map.add(markers); map.setFitView(markers,false,[48,48,48,48],17);}
+    if(previousPois===pois){
+      if(previousSelected!==selectedId){
+        const old=previousSelected?poiMarkers.get(previousSelected)?.marker:null;
+        old?.setzIndex?.(100);old?.setLabel?.({content:'',direction:'top'});
+        const next=selectedId?poiMarkers.get(selectedId)?.marker:null;
+        next?.setzIndex?.(190);next?.setLabel?.({content:'已选中',direction:'top'});
+      }
+      previousSelected=selectedId;return;
+    }
+    const valid=pois.filter(poi=>poi.location?.crs==='GCJ02'&&poi.verification_status==='verified'&&poi.location.verified_at&&!['pending','approximate'].includes(poi.location.quality));
+    const ids=new Set(valid.map(p=>p.id));
+    for(const [id,entry] of poiMarkers)if(!ids.has(id)){map.remove(entry.marker);poiMarkers.delete(id);}
+    for(const poi of valid){
+      const key=JSON.stringify([poi.location!.lng,poi.location!.lat,poi.name]);let entry=poiMarkers.get(poi.id);
+      if(entry?.key!==key){
+        if(entry)map.remove(entry.marker);
+        const marker=new AMap.Marker({position:[poi.location!.lng,poi.location!.lat],title:poi.name});
+        marker.on('click',()=>onSelect(poi.id));entry={marker,key};poiMarkers.set(poi.id,entry);map.add(marker);
+      }
+      entry.marker.setzIndex?.(poi.id===selectedId?190:100);
+      entry.marker.setLabel?.({content:poi.id===selectedId?'已选中':'',direction:'top'});
+    }
+    markers=[...poiMarkers.values()].map(entry=>entry.marker);
+    previousPois=pois;previousSelected=selectedId;
   }
-  function showPosition(position:UserPosition) {
+  function showPosition(position:UserPosition,focus=true) {
     const point=[position.lng,position.lat];
     const title=position.source==='manual'?'手动起点':position.accuracy_m===null?'IP 区域中心（粗略起点）':'设备定位';
     if (!locationMarker) locationMarker=new AMap.Marker({position:point,title,zIndex:200});
     else {locationMarker.setPosition(point);locationMarker.setTitle(title);}
     map.add(locationMarker);
-    map.setCenter(point);
+    if(focus)map.setCenter(point);
     if (accuracyCircle) {map.remove(accuracyCircle);accuracyCircle=null;}
     if (position.accuracy_m!==null) {
       accuracyCircle=new AMap.Circle({center:point,radius:position.accuracy_m,strokeColor:'#147da5',fillOpacity:.14});map.add(accuracyCircle);
@@ -91,14 +111,15 @@ export async function createOnlineMap(host: HTMLElement, config: MapPublicConfig
   function showTourStops(stops:TourStopMarker[]){
     if(tourMarkers.length)map.remove(tourMarkers);tourMarkers=[];
     if(!stops.length)return;
-    tourMarkers=stops.map(item=>new AMap.Marker({position:[item.lng,item.lat],title:item.title,zIndex:130,label:{content:String(item.index+1),direction:'top'}}));
+    tourMarkers=stops.map(item=>{const marker=new AMap.Marker({position:[item.lng,item.lat],title:item.title,zIndex:130,label:{content:String(item.index+1),direction:'top'}});marker.on('click',()=>onSelect(item.poiId));return marker;});
     map.add(tourMarkers);
     if(!routeLines.length)map.setFitView(tourMarkers,false,[48,48,48,48],15);
   }
   function showDestination(destination:MapDestination|null){
     if(destinationMarker)map.remove(destinationMarker);destinationMarker=null;
     if(!destination)return;
-    destinationMarker=new AMap.Marker({position:[destination.lng,destination.lat],title:destination.name,zIndex:190});
+    destinationMarker=new AMap.Marker({position:[destination.lng,destination.lat],title:destination.name,zIndex:190,label:{content:'已选中',direction:'top'}});
+    destinationMarker.on('click',()=>onSelect(destination.poiId));
     map.add(destinationMarker);map.setZoomAndCenter(17,[destination.lng,destination.lat]);
   }
   return {focusCampus(center,zoom){map.setZoomAndCenter(zoom,center);},setPois,showTourStops,showPosition,clearPosition(){if(locationMarker)map.remove(locationMarker);if(accuracyCircle)map.remove(accuracyCircle);locationMarker=null;accuracyCircle=null;},showDestination,showRoute,highlightStep,pickStart(callback){startPicker=callback;},clearRoute,resize(){map.resize?.();},locate:(id,abort)=>navigation.locate(id,abort,true),locateCity:(id,abort)=>navigation.locateCity(id,abort,true),findDestination:(poi,id,abort)=>navigation.findDestination(poi,id,abort),walk:(request,poi,abort,matched)=>navigation.walk(request,poi,abort,matched),navigate:(request,poi,abort,matched)=>navigation.navigate(request,poi,abort,matched),navigateTour:(session,stop,poi,id,origin,abort,matched)=>navigateTourStop(navigation,session,stop,poi,id,origin,abort,matched),destroy(){startPicker=null;clearRoute();if(tourMarkers.length){map.remove(tourMarkers);tourMarkers=[];}map.destroy();}};

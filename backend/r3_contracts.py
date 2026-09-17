@@ -106,8 +106,8 @@ class TourPlan(Strict):
             raise ValueError("Campus mismatch")
         if len({x.stop_id for x in self.stops}) != len(self.stops) or len({x.poi_id for x in self.stops}) != len(self.stops):
             raise ValueError("Duplicate stops")
-        if self.version == 1 and self.status != "infeasible" and not 3 <= len(self.stops) <= 5:
-            raise ValueError("Initial plan requires 3-5 stops")
+        if self.version == 1 and self.status != "infeasible" and not 2 <= len(self.stops) <= 5:
+            raise ValueError("Initial plan requires 2-5 stops")
         if self.status == "checked" and not self.stops:
             raise ValueError("Checked plan requires stops")
         ids = {x.evidence_id for x in self.evidence}

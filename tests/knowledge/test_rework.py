@@ -43,7 +43,7 @@ def test_coverage_counts_records_not_legacy_summaries():
     assert len(facts)>=200
     assert len({(f["campus_id"], f["fact"]) for f in facts})==len(facts)
     assert k.get_coverage().fact_count==sum(c.facts for c in k.get_coverage().campuses)
-    assert k.get_coverage().source_pages==22
+    assert k.get_coverage().source_pages==23
     assert sum(c.verified_coordinates for c in k.get_coverage().campuses)==0
 
 def test_historical_maps_are_local_relative_only():

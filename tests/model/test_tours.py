@@ -77,7 +77,13 @@ def test_feasibility(costs,minutes,expected):
 @pytest.mark.parametrize('interest',['必去同名','必去不存在','60分钟；不去测试站0；必去测试站0','从同名出发','30分钟'])
 def test_clarification_is_batched_before_model(interest):
     async def run():
-        service,p=fixture_service();s=(await service.create(request(interests=[interest]))).session
+        service,p=fixture_service()
+        if '不去测试站0；必去测试站0' in interest:
+            with pytest.raises(DomainError,match='TOUR_CONSTRAINT_CONFLICT'):
+                await service.create(request(interests=[interest]))
+            assert p.calls==0
+            return
+        s=(await service.create(request(interests=[interest]))).session
         assert s.plan.warnings and p.calls==0
         if s.status=='draft':
             with pytest.raises(DomainError):await command(service,s,'check')

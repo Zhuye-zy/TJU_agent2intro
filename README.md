@@ -1,6 +1,8 @@
 # 珂莱塔校园导游
 天津大学双校区数字人工作台，沿用 React/Vite、FastAPI、Live2D 和 LangGraph。角色为用户指定的 kelaita（珂莱塔），素材来源只用于形象，产品是校园导游。
 
+2026-09-17 功能更新：地点讲解显式开启/停止、选项式必去/避开、两站起行自动画真实路线、注册来源检索与缓存、出发前提示、短录音转写确认流程已接入。真实浏览器已验证音频播放事件和地图画线；真实 ASR 仍缺独立服务配置，人工听音待验。当前验收以 [本轮交付报告](docs/interaction/20260917-functional/REPORT.md) 为准（下方为历史记录）。[标准问题集](docs/evaluation/starter/questions.md) · [扩展40题](docs/evaluation/starter/cases.jsonl) · [来源注册表](docs/evaluation/starter/source_registry.json) · [检索政策](docs/evaluation/starter/retrieval_policy.json)。
+
 2026-09-15 更新：应用内步行支持自动 IP 起点、过期位置更新和未核验目的地的高德匹配，同名候选选择后自动继续。已真实验证“无起点→IP→目的地匹配→步行”服务链路。保留自动联网问答、末尾参考资料及四种导览语音。配置、行为及限制见 [联网与地图说明](docs/WEB_SEARCH_AND_MAPS.md)，测试范围见 [验收记录](docs/WEB_SEARCH_VALIDATION.md)。下方 R2 部分保留此前验收记录，地图当前状态以本机 `/api/maps/status` 为准。
 
 当前 **R2_PARTIAL / BROWSER_QA_PENDING**：三类内容生成、指定glm-5.1聊天/追问、真实日志和取消已通过后端实测；双校区知识、点位与历史相对示意图已集成。构建及前后端回归通过。中文TTS已合成有效音频，真实浏览器自动播报/人物渲染仍待现场验收。

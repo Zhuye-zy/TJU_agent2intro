@@ -152,6 +152,8 @@ class AcceptedPayload(Strict):
 class StatusPayload(Strict):
     stage: Literal["request", "knowledge", "model", "generation"]
     status: Literal["started"]
+    query_state: Literal['success','partial','no_evidence','timeout','unavailable','cancelled','error'] | None = None
+    parts: dict[str,str] | None = None
 class DeltaPayload(Strict):
     text: str = Field(min_length=1, max_length=23000)
 class SourcesPayload(Strict):
@@ -175,6 +177,12 @@ class CancelledPayload(Strict):
     local_task_stopped: bool
     upstream_stop: Literal["not_started", "unconfirmed", "confirmed"]
 class StreamBase(Strict):
+    channel: str | None = None
+    requestId: UUID | None = None
+    generation: str | None = None
+    campusId: CampusId | None = None
+    poiId: str | None = None
+    routeId: str | None = None
     event_id: UUID
     request_id: UUID
     seq: int = Field(ge=1)

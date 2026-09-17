@@ -1700,6 +1700,83 @@
         "AcceptedEvent": {
           "additionalProperties": false,
           "properties": {
+            "channel": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Channel"
+            },
+            "requestId": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Requestid"
+            },
+            "generation": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Generation"
+            },
+            "campusId": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "weijinlu",
+                    "beiyangyuan"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Campusid"
+            },
+            "poiId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Poiid"
+            },
+            "routeId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Routeid"
+            },
             "event_id": {
               "format": "uuid",
               "title": "Event Id",
@@ -1782,6 +1859,83 @@
         "ActionEvent": {
           "additionalProperties": false,
           "properties": {
+            "channel": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Channel"
+            },
+            "requestId": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Requestid"
+            },
+            "generation": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Generation"
+            },
+            "campusId": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "weijinlu",
+                    "beiyangyuan"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Campusid"
+            },
+            "poiId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Poiid"
+            },
+            "routeId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Routeid"
+            },
             "event_id": {
               "format": "uuid",
               "title": "Event Id",
@@ -1852,6 +2006,83 @@
         "CancelledEvent": {
           "additionalProperties": false,
           "properties": {
+            "channel": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Channel"
+            },
+            "requestId": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Requestid"
+            },
+            "generation": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Generation"
+            },
+            "campusId": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "weijinlu",
+                    "beiyangyuan"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Campusid"
+            },
+            "poiId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Poiid"
+            },
+            "routeId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Routeid"
+            },
             "event_id": {
               "format": "uuid",
               "title": "Event Id",
@@ -1982,6 +2213,83 @@
         "CompletedEvent": {
           "additionalProperties": false,
           "properties": {
+            "channel": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Channel"
+            },
+            "requestId": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Requestid"
+            },
+            "generation": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Generation"
+            },
+            "campusId": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "weijinlu",
+                    "beiyangyuan"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Campusid"
+            },
+            "poiId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Poiid"
+            },
+            "routeId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Routeid"
+            },
             "event_id": {
               "format": "uuid",
               "title": "Event Id",
@@ -2037,6 +2345,83 @@
         "DeltaEvent": {
           "additionalProperties": false,
           "properties": {
+            "channel": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Channel"
+            },
+            "requestId": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Requestid"
+            },
+            "generation": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Generation"
+            },
+            "campusId": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "weijinlu",
+                    "beiyangyuan"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Campusid"
+            },
+            "poiId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Poiid"
+            },
+            "routeId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Routeid"
+            },
             "event_id": {
               "format": "uuid",
               "title": "Event Id",
@@ -2184,6 +2569,83 @@
         "SourcesEvent": {
           "additionalProperties": false,
           "properties": {
+            "channel": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Channel"
+            },
+            "requestId": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Requestid"
+            },
+            "generation": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Generation"
+            },
+            "campusId": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "weijinlu",
+                    "beiyangyuan"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Campusid"
+            },
+            "poiId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Poiid"
+            },
+            "routeId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Routeid"
+            },
             "event_id": {
               "format": "uuid",
               "title": "Event Id",
@@ -2252,6 +2714,83 @@
         "StatusEvent": {
           "additionalProperties": false,
           "properties": {
+            "channel": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Channel"
+            },
+            "requestId": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Requestid"
+            },
+            "generation": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Generation"
+            },
+            "campusId": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "weijinlu",
+                    "beiyangyuan"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Campusid"
+            },
+            "poiId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Poiid"
+            },
+            "routeId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Routeid"
+            },
             "event_id": {
               "format": "uuid",
               "title": "Event Id",
@@ -2308,6 +2847,42 @@
               "const": "started",
               "title": "Status",
               "type": "string"
+            },
+            "query_state": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "success",
+                    "partial",
+                    "no_evidence",
+                    "timeout",
+                    "unavailable",
+                    "cancelled",
+                    "error"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Query State"
+            },
+            "parts": {
+              "anyOf": [
+                {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Parts"
             }
           },
           "required": [
@@ -2320,6 +2895,83 @@
         "StreamErrorEvent": {
           "additionalProperties": false,
           "properties": {
+            "channel": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Channel"
+            },
+            "requestId": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Requestid"
+            },
+            "generation": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Generation"
+            },
+            "campusId": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "weijinlu",
+                    "beiyangyuan"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Campusid"
+            },
+            "poiId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Poiid"
+            },
+            "routeId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Routeid"
+            },
             "event_id": {
               "format": "uuid",
               "title": "Event Id",
@@ -2437,6 +3089,83 @@
         "UsageEvent": {
           "additionalProperties": false,
           "properties": {
+            "channel": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Channel"
+            },
+            "requestId": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Requestid"
+            },
+            "generation": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Generation"
+            },
+            "campusId": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "weijinlu",
+                    "beiyangyuan"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Campusid"
+            },
+            "poiId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Poiid"
+            },
+            "routeId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Routeid"
+            },
             "event_id": {
               "format": "uuid",
               "title": "Event Id",
