@@ -10,7 +10,7 @@ def test_old_request_and_structured_constraints():
     assert TourRequest(**sample).must_visit==[]
     request=TourRequest(**dict(sample,message="想看校史",must_visit=["fixture-stop-0"],avoid=["fixture-stop-1"],visit_date="2026-10-01",max_walking_minutes=20))
     assert request.visit_date.isoformat()=="2026-10-01"
-    for patch in [dict(must_visit=["x","x"]),dict(must_visit=["x"],avoid=["x"]),dict(avoid=["x"],start={"kind":"poi","poi_id":"x"}),dict(max_walking_minutes=-1)]:
+    for patch in [dict(must_visit=["x","x"]),dict(must_visit=[f"required-{i}" for i in range(6)]),dict(avoid=[f"avoid-{i}" for i in range(6)]),dict(must_visit=["x"],avoid=["x"]),dict(avoid=["x"],start={"kind":"poi","poi_id":"x"}),dict(max_walking_minutes=-1)]:
         with pytest.raises(ValidationError):TourRequest(**dict(sample,**patch))
 
 def test_skip_end_and_acknowledgement_shapes():

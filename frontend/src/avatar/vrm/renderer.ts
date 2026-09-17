@@ -5,11 +5,13 @@ import type { VRMHumanBoneName } from '@pixiv/three-vrm-core';
 import type { AdapterResult, AvatarState } from '../../../../shared/contracts';
 import { VRM_CUSTOM_MODEL, VRM_FALLBACK_MODEL, vrmManifest } from './manifest';
 import { RoamController, roamEnabled } from './roam';
+import type { AvatarGesture } from './flag';
+import { GESTURE_DURATIONS, IDLE_GESTURES } from './gestures';
 
 const TARGET_HEIGHT = 1.55;
 const BASE_CAMERA_Z = 2.1;
-/** VRM0 sample faces -Z after load; rotate 180° so idle pose faces the camera. */
-const VRM_BASE_YAW = Math.PI;
+/** three-vrm normalizes both VRM 0.x and 1.0 models to face +Z (toward our camera). */
+const VRM_BASE_YAW = 0;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -32,10 +34,21 @@ export class VrmRenderer {
   private walkBlend = 0;
   private greetUntil = 0;
   private baseY = 0;
+  private halted = false;
+  private screenShown = false;
+  private companionVideo: { src: string; mime?: string; caption?: string } | null = null;
+  private speakBlend = 0;
+  private gesture: { kind: AvatarGesture; startedAt: number; duration: number } | null = null;
+  private gestureKind: AvatarGesture | null = null;
+  private gestureElapsed = 0;
+  private gestureWeight = 0;
+  private gestureOffsetY = 0;
+  private nextGestureAt = performance.now() + 18000 + Math.random() * 22000;
   private walker?: {
     hips?: THREE.Object3D; leftUpperLeg?: THREE.Object3D; leftLowerLeg?: THREE.Object3D; leftFoot?: THREE.Object3D;
     rightUpperLeg?: THREE.Object3D; rightLowerLeg?: THREE.Object3D; rightFoot?: THREE.Object3D;
-    leftUpperArm?: THREE.Object3D; leftLowerArm?: THREE.Object3D; rightUpperArm?: THREE.Object3D; rightLowerArm?: THREE.Object3D;
+    leftUpperArm?: THREE.Object3D; leftLowerArm?: THREE.Object3D; leftHand?: THREE.Object3D;
+    rightUpperArm?: THREE.Object3D; rightLowerArm?: THREE.Object3D; rightHand?: THREE.Object3D;
   };
   private bones: { head?: THREE.Object3D; chest?: THREE.Object3D; hips?: THREE.Object3D } = {};
   private baseQuaternions = new Map<THREE.Object3D, THREE.Quaternion>();
@@ -48,12 +61,15 @@ export class VrmRenderer {
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       const canvas = renderer.domElement;
       canvas.dataset.avatarRenderer = 'vrm';
+      canvas.dataset.avatarState = 'idle';
       canvas.style.width = '100%';
       canvas.style.height = '100%';
       canvas.style.display = 'block';
+      let renderHost = host;
       if (roamEnabled()) {
-        this.roam = new RoamController(() => { this.greetUntil = performance.now() + 1500; });
+        this.roam = new RoamController(() => { this.playGesture('wave'); });
         this.roam.stage.appendChild(canvas);
+        renderHost = this.roam.stage;
       } else {
         host.appendChild(canvas);
       }
@@ -101,7 +117,8 @@ export class VrmRenderer {
       this.walker = {
         hips: this.bones.hips, leftUpperLeg: bone('leftUpperLeg'), leftLowerLeg: bone('leftLowerLeg'), leftFoot: bone('leftFoot'),
         rightUpperLeg: bone('rightUpperLeg'), rightLowerLeg: bone('rightLowerLeg'), rightFoot: bone('rightFoot'),
-        leftUpperArm: bone('leftUpperArm'), leftLowerArm: bone('leftLowerArm'), rightUpperArm: bone('rightUpperArm'), rightLowerArm: bone('rightLowerArm'),
+        leftUpperArm: bone('leftUpperArm'), leftLowerArm: bone('leftLowerArm'), leftHand: bone('leftHand'),
+        rightUpperArm: bone('rightUpperArm'), rightLowerArm: bone('rightLowerArm'), rightHand: bone('rightHand'),
       };
       for (const item of [...Object.values(this.bones), ...Object.values(this.walker)]) {
         if (item) this.baseQuaternions.set(item, item.quaternion.clone());
@@ -109,13 +126,21 @@ export class VrmRenderer {
       scene.add(vrm.scene);
       this.vrm = vrm;
 
-      const fit = () => this.resize(host);
+      // The roaming canvas is reparented out of the original 1:1 avatar host.
+      // Size the renderer from its actual 190:260 stage to avoid CSS stretching.
+      const fit = () => this.resize(renderHost);
       this.observer = new ResizeObserver(fit);
-      this.observer.observe(host);
+      this.observer.observe(renderHost);
       fit();
       this.applyScale();
 
       renderer.setAnimationLoop(() => this.tick());
+      const api = window.campusAvatar;
+      if (api) {
+        api.gesture = (kind) => this.playGesture(kind);
+        api.setState = (state) => { this.setState(state); return `state: ${state}`; };
+        api.setCompanionVideo = (video) => { this.setCompanionVideo(video); return video ? `video: ${video.src}` : 'video: none'; };
+      }
       return { status: 'ready' };
     } catch {
       this.dispose();
@@ -125,6 +150,7 @@ export class VrmRenderer {
 
   setState(state: AvatarState): void {
     this.state = state;
+    if (this.renderer) this.renderer.domElement.dataset.avatarState = state;
   }
 
   setAudioLevel(level: number): void {
@@ -136,14 +162,41 @@ export class VrmRenderer {
     this.applyScale();
   }
 
+  /** Interaction gestures: wave hello, hop, dance, nod. */
+  playGesture(kind: AvatarGesture): string {
+    const duration = GESTURE_DURATIONS[kind];
+    if (!duration) return 'gesture: unknown';
+    this.gesture = { kind, startedAt: performance.now(), duration };
+    if (kind === 'wave' || kind === 'dance') this.greetUntil = performance.now() + duration * 1000;
+    return `gesture: ${kind}`;
+  }
+
+  /** Bind the clip shown on the narration screen; null keeps the blank placeholder. */
+  setCompanionVideo(video: { src: string; mime?: string; caption?: string } | null): void {
+    this.companionVideo = video;
+    if (this.state === 'speaking') this.roam?.setScreenVideo(video?.src ?? null);
+  }
+
   dispose(): void {
     this.renderer?.setAnimationLoop(null);
     this.observer?.disconnect();
     this.observer = undefined;
     this.roam?.dispose();
     this.roam = undefined;
+    const api = window.campusAvatar;
+    if (api?.gesture) delete api.gesture;
+    if (api?.setState) delete api.setState;
+    if (api?.setCompanionVideo) delete api.setCompanionVideo;
     this.walkBlend = 0;
     this.walker = undefined;
+    this.gesture = null;
+    this.gestureKind = null;
+    this.gestureWeight = 0;
+    this.gestureOffsetY = 0;
+    this.halted = false;
+    this.screenShown = false;
+    this.speakBlend = 0;
+    this.companionVideo = null;
     if (this.vrm) {
       try { VRMUtils.deepDispose(this.vrm.scene); } catch { /* ignore */ }
       this.vrm = undefined;
@@ -191,7 +244,27 @@ export class VrmRenderer {
     const delta = this.clock.getDelta();
     const now = performance.now();
     this.smoothedLevel += (this.audioLevel - this.smoothedLevel) * 0.45;
-    this.roam?.update(now);
+    // Speech playback keeps the avatar standing in place: roaming halts and the
+    // model turns back to face the camera until the utterance ends.
+    const speaking = this.state === 'speaking';
+    if (speaking && !this.halted) { this.halted = true; this.roam?.halt(); }
+    else if (!speaking && this.halted) { this.halted = false; this.roam?.resume(now); }
+    if (!speaking) this.roam?.update(now);
+    this.advanceGesture(now, speaking);
+    this.speakBlend += ((speaking ? 1 : 0) - this.speakBlend) * Math.min(1, delta * 6);
+    if (speaking !== this.screenShown) {
+      this.screenShown = speaking;
+      if (speaking) {
+        this.roam?.showScreen();
+        this.roam?.setScreenVideo(this.companionVideo?.src ?? null);
+      } else {
+        this.roam?.hideScreen();
+      }
+    }
+    if (this.renderer) {
+      this.renderer.domElement.dataset.avatarHalted = String(this.halted);
+      this.renderer.domElement.dataset.avatarMotion = this.roam?.motion ?? 'none';
+    }
     const walking = this.roam?.motion === 'walk';
     this.walkBlend += ((walking ? 1 : 0) - this.walkBlend) * Math.min(1, delta * 8);
     if (this.roam) {
@@ -199,12 +272,41 @@ export class VrmRenderer {
       const current = this.vrm.scene.rotation.y;
       const difference = Math.atan2(Math.sin(target - current), Math.cos(target - current));
       this.vrm.scene.rotation.y = current + difference * Math.min(1, delta * 8);
-      this.vrm.scene.position.y = this.baseY + Math.abs(Math.sin(now / 1000 * 6.4)) * 0.02 * this.walkBlend;
+      const bob = Math.abs(Math.sin(now / 1000 * 6.4)) * 0.02 * this.walkBlend;
+      this.vrm.scene.position.y = this.baseY + bob + this.gestureOffsetY;
+    } else {
+      this.vrm.scene.position.y = this.baseY + this.gestureOffsetY;
     }
     this.driveExpressions(now);
     this.driveBones(now, delta);
     this.vrm.update(delta);
     this.renderer.render(this.scene, this.camera);
+  }
+
+  /** Advance the active gesture and occasionally play one while idle. */
+  private advanceGesture(now: number, speaking: boolean): void {
+    this.gestureKind = null;
+    this.gestureElapsed = 0;
+    this.gestureWeight = 0;
+    this.gestureOffsetY = 0;
+    if (this.gesture) {
+      const elapsed = (now - this.gesture.startedAt) / 1000;
+      if (elapsed >= this.gesture.duration) {
+        this.gesture = null;
+      } else {
+        const fadeIn = Math.min(1, elapsed / 0.22);
+        const fadeOut = Math.min(1, (this.gesture.duration - elapsed) / 0.3);
+        this.gestureKind = this.gesture.kind;
+        this.gestureElapsed = elapsed;
+        this.gestureWeight = Math.max(0, Math.min(fadeIn, fadeOut));
+      }
+    } else if (!speaking && this.state === 'idle' && (!this.roam || this.roam.motion === 'idle') && now >= this.nextGestureAt) {
+      this.playGesture(IDLE_GESTURES[Math.floor(Math.random() * IDLE_GESTURES.length)]);
+      this.nextGestureAt = now + 24000 + Math.random() * 30000;
+    }
+    if (this.gestureKind === 'jump') {
+      this.gestureOffsetY = Math.abs(Math.sin(Math.PI * this.gestureElapsed / 0.9)) * 0.12 * this.gestureWeight;
+    }
   }
 
   private driveExpressions(now: number): void {
@@ -248,12 +350,13 @@ export class VrmRenderer {
       pose.set(bone, { x: current.x + x, y: current.y + y, z: current.z + z });
     };
     const blend = this.walkBlend;
-    // Relaxed A-pose: bring T-pose arms down (VRM normalized bones are T-pose).
+    // Relaxed A-pose: normalized left/right arms point +X/-X in T-pose, so
+    // they need opposite Z rotations to hang down beside the body.
     if (this.walker) {
-      add(this.walker.leftUpperArm, 0, -0.12, 1.12);
-      add(this.walker.rightUpperArm, 0, 0.12, -1.12);
-      add(this.walker.leftLowerArm, 0.18, 0, 0.08);
-      add(this.walker.rightLowerArm, 0.18, 0, -0.08);
+      add(this.walker.leftUpperArm, 0, -0.08, -1.25);
+      add(this.walker.rightUpperArm, 0, 0.08, 1.25);
+      add(this.walker.leftLowerArm, 0.12, 0, 0);
+      add(this.walker.rightLowerArm, 0.12, 0, 0);
     }
     if (blend > 0.01 && this.walker) {
       const swing = Math.sin(seconds * 6.4);
@@ -265,10 +368,43 @@ export class VrmRenderer {
       add(this.walker.rightLowerLeg, -kneeRight * 0.75 * blend, 0, 0);
       add(this.walker.leftFoot, kneeLeft * 0.3 * blend, 0, 0);
       add(this.walker.rightFoot, kneeRight * 0.3 * blend, 0, 0);
-      add(this.walker.leftUpperArm, -swing * 0.4 * blend, 0, 0.12 * blend);
-      add(this.walker.rightUpperArm, swing * 0.4 * blend, 0, -0.12 * blend);
-      add(this.walker.leftLowerArm, 0.25 * blend, 0, 0);
-      add(this.walker.rightLowerArm, 0.25 * blend, 0, 0);
+      add(this.walker.leftUpperArm, -swing * 0.18 * blend, 0, 0);
+      add(this.walker.rightUpperArm, swing * 0.18 * blend, 0, 0);
+      add(this.walker.leftLowerArm, 0.1 * blend, 0, 0);
+      add(this.walker.rightLowerArm, 0.1 * blend, 0, 0);
+    }
+    if (this.speakBlend > 0.01 && this.walker) {
+      // While narrating, the left arm lifts in front of the chest, palm up and
+      // supporting the narration screen.
+      const hold = this.speakBlend;
+      add(this.walker.leftUpperArm, -0.42 * hold, 0.1 * hold, 0.9 * hold);
+      add(this.walker.leftLowerArm, 0.3 * hold, 0, -0.45 * hold);
+      add(this.walker.leftHand, -0.3 * hold, 0, 0.2 * hold);
+    }
+    const gesture = this.gestureKind;
+    const weight = this.gestureWeight;
+    const gestureTime = this.gestureElapsed;
+    if (gesture && weight > 0 && this.walker) {
+      if (gesture === 'wave') {
+        add(this.walker.rightUpperArm, -0.12 * weight, 0.08 * weight, -1.7 * weight);
+        add(this.walker.rightLowerArm, 0, 0, (-0.8 + Math.sin(gestureTime * 9) * 0.3) * weight);
+      } else if (gesture === 'jump') {
+        const hop = Math.abs(Math.sin(Math.PI * gestureTime / 0.9));
+        add(this.walker.leftUpperArm, 0, 0, 0.95 * weight);
+        add(this.walker.rightUpperArm, 0, 0, -0.95 * weight);
+        add(this.walker.leftUpperLeg, 0.35 * hop * weight, 0, 0);
+        add(this.walker.rightUpperLeg, 0.35 * hop * weight, 0, 0);
+        add(this.walker.leftLowerLeg, -0.55 * hop * weight, 0, 0);
+        add(this.walker.rightLowerLeg, -0.55 * hop * weight, 0, 0);
+      } else if (gesture === 'dance') {
+        const sway = Math.sin(gestureTime * 5);
+        add(this.walker.leftUpperArm, 0, 0, (0.9 + sway * 0.35) * weight);
+        add(this.walker.rightUpperArm, 0, 0, (-0.9 + sway * 0.35) * weight);
+        add(this.walker.leftLowerArm, 0, 0, -0.45 * weight);
+        add(this.walker.rightLowerArm, 0, 0, 0.45 * weight);
+        add(this.bones.hips, 0, 0, sway * 0.16 * weight);
+        add(this.bones.chest, 0, 0, Math.sin(gestureTime * 5 + 0.8) * 0.1 * weight);
+      }
     }
     let headX = Math.sin(seconds * 0.5) * 0.02;
     let headY = Math.sin(seconds * 0.34) * 0.03;
@@ -287,6 +423,13 @@ export class VrmRenderer {
     } else if (this.state === 'error') {
       headX += 0.12;
       hipsZ = 0;
+    }
+    if (gesture === 'wave') headZ += 0.06 * weight;
+    else if (gesture === 'nod') headX += Math.sin(gestureTime * 10) * 0.13 * weight;
+    else if (gesture === 'jump') headX -= 0.06 * weight;
+    else if (gesture === 'dance') {
+      headX += Math.sin(gestureTime * 5) * 0.05 * weight;
+      headY += Math.sin(gestureTime * 5 + 1) * 0.07 * weight;
     }
     add(this.bones.head, headX, headY, headZ);
     add(this.bones.chest, 0, 0, chestZ);

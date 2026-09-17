@@ -15,6 +15,7 @@ import { campusMediaFor } from './r2-model';
 import { registeredPhotos, tourPhotoFor, type TourPhoto } from './tour-photos';
 import { tourKnowledgeContext } from '../transport/r3-knowledge';
 import type { TourKnowledgeContext } from '../../../shared/r3-knowledge';
+import { MAX_TOUR_CONSTRAINT_POIS, tourConstraintIds, updateTourConstraint } from './tour-constraints';
 import './tour.css';
 
 export interface TourMemory {
@@ -34,6 +35,10 @@ interface Props {
 }
 const STATUS={draft:'行程草稿',checked:'已完成条件检查',active:'参观进行中',paused:'已暂停',completed:'参观已完成',cancelled:'已结束',infeasible:'条件暂不满足'};
 const PROGRESS={pending:'待参观',navigating:'前往本站',arrived:'已确认到达',explaining:'正在讲解',completed:'已完成',skipped:'已跳过'};
+function ConstraintPicker({title,value,onChange,pois,blockedIds,locationNote=false}:{title:string;value:string;onChange(value:string):void;pois:POI[];blockedIds:string[];locationNote?:boolean}){
+ const selected=tourConstraintIds(value);
+ return <fieldset className="tour-constraint-group"><legend>{title}（最多 {MAX_TOUR_CONSTRAINT_POIS} 处）</legend><small>已选 {selected.length} / {MAX_TOUR_CONSTRAINT_POIS}</small><div className="tour-constraint-list">{Array.from({length:MAX_TOUR_CONSTRAINT_POIS},(_,index)=><label className="tour-constraint-row" key={index}><span>{index+1}.</span><select aria-label={`${title} ${index+1}`} value={selected[index]??''} disabled={index>selected.length} onChange={event=>onChange(updateTourConstraint(value,index,event.target.value))}><option value="">{index<selected.length?'清除此项':'未选择'}</option>{pois.map(p=><option key={p.id} value={p.id} disabled={(selected.includes(p.id)&&selected[index]!==p.id)||blockedIds.includes(p.id)}>{p.name}{locationNote&&!p.location?'（步行匹配待确认）':''}</option>)}</select></label>)}</div></fieldset>;
+}
 export function TourWorkspace({campus,voice,caption,narration,onStop,onExplain,onCampus,onReadRoute,memory,onMemory,registerCancel,registerText,registerMapFocus,selectedPoi,onExplainPoi,onRouteChange,onSelectPoi,panelOpen,onPanelClose,speechStatus}:Props){
  const lifecycle=useRef(new TourLifecycle(r3Transport,(id,sid)=>transport.cancel(id,sid).catch(()=>null)));
  const [session,setSession]=useState<TourSession|null>(memory?.session??null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
@@ -137,7 +142,7 @@ export function TourWorkspace({campus,voice,caption,narration,onStop,onExplain,o
   };
   let required:string[],avoided:string[];
   try{required=resolve(must);avoided=resolve(avoid);}catch(e){setError((e as Error).message);return;}
-  if(required.length>5||required.some(id=>avoided.includes(id))){setError('必去最多5处，且不能同时避开。');return;}
+  if(required.length>MAX_TOUR_CONSTRAINT_POIS||avoided.length>MAX_TOUR_CONSTRAINT_POIS||required.some(id=>avoided.includes(id))){setError('必去和避开参观点各最多 5 处，且同一地点不能同时选择。');return;}
   if(maxWalk!==''&&(!Number.isInteger(Number(maxWalk))||Number(maxWalk)<0||Number(maxWalk)>240)){setError('步行上限请输入 0—240 分钟。');return;}
   if(prefs.length>8){setError('兴趣与地点要求合计最多 8 项，请精简后重试。');return;}
   if(!prefs.length){setError('请填写至少一项兴趣或参观要求。');return;}
@@ -189,8 +194,8 @@ export function TourWorkspace({campus,voice,caption,narration,onStop,onExplain,o
    <label>感兴趣的内容<textarea value={interests} maxLength={160} onChange={e=>setInterests(e.target.value)} placeholder="校园历史、建筑、图书馆…" rows={2}/></label>
    <div className="tour-form-row">{(['start','end'] as const).map((kind)=><label key={kind}>{kind==='start'?'从哪里出发':'最后到哪里'}<select value={kind==='start'?start:end} onChange={e=>(kind==='start'?setStart:setEnd)(e.target.value)}><option value="unspecified">请导游建议</option><option value="current_position">当前位置（仅导航使用）</option>{pois.map(p=><option value={p.id} key={p.id}>{p.name}</option>)}</select></label>)}</div>
    {poiError&&<p>地点目录未加载，可先选择“请导游建议”。</p>}
-   <div className="tour-form-row"><label>必去地点（最多5处）<select multiple value={must.split(',').filter(Boolean)} onChange={e=>setMust(Array.from(e.target.selectedOptions,o=>o.value).join(','))}>{pois.map(p=><option key={p.id} value={p.id}>{p.name}{!p.location?'（步行匹配待确认）':''}</option>)}</select></label><label>避开参观点（不安排停留）<select multiple value={avoid.split(',').filter(Boolean)} onChange={e=>setAvoid(Array.from(e.target.selectedOptions,o=>o.value).join(','))}>{pois.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label></div>
-   <p>可按住 Ctrl 多选；避开只表示不安排停留，不能保证步行路线绕开该区域。</p>
+   <div className="tour-form-row tour-constraint-grid"><ConstraintPicker title="必去地点" value={must} onChange={setMust} pois={pois} blockedIds={tourConstraintIds(avoid)} locationNote/><ConstraintPicker title="避开参观点" value={avoid} onChange={setAvoid} pois={pois} blockedIds={tourConstraintIds(must)}/></div>
+   <p>请按 1—5 的顺序选择，留空即可少选；避开只表示不安排停留，不能保证步行路线绕开该区域。</p>
    {must.split(',').some(id=>id&&avoid.split(',').includes(id))&&<p role="alert">同一地点不能同时必去和避开，请解除冲突后规划。</p>}
    <div className="tour-form-row"><label>参观日期（选填）<input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label><label>步行上限（分钟，选填）<input type="number" min="0" max="240" value={maxWalk} onChange={e=>setMaxWalk(e.target.value)}/></label></div>
    <label className="tour-check"><input type="checkbox" checked={access} onChange={e=>setAccess(e.target.checked)}/>需要无台阶路线</label>

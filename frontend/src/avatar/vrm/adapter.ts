@@ -2,11 +2,14 @@ import type { AdapterResult, AvatarAdapter, AvatarState } from '../../../../shar
 import { vrmManifest } from './manifest';
 import './flag';
 
+type CompanionVideo = { src: string; mime?: string; caption?: string } | null;
+
 type VrmRendererLike = {
   mount(host: HTMLElement): Promise<AdapterResult>;
   setState(state: AvatarState): void;
   setAudioLevel(level: number): void;
   setScale(scale: number): void;
+  setCompanionVideo(video: CompanionVideo): void;
   dispose(): void;
 };
 
@@ -17,6 +20,7 @@ export class VrmAvatarAdapter implements AvatarAdapter {
   private generation = 0;
   private pendingState: AvatarState = 'idle';
   private pendingScale = 1;
+  private pendingVideo: CompanionVideo = null;
 
   async mount(host: HTMLElement): Promise<AdapterResult> {
     this.dispose();
@@ -34,6 +38,7 @@ export class VrmAvatarAdapter implements AvatarAdapter {
       }
       renderer.setState(this.pendingState);
       renderer.setScale(this.pendingScale);
+      renderer.setCompanionVideo(this.pendingVideo);
       return result;
     } catch {
       this.renderer = undefined;
@@ -53,6 +58,11 @@ export class VrmAvatarAdapter implements AvatarAdapter {
   setScale(scale: number): void {
     this.pendingScale = scale;
     this.renderer?.setScale(scale);
+  }
+
+  setCompanionVideo(video: CompanionVideo): void {
+    this.pendingVideo = video;
+    this.renderer?.setCompanionVideo(video);
   }
 
   dispose(): void {

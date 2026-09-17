@@ -23,17 +23,24 @@ const OVERLAY_HEIGHT = 260;
 const MARGIN = 10;
 const WALK_SPEED = 78;
 
+/** Convert overlay motion (positive Y moves up the screen) to normalized-VRM yaw. */
+export function headingForScreenMotion(dx: number, dy: number): number {
+  return Math.atan2(dx, -dy);
+}
+
 export class RoamController {
   readonly stage: HTMLDivElement;
   motion: 'idle' | 'walk' = 'idle';
   facing: 1 | -1 = 1;
   /** World-space yaw target (radians) for the current movement direction. */
-  heading = Math.PI;
+  heading = 0;
   x = 0;
   y = 48;
 
   private overlay: HTMLDivElement;
   private bubble: HTMLDivElement;
+  private screen!: HTMLDivElement;
+  private videoElement!: HTMLVideoElement;
   private hit!: HTMLDivElement;
   private targetX: number;
   private targetY: number;
@@ -86,6 +93,25 @@ export class RoamController {
     } satisfies Partial<CSSStyleDeclaration>);
     this.overlay.appendChild(this.bubble);
 
+    // Narration screen: a blank placeholder until a clip is bound for the POI.
+    this.screen = document.createElement('div');
+    this.screen.dataset.avatarScreen = 'true';
+    Object.assign(this.screen.style, {
+      // Sits on the raised palm of the speaking pose (see renderer hold pose).
+      position: 'absolute', left: '166px', top: '116px', transform: 'translate(-50%, -100%)',
+      width: '132px', height: '76px', borderRadius: '10px', overflow: 'hidden',
+      background: '#0d141c', border: '1px solid rgba(255,255,255,.35)',
+      boxShadow: '0 8px 20px rgba(10,25,40,.28)', opacity: '0', transition: 'opacity .2s ease',
+      pointerEvents: 'none',
+    } satisfies Partial<CSSStyleDeclaration>);
+    this.videoElement = document.createElement('video');
+    this.videoElement.muted = true;
+    this.videoElement.loop = true;
+    this.videoElement.playsInline = true;
+    Object.assign(this.videoElement.style, { width: '100%', height: '100%', objectFit: 'cover', display: 'none' });
+    this.screen.appendChild(this.videoElement);
+    this.overlay.appendChild(this.screen);
+
     document.body.appendChild(this.overlay);
     window.addEventListener('resize', this.onResize);
     hit.addEventListener('pointerdown', (event) => this.pointerDown(event));
@@ -109,8 +135,9 @@ export class RoamController {
         this.x += (dx / distance) * step;
         this.y += (dy / distance) * step;
         this.facing = dx < 0 ? -1 : 1;
-        // Screen up = away from camera; derive the yaw that points the model along the path.
-        this.heading = Math.atan2(-dx, dy);
+        // The normalized model faces +Z. Screen up points away from the +Z
+        // camera, so map the screen path to world direction (dx, 0, -dy).
+        this.heading = headingForScreenMotion(dx, dy);
       }
       this.applyPosition();
     } else if (now >= this.idleUntil) {
@@ -124,6 +151,50 @@ export class RoamController {
     this.bubble.textContent = text;
     this.bubble.style.opacity = '1';
     window.setTimeout(() => { this.bubble.style.opacity = '0'; }, ms);
+  }
+
+  /** Show the narration screen while the guide speaks (blank placeholder without a clip). */
+  showScreen(): void {
+    this.screen.style.opacity = '1';
+  }
+
+  hideScreen(): void {
+    this.screen.style.opacity = '0';
+    this.setScreenVideo(null);
+  }
+
+  setScreenVideo(src: string | null): void {
+    const video = this.videoElement;
+    if (!src) {
+      video.pause();
+      if (video.dataset.src) {
+        video.removeAttribute('src');
+        delete video.dataset.src;
+        video.load();
+      }
+      video.style.display = 'none';
+      return;
+    }
+    if (video.dataset.src !== src) {
+      video.dataset.src = src;
+      video.src = src;
+    }
+    video.style.display = 'block';
+    void video.play().catch(() => undefined);
+  }
+
+  /** Stand still (stop walking and cancel the next wander) while the guide speaks. */
+  halt(): void {
+    this.targetX = this.x;
+    this.targetY = this.y;
+    this.motion = 'idle';
+    this.idleUntil = Number.POSITIVE_INFINITY;
+  }
+
+  /** Allow roaming again after speech playback ends. */
+  resume(now: number): void {
+    this.motion = 'idle';
+    this.idleUntil = now + 1200;
   }
 
   dispose(): void {

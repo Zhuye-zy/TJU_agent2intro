@@ -142,9 +142,13 @@ export class AmapNavigation {
     const rows=value.pois;
     if(rows!==undefined&&!Array.isArray(rows))throw new MapCallError('UPSTREAM_PROTOCOL_ERROR');
     if(!rows?.length)throw new MapCallError('destination_not_found');
-    const matches=rows.slice(0,5).filter(row=>typeof row.id==='string'&&typeof row.name==='string'&&row.location).map(row=>{
+    const matches=rows.slice(0,5).filter(row=>typeof row.name==='string'&&typeof row.location==='string'&&row.location).map(row=>{
      const [lng,lat]=providerPoint(row.location);
-     const match=Object.freeze({poiId:poi.id,providerId:row.id,name:row.name,address:typeof row.address==='string'?row.address:'地址未提供',lng,lat,matchedAt:Date.now()});
+     // AMap returns a provider id only for some places; synthesize a stable one
+     // so rows without id are still selectable (previously they were dropped and
+     // the destination looked "not found" even though AMap had returned it).
+     const providerId=typeof row.id==='string'&&row.id?row.id:`${row.name}@${row.location}`;
+     const match=Object.freeze({poiId:poi.id,providerId,name:row.name,address:typeof row.address==='string'?row.address:'地址未提供',lng,lat,matchedAt:Date.now()});
      return match;
     });
     const accepted=matches.filter(match=>campusCandidate(poi,match));

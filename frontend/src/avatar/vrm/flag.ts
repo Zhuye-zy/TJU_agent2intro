@@ -18,6 +18,9 @@ export function vrmAvatarEnabled(): boolean {
 }
 
 import { roamEnabled, setRoamEnabled } from './roam';
+import type { AvatarState } from '../../../../shared/contracts';
+
+export type AvatarGesture = 'wave' | 'jump' | 'dance' | 'nod';
 
 type AvatarSwitch = {
   enable: () => string;
@@ -26,6 +29,12 @@ type AvatarSwitch = {
   roam: (enabled: boolean) => string;
   roamMode: () => 'on' | 'off';
   reload: () => void;
+  /** Play an interaction gesture on the VRM avatar; no-op when Live2D is active. */
+  gesture?: (kind: AvatarGesture) => string;
+  /** Test/demo hook: force an avatar state (idle | listening | thinking | speaking | error). */
+  setState?: (state: AvatarState) => string;
+  /** Test/demo hook: bind or clear the narration screen clip. */
+  setCompanionVideo?: (video: { src: string; mime?: string; caption?: string } | null) => string;
 };
 
 declare global {

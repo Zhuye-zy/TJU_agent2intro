@@ -129,7 +129,7 @@ class Planner:
                     warnings.append('文字起终点与结构选择不一致，请集中确认起终点。')
         if req.duration_minutes is not None and req.duration_minutes != body.duration_minutes:
             warnings.append('文字时长与所选时长不一致，请集中确认可用分钟数。')
-        pois = [p for p in self.catalog.pois(body.campus_id) if p.id not in req.avoid]
+        pois = [p for p in self.catalog.planning_pois(body.campus_id) if p.id not in req.avoid]
         core_getter = getattr(self.catalog.source, 'get_core_bundle', None)
         if core_getter:
             core = core_getter(body.campus_id)

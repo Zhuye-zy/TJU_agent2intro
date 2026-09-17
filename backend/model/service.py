@@ -359,6 +359,10 @@ class CampusModelService:
       attached.append(Source(id=item["evidence_id"],title=origin["title"],snippet=item["claim"],
        url=origin["url"],campus_id=request.campus_id,published_at=origin.get("published_at"),retrieved_at=fact["retrieved_at"]))
     ids={h.id for h in attached};hits=attached+[h for h in hits if h.id not in ids]
+  if 'parts' not in query_meta and intent_for(request.message)=='current_rule':
+   # Current-rule questions keep their split status even when web search is
+   # disabled: stable clauses resolved locally, current clauses stay unknown.
+   query_meta['parts']={'stable':'success' if hits else 'no_evidence','current':'unavailable'}
   self.query_traces[str(request.request_id)]=query_meta
   while len(self.query_traces)>256:self.query_traces.popitem(last=False)
   return {"hits":hits[:20],"knowledge_ready":ready,"query_meta":query_meta}

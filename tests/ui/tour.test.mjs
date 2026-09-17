@@ -124,6 +124,19 @@ test('M integration saves formal constraints and interprets only explicit remain
  assert.ok(!privateText('%31%31%37%2E%31%32%33%34').includes('%31'));
 });
 
+const constraintsOutput=await build({configFile:false,logLevel:'silent',build:{write:false,minify:false,lib:{entry:'frontend/src/ui/tour-constraints.ts',formats:['es'],fileName:()=> 'tour-constraints.js'}}});
+const constraintsChunk=(Array.isArray(constraintsOutput)?constraintsOutput[0]:constraintsOutput).output.find(v=>v.type==='chunk');
+const {MAX_TOUR_CONSTRAINT_POIS,tourConstraintIds,updateTourConstraint}=await import('data:text/javascript;base64,'+Buffer.from(constraintsChunk.code).toString('base64'));
+test('tour constraints expose five ordered slots and compact cleared selections',()=>{
+ assert.equal(MAX_TOUR_CONSTRAINT_POIS,5);
+ let value='';
+ for(let index=0;index<5;index++)value=updateTourConstraint(value,index,'poi-'+(index+1));
+ assert.deepEqual(tourConstraintIds(value),['poi-1','poi-2','poi-3','poi-4','poi-5']);
+ assert.equal(updateTourConstraint(value,5,'poi-6'),value);
+ value=updateTourConstraint(value,1,'');
+ assert.deepEqual(tourConstraintIds(value),['poi-1','poi-3','poi-4','poi-5']);
+});
+
 const photosOutput=await build({configFile:false,logLevel:'silent',build:{write:false,minify:false,lib:{entry:'frontend/src/ui/tour-photos.ts',formats:['es'],fileName:()=> 'tour-photos.js'}}});
 const photosChunk=(Array.isArray(photosOutput)?photosOutput[0]:photosOutput).output.find(v=>v.type==='chunk');
 const {tourPhotoFor}=await import('data:text/javascript;base64,'+Buffer.from(photosChunk.code).toString('base64'));

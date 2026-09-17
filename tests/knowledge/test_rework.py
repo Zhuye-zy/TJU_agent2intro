@@ -11,11 +11,21 @@ def test_all_pois_have_same_identity_in_legacy_projection():
     k=LocalKnowledge()
     for campus in ("weijinlu","beiyangyuan"):
         page=k.list_pois(campus,None,"",100,None)
-        assert {p.id for p in page.items}=={b.id for b in k.list_buildings(campus)}
+        assert {p.id for p in page.items}<={b.id for b in k.list_buildings(campus)}
+        assert all(k.is_map_searchable(p.id) for p in page.items)
         assert all(k.get_building(p.id).campus_id==campus for p in page.items)
     assert k.get_poi("beiyangyuan-zhengdong-library") is not None
     assert k.search("三问桥","beiyangyuan",5)
     assert k.search("春水图书馆","weijinlu",5)
+
+def test_amap_audit_removes_unusable_destinations_from_directory():
+    k=LocalKnowledge(); rows=json.loads((DATA_DIRECTORY/"map_searchability.json").read_text(encoding="utf-8"))
+    assert len(rows)==106 and {row["status"] for row in rows}=={"searchable","not_found"}
+    expected={campus:sum(1 for row in rows if row["status"]=="searchable" and row["poi_id"].startswith(campus))
+              for campus in ("weijinlu","beiyangyuan")}
+    assert {campus:len(k.list_pois(campus,None,"",100,None).items) for campus in ("weijinlu","beiyangyuan")}==expected
+    assert not k.is_map_searchable("beiyangyuan-bowen-road")
+    assert k.get_poi("beiyangyuan-bowen-road") is not None
 
 def test_long_chinese_query_round_trip_all_pages():
     c=TestClient(app); params=dict(campus_id="beiyangyuan",query="天津大学北洋园校区图书馆和食堂的相对位置在哪里",limit=1)
@@ -52,7 +62,7 @@ def test_historical_maps_are_local_relative_only():
         assets=k.get_campus_assets(campus)
         assert len(assets.maps)==1 and not assets.maps[0].supports_precise_navigation
         points=[p for p in k.list_pois(campus,None,"",100,None).items if p.schematic_position]
-        assert len(points)>=10
+        assert len(points)>=4
         assert all(p.schematic_position.map_id==assets.maps[0].id and p.location is None for p in points)
         assert all(p.schematic_position.source_ref=="src-maps-2017" for p in points)
 

@@ -67,7 +67,7 @@ class TourRequest(Strict):
     accessibility: Literal["standard", "step_free"] = "standard"
     message: str = Field(default="", max_length=2000)
     must_visit: list[Id] = Field(default_factory=list, max_length=5)
-    avoid: list[Id] = Field(default_factory=list, max_length=100)
+    avoid: list[Id] = Field(default_factory=list, max_length=5)
     visit_date: date | None = None
     max_walking_minutes: int | None = Field(default=None, ge=0, le=240)
     @model_validator(mode="after")

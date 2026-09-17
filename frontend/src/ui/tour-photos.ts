@@ -12,6 +12,14 @@ export interface TourPhoto {
 
 const PHOTOS: Record<string, TourPhoto> = {
   'beiyangyuan-datong-center': { src: '/assets/campus/photos/beiyangyuan-datong-center-1.jpg', caption: '大通学生中心', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'beiyangyuan-dorm-cheng': { src: '/assets/campus/photos/beiyangyuan-dorm-cheng-1.jpg', caption: '诚园', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'beiyangyuan-dorm-ge': { src: '/assets/campus/photos/beiyangyuan-dorm-ge-1.jpg', caption: '格园', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'beiyangyuan-dorm-ping': { src: '/assets/campus/photos/beiyangyuan-dorm-ping-1.jpg', caption: '平园', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'beiyangyuan-dorm-qi': { src: '/assets/campus/photos/beiyangyuan-dorm-qi-1.jpg', caption: '齐园', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'beiyangyuan-dorm-xiu': { src: '/assets/campus/photos/beiyangyuan-dorm-xiu-1.jpg', caption: '修园', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'beiyangyuan-dorm-zheng': { src: '/assets/campus/photos/beiyangyuan-dorm-zheng-1.jpg', caption: '正园', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'beiyangyuan-dorm-zhi': { src: '/assets/campus/photos/beiyangyuan-dorm-zhi-1.jpg', caption: '知园', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'beiyangyuan-dorm-zhi-guo': { src: '/assets/campus/photos/beiyangyuan-dorm-zhi-guo-1.jpg', caption: '治园', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
   'beiyangyuan-earthquake-facility': { src: '/assets/campus/photos/beiyangyuan-earthquake-facility-1.jpg', caption: '国家大型地震工程模拟研究设施', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
   'beiyangyuan-east-gate': { src: '/assets/campus/photos/beiyangyuan-east-gate-1.jpg', caption: '北洋园校区东门', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
   'beiyangyuan-gaokao-wall': { src: '/assets/campus/photos/beiyangyuan-gaokao-wall-1.jpg', caption: '恢复高考纪念墙', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
@@ -34,6 +42,23 @@ const PHOTOS: Record<string, TourPhoto> = {
   'beiyangyuan-xue-6-dining': { src: '/assets/campus/photos/beiyangyuan-xue-6-dining-1.jpg', caption: '学六食堂（菊园餐厅）', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
   'beiyangyuan-zhengdong-library': { src: '/assets/campus/photos/beiyangyuan-zhengdong-library-1.jpg', caption: '郑东图书馆', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
   'weijinlu-newton-tree': { src: '/assets/campus/photos/weijinlu-newton-tree-1.jpg', caption: '牛顿苹果树', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'weijinlu-25-teaching': { src: '/assets/campus/photos/weijinlu-25-teaching-1.jpg', caption: '曾宪梓楼（25教）', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'weijinlu-aiwan-lake': { src: '/assets/campus/photos/weijinlu-aiwan-lake-1.jpg', caption: '爱晚湖', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'weijinlu-alumni-home': { src: '/assets/campus/photos/weijinlu-alumni-home-1.jpg', caption: '校友之家', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'weijinlu-beiyang-square': { src: '/assets/campus/photos/weijinlu-beiyang-square-1.jpg', caption: '北洋广场', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'weijinlu-chunshui-library': { src: '/assets/campus/photos/weijinlu-chunshui-library-1.jpg', caption: '春水图书馆（北馆）', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'weijinlu-east-gate': { src: '/assets/campus/photos/weijinlu-east-gate-1.jpg', caption: '卫津路校区东门', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'weijinlu-feng-jicai': { src: '/assets/campus/photos/weijinlu-feng-jicai-1.jpg', caption: '冯骥才文学艺术研究院', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'weijinlu-history-museum': { src: '/assets/campus/photos/weijinlu-history-museum-1.jpg', caption: '天津大学校史博物馆', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'weijinlu-jingye-lake': { src: '/assets/campus/photos/weijinlu-jingye-lake-1.jpg', caption: '敬业湖', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'weijinlu-qiushi-pavilion': { src: '/assets/campus/photos/weijinlu-qiushi-pavilion-1.jpg', caption: '求是亭', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'weijinlu-science-library': { src: '/assets/campus/photos/weijinlu-science-library-1.jpg', caption: '科学图书馆（南馆）', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'weijinlu-stadium': { src: '/assets/campus/photos/weijinlu-stadium-1.jpg', caption: '体育场', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'weijinlu-student-center': { src: '/assets/campus/photos/weijinlu-student-center-1.jpg', caption: '大学生活动中心', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'weijinlu-wang-xuezhong': { src: '/assets/campus/photos/weijinlu-wang-xuezhong-1.jpg', caption: '王学仲艺术研究所', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'weijinlu-youth-lake': { src: '/assets/campus/photos/weijinlu-youth-lake-1.jpg', caption: '青年湖', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'weijinlu-youyi-lake': { src: '/assets/campus/photos/weijinlu-youyi-lake-1.jpg', caption: '友谊湖', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
+  'weijinlu-zhang-tailei': { src: '/assets/campus/photos/weijinlu-zhang-tailei-1.jpg', caption: '张太雷像', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
 };
 
 function placeholderImage(title: string): string {

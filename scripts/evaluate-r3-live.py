@@ -74,7 +74,7 @@ async def run_case(index,q):
       initial_message='了解校园文化，参观60分钟' if simulated else q['query']
       body=TourRequest(request_id=rid,session_id=sid,campus_id=campus,duration_minutes=duration,
        message=initial_message,interests=['文化','图书馆','餐饮'] if q['id'].startswith('t01') else ['校园文化'],
-       start={'kind':'poi','poi_id':campus+'-east-gate'},end={'kind':'unspecified'},
+       start={'kind':'poi','poi_id':{'weijinlu':'weijinlu-09-teaching','beiyangyuan':'beiyangyuan-qiushi-hall'}[campus]},end={'kind':'unspecified'},
        accessibility='step_free' if q['id'].startswith('t02') else 'standard',visit_date='2026-09-15')
       result=await tour_service.create(body);s=result.session
       row['first_content_ms']=(time.monotonic()-start)*1000
@@ -82,7 +82,7 @@ async def run_case(index,q):
        s=await command(s,'check');s=await command(s,'start');s=await command(s,'arrive');s=await command(s,'complete_stop')
        first=s.plan.stops[0].model_dump(mode='json')
        s=(await tour_service.revise(s.tour_id,PlanRevision(request_id=uuid4(),session_id=sid,expected_version=s.plan.version,expected_state_version=s.state_version,operation='set_remaining_time',remaining_minutes=20))).session
-       removable=next(p for p in s.plan.stops if p.stop_id!=s.current_stop_id and p.poi_id!=campus+'-east-gate')
+       removable=next(p for p in s.plan.stops if p.stop_id!=s.current_stop_id and p.poi_id!={'weijinlu':'weijinlu-09-teaching','beiyangyuan':'beiyangyuan-qiushi-hall'}[campus])
        s=(await tour_service.revise(s.tour_id,PlanRevision(request_id=uuid4(),session_id=sid,expected_version=s.plan.version,expected_state_version=s.state_version,operation='remove_stop',stop_id=removable.stop_id))).session
        row['state_replay']={'completed_preserved':s.plan.stops[0].model_dump(mode='json')==first,'remaining_minutes':s.remaining_minutes,'stops_after_remove':len(s.plan.stops)}
       row['session']=s.model_dump(mode='json');row['usage']=result.usage.model_dump() if result.usage else None

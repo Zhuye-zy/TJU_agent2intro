@@ -6,6 +6,7 @@ import { createSpeechInteractionController } from '../speech/interaction';
 import { connectSpeechInteraction } from '../transport/r3-speech';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { ApiError, AvatarAdapter, AvatarState, CampusId, ChatResponse, Health, Mode, RuntimeEvent, Source, SpeechAdapter, Voice } from '../../../shared/contracts';
+import { tourVideoFor } from './tour-videos';
 import type { CampusAssets, GenerationOptions, POI, SpeechController, SpeechProgress, SpeechRun, StreamEvent } from '../../../shared/r2';
 import { createAvatarAdapter } from '../avatar/adapter';
 import { createSpeechController } from '../speech/controller';
@@ -181,6 +182,7 @@ export function App() {
     return () => { active = false; laneAbortRef.current.chat?.abort(); laneAbortRef.current.generation?.abort(); asrAbortRef.current?.abort(); unsubscribe(); unsubscribeLevel(); controller.dispose(); interactionContext.current=null;interactionRef.current?.dispose(); avatar.dispose(); if (asrRequestRef.current) void asr.stop(asrRequestRef.current); };
   }, []);
   useEffect(() => { avatarRef.current?.setState(avatarState); }, [avatarState]);
+  useEffect(() => { const video = avatarState === 'speaking' && selectedPoi ? tourVideoFor(selectedPoi.id) : null; avatarRef.current?.setCompanionVideo?.(video ? { src: video.src, mime: video.mime, caption: video.caption } : null); }, [avatarState, selectedPoi]);
   useEffect(() => {
     if (previousCampusRef.current === prefs.campus) return; previousCampusRef.current = prefs.campus; setSelectedPoi(null); selectedPoiRef.current = null; setFocusPoiId(null); setCampusAssets(null); setNotice('已切换浏览校区；实际位置不会自动改变。');
     void stopListening(); void cancelLane('chat', 'campus_change'); void cancelLane('generation', 'campus_change'); void speechControllerRef.current?.stop('campus_change');

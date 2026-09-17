@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 import {build} from 'vite';
 import {pathToFileURL} from 'node:url';
 const catalog=JSON.parse(readFileSync('data/knowledge/pois.json','utf8'));
-const samples=['beiyangyuan-alumni-forest','beiyangyuan-bowen-road','beiyangyuan-chunhui-garden','beiyangyuan-datong-center','beiyangyuan-zhengdong-library'].map(id=>catalog.find(p=>p.id===id));
+const samples=['beiyangyuan-tailei-square','beiyangyuan-tianlin-square','beiyangyuan-shutian-square','beiyangyuan-datong-center','beiyangyuan-zhengdong-library'].map(id=>catalog.find(p=>p.id===id));
 await build({configFile:false,logLevel:'silent',plugins:[{name:'offline-page',enforce:'pre',resolveId(id){if(id==='react'||id==='react/jsx-runtime')return '\0'+id;},load(id){
  if(id==='\0react')return ['useState','useRef','useMemo','useCallback','useEffect'].map(name=>`export const ${name}=(...a)=>globalThis.__hooks.${name}(...a);`).join('\n');
  if(id==='\0react/jsx-runtime')return 'export const Fragment="fragment";export const jsx=(type,props,key)=>({type,props:props??{},key});export const jsxs=jsx;';
@@ -58,6 +58,7 @@ test('I01-I05 selected ID, directory/card/photo identity, reverse-sync and late 
 test('I06-I08 map/manual origin, route retention, late route cancellation, missing location',async()=>{
  const r=rig(),h=r.h;await h.settle();button(h,'在地图选择起点').onClick();await h.settle();assert.equal(typeof r.picker,'function');const picked=position();r.picker(picked);await h.settle();assert.deepEqual(r.map.position,picked);
  directory(h,samples[3].name).props.onClick();await h.settle();await button(h,'从起点步行到这里').onClick();await h.settle();assert.equal(r.drawn.length,1);
+ const online=nodes(h.tree).find(n=>n.props?.className==='online-map-wrap');assert.equal(online.props.hidden,false);assert.ok(text(h.tree).includes('步行方案'));
  directory(h,samples[4].name).props.onClick();await h.settle();assert.equal(r.drawn.length,1);assert.ok(text(h.tree).includes('步行方案'));
  let finish;const original=r.map.navigate;r.map.navigate=async req=>new Promise(resolve=>finish=()=>original(req).then(resolve));button(h,'从起点步行到这里').onClick();await h.settle();button(h,'清空路线').onClick();finish();await h.settle();assert.equal(r.drawn.length,0);
  r.map.findDestination=async()=>{throw Error('destination_not_found');};directory(h,samples[2].name).props.onClick();await h.settle();assert.equal(r.destination,null);assert.ok(text(h.tree).includes('暂未定位'));assert.ok(text(h.tree).includes(samples[2].description));

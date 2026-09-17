@@ -4,7 +4,7 @@ import {AmapNavigation} from '../.runtime/adapter-build/navigation.js';
 import {MapBudget} from '../.runtime/adapter-build/map-budget.js';
 const base='http://127.0.0.1:8000',out='docs/interaction/20260917-optimization/';
 const catalog=JSON.parse(readFileSync('data/knowledge/pois.json','utf8'));
-const ids=['beiyangyuan-datong-center','beiyangyuan-zhengdong-library','beiyangyuan-alumni-forest','beiyangyuan-bowen-road','beiyangyuan-chunhui-garden'];
+const ids=['beiyangyuan-datong-center','beiyangyuan-zhengdong-library','beiyangyuan-tailei-square','beiyangyuan-tianlin-square','beiyangyuan-shutian-square'];
 const config=await (await fetch(base+'/api/maps/config')).json();
 const budget=new MapBudget({limits:{map_load:0,geolocation:0,poi_search:6,walking_route:2}});
 const readJson=async(path,options)=>{const response=await fetch(base+'/api'+path,options);const body=await response.json();if(!response.ok)throw body;return body;};

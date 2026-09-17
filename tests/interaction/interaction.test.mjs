@@ -12,7 +12,7 @@ async function bundle(name,before=false){
 const current=await bundle('current'),before=await bundle('before',true);
 const {campusCandidate,preciseOrigin,planSegments,routeIntent,OperationScope,tourPhotoFor,AmapNavigation,MapBudget}=current;
 const catalog=JSON.parse(readFileSync('data/knowledge/pois.json','utf8'));
-const ids=['beiyangyuan-alumni-forest','beiyangyuan-bowen-road','beiyangyuan-chunhui-garden','beiyangyuan-datong-center','beiyangyuan-zhengdong-library'];
+const ids=['beiyangyuan-tailei-square','beiyangyuan-tianlin-square','beiyangyuan-shutian-square','beiyangyuan-datong-center','beiyangyuan-zhengdong-library'];
 const samples=ids.map(id=>catalog.find(p=>p.id===id));
 const origin=()=>({lng:117.31,lat:38.998,crs:'GCJ02',source:'manual',accuracy_m:null,timestamp:new Date().toISOString()});
 const config={js_key:'offline-fixture',service_host:'/api/maps/amap',status:{security_key_configured:true,online_map:'UNVERIFIED'}};

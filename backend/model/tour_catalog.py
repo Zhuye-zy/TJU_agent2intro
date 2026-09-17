@@ -1,5 +1,6 @@
 """Read-only projection of D's same catalog; never projects precise locations."""
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from backend.common.errors import DomainError
@@ -27,7 +28,8 @@ class TourCatalog:
 
     def poi(self, poi_id, campus):
         poi = self.source.get_poi(poi_id)
-        if not poi or poi.campus_id != campus:
+        searchable = getattr(self.source, 'is_map_searchable', None)
+        if not poi or poi.campus_id != campus or (searchable and not searchable(poi_id)):
             raise DomainError('VALIDATION_ERROR', '地点不存在或不属于所选校区', 422)
         return poi
 
@@ -87,5 +89,30 @@ class TourCatalog:
     def safe_candidate(self, poi):
         return {'poi_id': poi.id, 'name': redact_coordinates(poi.name),
                 'category': poi.category, 'description': redact_coordinates(poi.description)[:250]}
+
+    def photo_ids(self):
+        """POI ids with a bound reference photo; None when this source has no photo directory."""
+        directory = getattr(self.source, 'data_directory', None)
+        if directory is None:
+            return None
+        root = Path(directory).parent / 'reference_photos'
+        if not root.is_dir():
+            return None
+        result = set()
+        for campus_dir in root.iterdir():
+            if not campus_dir.is_dir():
+                continue
+            for item in campus_dir.iterdir():
+                match = re.match(r'^(.+?)-\d+\.[A-Za-z0-9]+$', item.name)
+                if match:
+                    result.add(match.group(1))
+        return result
+
+    def planning_pois(self, campus):
+        """Planning pool: photo-less stops stay out of generated tours."""
+        pois = self.pois(campus)
+        ids = self.photo_ids()
+        return pois if ids is None else [p for p in pois if p.id in ids]
+
 
 catalog = TourCatalog()

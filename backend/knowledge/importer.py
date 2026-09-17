@@ -11,7 +11,7 @@ from backend.contracts import Source, Building
 from backend.r2_contracts import POI, KnowledgeRecord, CampusAssets
 from .service import DATA_DIRECTORY
 
-MANAGED = ("documents.json","buildings.json","pois.json","assets.json","SOURCE_REGISTRY.json","facts.json",
+MANAGED = ("documents.json","buildings.json","pois.json","map_searchability.json","assets.json","SOURCE_REGISTRY.json","facts.json",
            "evidence_metadata.json","service_rules.json","core_routes.json","r3/conflicts.json")
 def _rows(directory, name):
     value=json.loads((directory/name).read_text(encoding="utf-8"))
@@ -22,7 +22,8 @@ def _rows(directory, name):
 def inspect(directory: Path) -> dict[str,int]:
     rows={name:_rows(directory,name) for name in MANAGED}
     for name,data in rows.items():
-        identity = {"assets.json": "campus_id", "evidence_metadata.json": "fact_id", "core_routes.json": "poi_id"}.get(name, "id")
+        identity = {"assets.json": "campus_id", "evidence_metadata.json": "fact_id", "core_routes.json": "poi_id",
+                    "map_searchability.json": "poi_id"}.get(name, "id")
         ids = [x.get(identity) for x in data]
         if len(ids)!=len(set(ids)) or any(x is None for x in ids):raise ValueError(f"{name}: invalid/duplicate identity")
     registry={x["id"]:x for x in rows["SOURCE_REGISTRY.json"]}
@@ -31,6 +32,12 @@ def inspect(directory: Path) -> dict[str,int]:
     pois={x["id"]:POI.model_validate(x) for x in rows["pois.json"]}
     for poi in pois.values():
         if not poi.source_refs or not set(poi.source_refs)<=registry.keys():raise ValueError("orphan POI source")
+    searchability = rows["map_searchability.json"]
+    if {row["poi_id"] for row in searchability} != set(pois):
+        raise ValueError("map searchability must cover exactly all POIs")
+    if any(row.get("provider") != "amap" or row.get("status") not in {"searchable", "not_found"}
+           or not row.get("checked_at") for row in searchability):
+        raise ValueError("invalid map searchability")
     for row in rows["documents.json"]:
         copy=dict(row)
         for extra in ("aliases","building_id","temporal_note"):copy.pop(extra,None)

@@ -268,3 +268,13 @@
 .tour-input input,.tour-input select{max-width:100%}
 
 .tour-map .location-actions .live-follow{margin-top:0}
+
+/* Explicit numbered constraint slots avoid platform-specific Ctrl/Command multi-select. */
+.tour-constraint-group{min-width:0;margin:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fbfcfd}
+.tour-constraint-group legend{padding:0 5px;font-size:14px;font-weight:600;color:var(--ink)}
+.tour-constraint-group>small{display:block;margin-bottom:8px;color:var(--muted)}
+.tour-constraint-list{display:grid;gap:7px}
+.tour-workspace .tour-constraint-row{display:grid;grid-template-columns:24px minmax(0,1fr);align-items:center;gap:5px;font-weight:400}
+.tour-constraint-row>span{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.tour-workspace .tour-constraint-row select{padding:8px 9px;font-size:14px}
+.tour-constraint-row select:disabled{opacity:.55;cursor:not-allowed}

@@ -1,21 +1,21 @@
 # 参考图拍摄清单
 
-状态：已覆盖 23 / 106 个点位；缺 83 个（详见 MISSING.md）。
+状态：已覆盖 48 / 106 个点位；缺 58 个（详见 MISSING.md）。
 图片命名 `<poi_id>-N.<ext>`，由脚本自动关联，manifest.csv 可查来源。
 
 ## 卫津路校区（50）
 
 ### 教学/科研
-- [ ] **曾宪梓楼（25教）** `weijinlu-25-teaching` P1
+- [x] **曾宪梓楼（25教）** `weijinlu-25-teaching` P1 ×1
 - [ ] **水利馆** `weijinlu-water-building` P1
 - [ ] **第九教学楼** `weijinlu-09-teaching` P1
 
 ### 图书馆
-- [ ] **春水图书馆（北馆）** `weijinlu-chunshui-library` P1
-- [ ] **科学图书馆（南馆）** `weijinlu-science-library` P1
+- [x] **春水图书馆（北馆）** `weijinlu-chunshui-library` P1 ×2
+- [x] **科学图书馆（南馆）** `weijinlu-science-library` P1 ×2
 
 ### 校门
-- [ ] **卫津路校区东门** `weijinlu-east-gate` P1
+- [x] **卫津路校区东门** `weijinlu-east-gate` P1 ×2
 
 ### 餐饮
 - [ ] **学五食堂** `weijinlu-xue-5-dining` P2
@@ -31,7 +31,7 @@
 - [ ] **四斋** `weijinlu-dorm-si` P3
 
 ### 体育
-- [ ] **体育场** `weijinlu-stadium` P1
+- [x] **体育场** `weijinlu-stadium` P1 ×2
 - [ ] **体育馆** `weijinlu-gym` P1
 - [ ] **游泳馆** `weijinlu-swimming` P1
 - [ ] **老体育馆（篮球馆）** `weijinlu-old-gym` P1
@@ -39,37 +39,37 @@
 ### 文化/景观
 - [x] **牛顿苹果树** `weijinlu-newton-tree` P1 ×2
 - [ ] **东门广场** `weijinlu-east-gate-square` P1
-- [ ] **冯骥才文学艺术研究院** `weijinlu-feng-jicai` P1
+- [x] **冯骥才文学艺术研究院** `weijinlu-feng-jicai` P1 ×2
 - [ ] **刘豹像** `weijinlu-liu-bao` P1
 - [ ] **北洋大学堂纪念碑亭** `weijinlu-beiyang-pavilion` P1
-- [ ] **北洋广场** `weijinlu-beiyang-square` P1
+- [x] **北洋广场** `weijinlu-beiyang-square` P1 ×2
 - [ ] **卢绳像** `weijinlu-lu-sheng` P1
-- [ ] **友谊湖** `weijinlu-youyi-lake` P1
+- [x] **友谊湖** `weijinlu-youyi-lake` P1 ×2
 - [ ] **天工石** `weijinlu-tiangong-stone` P1
-- [ ] **天津大学校史博物馆** `weijinlu-history-museum` P1
-- [ ] **张太雷像** `weijinlu-zhang-tailei` P1
+- [x] **天津大学校史博物馆** `weijinlu-history-museum` P1 ×2
+- [x] **张太雷像** `weijinlu-zhang-tailei` P1 ×1
 - [ ] **徐中像** `weijinlu-xu-zhong` P1
-- [ ] **敬业湖** `weijinlu-jingye-lake` P1
+- [x] **敬业湖** `weijinlu-jingye-lake` P1 ×1
 - [ ] **敬业石** `weijinlu-jingye-stone` P1
 - [ ] **李曙森像** `weijinlu-li-shusen` P1
 - [ ] **校歌** `weijinlu-school-song` P1
 - [ ] **梦成真石** `weijinlu-dream-stone` P1
-- [ ] **求是亭** `weijinlu-qiushi-pavilion` P1
+- [x] **求是亭** `weijinlu-qiushi-pavilion` P1 ×2
 - [ ] **沈玉麟像** `weijinlu-shen-yulin` P1
 - [ ] **溯源石** `weijinlu-suyuan-stone` P1
-- [ ] **爱晚湖** `weijinlu-aiwan-lake` P1
-- [ ] **王学仲艺术研究所** `weijinlu-wang-xuezhong` P1
+- [x] **爱晚湖** `weijinlu-aiwan-lake` P1 ×2
+- [x] **王学仲艺术研究所** `weijinlu-wang-xuezhong` P1 ×1
 - [ ] **盛宣怀像** `weijinlu-sheng-xuanhuai` P1
 - [ ] **钦字第一号考凭** `weijinlu-qin-exam` P1
 - [ ] **铭德道海棠** `weijinlu-haitang` P1
 - [ ] **锡良模型园** `weijinlu-xiliang-garden` P1
-- [ ] **青年湖** `weijinlu-youth-lake` P1
+- [x] **青年湖** `weijinlu-youth-lake` P1 ×2
 - [ ] **青年湖畔双亭** `weijinlu-double-pavilions` P1
 - [ ] **马寅初像** `weijinlu-ma-yinchu` P1
 
 ### 服务
-- [ ] **大学生活动中心** `weijinlu-student-center` P1
-- [ ] **校友之家** `weijinlu-alumni-home` P1
+- [x] **大学生活动中心** `weijinlu-student-center` P1 ×2
+- [x] **校友之家** `weijinlu-alumni-home` P1 ×2
 
 ## 北洋园校区（56）
 
@@ -95,14 +95,14 @@
 - [ ] **留学生食堂** `beiyangyuan-international-dining` P2
 
 ### 宿舍区
-- [ ] **修园** `beiyangyuan-dorm-xiu` P3
-- [ ] **平园** `beiyangyuan-dorm-ping` P3
-- [ ] **格园** `beiyangyuan-dorm-ge` P3
-- [ ] **正园** `beiyangyuan-dorm-zheng` P3
-- [ ] **治园** `beiyangyuan-dorm-zhi-guo` P3
-- [ ] **知园** `beiyangyuan-dorm-zhi` P3
-- [ ] **诚园** `beiyangyuan-dorm-cheng` P3
-- [ ] **齐园** `beiyangyuan-dorm-qi` P3
+- [x] **修园** `beiyangyuan-dorm-xiu` P3 ×1
+- [x] **平园** `beiyangyuan-dorm-ping` P3 ×1
+- [x] **格园** `beiyangyuan-dorm-ge` P3 ×1
+- [x] **正园** `beiyangyuan-dorm-zheng` P3 ×1
+- [x] **治园** `beiyangyuan-dorm-zhi-guo` P3 ×1
+- [x] **知园** `beiyangyuan-dorm-zhi` P3 ×1
+- [x] **诚园** `beiyangyuan-dorm-cheng` P3 ×1
+- [x] **齐园** `beiyangyuan-dorm-qi` P3 ×1
 
 ### 体育
 - [x] **综合体育馆** `beiyangyuan-gym` P1 ×2

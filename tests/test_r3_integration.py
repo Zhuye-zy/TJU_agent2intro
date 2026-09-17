@@ -70,10 +70,10 @@ def test_current_real_data_simulated_full_loop_and_live_restore_pauses():
         service=TourService(planner,RuntimeStore())
         req=TourRequest(request_id=uuid4(),session_id=uuid4(),campus_id='weijinlu',duration_minutes=60,
             message='第一次来天大，希望了解校史，最后回到出发校门',interests=['校史'],
-            start={'kind':'poi','poi_id':'weijinlu-east-gate'},end={'kind':'poi','poi_id':'weijinlu-east-gate'},
+            start={'kind':'poi','poi_id':'weijinlu-09-teaching'},end={'kind':'poi','poi_id':'weijinlu-09-teaching'},
             must_visit=['weijinlu-history-museum'],visit_date='2026-09-15')
         s=(await service.create(req)).session
-        assert 3<=len(s.plan.stops)<=5 and s.plan.stops[-1].poi_id=='weijinlu-east-gate'
+        assert 3<=len(s.plan.stops)<=5 and s.plan.stops[-1].poi_id=='weijinlu-09-teaching'
         s=await command(service,s,'check');s=await command(service,s,'start')
         s=await command(service,s,'arrive');s=await command(service,s,'explain');s=await command(service,s,'complete_stop')
         completed=s.plan.stops[0].model_dump()
