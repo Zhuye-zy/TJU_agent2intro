@@ -97,9 +97,9 @@ export class RoamController {
     this.screen = document.createElement('div');
     this.screen.dataset.avatarScreen = 'true';
     Object.assign(this.screen.style, {
-      // Sits on the raised palm of the speaking pose (see renderer hold pose).
-      position: 'absolute', left: '166px', top: '116px', transform: 'translate(-50%, -100%)',
-      width: '132px', height: '76px', borderRadius: '10px', overflow: 'hidden',
+      // Floats above the head so it never covers the character.
+      position: 'absolute', left: '50%', top: '-6px', transform: 'translate(-50%, -100%)',
+      width: '176px', height: '99px', borderRadius: '10px', overflow: 'hidden',
       background: '#0d141c', border: '1px solid rgba(255,255,255,.35)',
       boxShadow: '0 8px 20px rgba(10,25,40,.28)', opacity: '0', transition: 'opacity .2s ease',
       pointerEvents: 'none',

@@ -37,7 +37,8 @@ export class VrmRenderer {
   private halted = false;
   private screenShown = false;
   private companionVideo: { src: string; mime?: string; caption?: string } | null = null;
-  private speakBlend = 0;
+  private speakMotion: { kind: 'spread' | 'tilt'; startedAt: number; duration: number; sign: 1 | -1 } | null = null;
+  private nextSpeakMotionAt = 0;
   private gesture: { kind: AvatarGesture; startedAt: number; duration: number } | null = null;
   private gestureKind: AvatarGesture | null = null;
   private gestureElapsed = 0;
@@ -195,7 +196,7 @@ export class VrmRenderer {
     this.gestureOffsetY = 0;
     this.halted = false;
     this.screenShown = false;
-    this.speakBlend = 0;
+    this.speakMotion = null;
     this.companionVideo = null;
     if (this.vrm) {
       try { VRMUtils.deepDispose(this.vrm.scene); } catch { /* ignore */ }
@@ -251,7 +252,6 @@ export class VrmRenderer {
     else if (!speaking && this.halted) { this.halted = false; this.roam?.resume(now); }
     if (!speaking) this.roam?.update(now);
     this.advanceGesture(now, speaking);
-    this.speakBlend += ((speaking ? 1 : 0) - this.speakBlend) * Math.min(1, delta * 6);
     if (speaking !== this.screenShown) {
       this.screenShown = speaking;
       if (speaking) {
@@ -264,6 +264,7 @@ export class VrmRenderer {
     if (this.renderer) {
       this.renderer.domElement.dataset.avatarHalted = String(this.halted);
       this.renderer.domElement.dataset.avatarMotion = this.roam?.motion ?? 'none';
+      this.renderer.domElement.dataset.avatarSpeakMotion = this.speakMotion?.kind ?? 'none';
     }
     const walking = this.roam?.motion === 'walk';
     this.walkBlend += ((walking ? 1 : 0) - this.walkBlend) * Math.min(1, delta * 8);
@@ -281,6 +282,26 @@ export class VrmRenderer {
     this.driveBones(now, delta);
     this.vrm.update(delta);
     this.renderer.render(this.scene, this.camera);
+  }
+
+  /** Speaking motions: arms spread or head tilt, triggered at irregular intervals. */
+  private speakMotionData(now: number): { kind: 'spread' | 'tilt' | null; env: number; sign: 1 | -1 } {
+    if (this.state !== 'speaking') {
+      this.speakMotion = null;
+      return { kind: null, env: 0, sign: 1 };
+    }
+    if (!this.speakMotion && now >= this.nextSpeakMotionAt) {
+      const kind = Math.random() < 0.55 ? 'spread' : 'tilt';
+      this.speakMotion = { kind, startedAt: now, duration: 1.3 + Math.random() * 0.7, sign: Math.random() < 0.5 ? -1 : 1 };
+      this.nextSpeakMotionAt = now + 3200 + Math.random() * 4200;
+    }
+    if (!this.speakMotion) return { kind: null, env: 0, sign: 1 };
+    const phase = (now - this.speakMotion.startedAt) / 1000 / this.speakMotion.duration;
+    if (phase >= 1) {
+      this.speakMotion = null;
+      return { kind: null, env: 0, sign: 1 };
+    }
+    return { kind: this.speakMotion.kind, env: Math.sin(Math.PI * phase), sign: this.speakMotion.sign };
   }
 
   /** Advance the active gesture and occasionally play one while idle. */
@@ -373,17 +394,18 @@ export class VrmRenderer {
       add(this.walker.leftLowerArm, 0.1 * blend, 0, 0);
       add(this.walker.rightLowerArm, 0.1 * blend, 0, 0);
     }
-    if (this.speakBlend > 0.01 && this.walker) {
-      // While narrating, the left arm lifts in front of the chest, palm up and
-      // supporting the narration screen.
-      const hold = this.speakBlend;
-      add(this.walker.leftUpperArm, -0.42 * hold, 0.1 * hold, 0.9 * hold);
-      add(this.walker.leftLowerArm, 0.3 * hold, 0, -0.45 * hold);
-      add(this.walker.leftHand, -0.3 * hold, 0, 0.2 * hold);
-    }
     const gesture = this.gestureKind;
     const weight = this.gestureWeight;
     const gestureTime = this.gestureElapsed;
+    const motion = this.speakMotionData(now);
+    if (motion.kind === 'spread' && motion.env > 0 && this.walker) {
+      // Arms open outward and close again, at irregular moments while narrating.
+      const spread = motion.env;
+      add(this.walker.leftUpperArm, -0.15 * spread, 0, 0.95 * spread);
+      add(this.walker.rightUpperArm, -0.15 * spread, 0, -0.95 * spread);
+      add(this.walker.leftLowerArm, 0, 0, -0.3 * spread);
+      add(this.walker.rightLowerArm, 0, 0, 0.3 * spread);
+    }
     if (gesture && weight > 0 && this.walker) {
       if (gesture === 'wave') {
         add(this.walker.rightUpperArm, -0.12 * weight, 0.08 * weight, -1.7 * weight);
@@ -424,6 +446,7 @@ export class VrmRenderer {
       headX += 0.12;
       hipsZ = 0;
     }
+    if (motion.kind === 'tilt') headZ += motion.env * motion.sign * 0.22;
     if (gesture === 'wave') headZ += 0.06 * weight;
     else if (gesture === 'nod') headX += Math.sin(gestureTime * 10) * 0.13 * weight;
     else if (gesture === 'jump') headX -= 0.06 * weight;
