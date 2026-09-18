@@ -28,6 +28,11 @@ export function headingForScreenMotion(dx: number, dy: number): number {
   return Math.atan2(dx, -dy);
 }
 
+/** Preserve the avatar's visible screen position when it leaves an in-page presentation dock. */
+export function roamPositionForRect(rect: Pick<DOMRect, 'left' | 'bottom'>, viewportHeight: number): {x:number;y:number} {
+  return {x: rect.left, y: viewportHeight - rect.bottom};
+}
+
 export class RoamController {
   readonly stage: HTMLDivElement;
   motion: 'idle' | 'walk' = 'idle';
@@ -46,12 +51,21 @@ export class RoamController {
   private dock:HTMLElement|null=null;
 
   setPresentationHost(host:HTMLElement|null):void{
+    const dockedRect=this.dock&&!host?this.overlay.getBoundingClientRect():null;
     this.dock=host;
     (host??document.body).appendChild(this.overlay);
     Object.assign(this.overlay.style,host?{position:'absolute',left:'0',bottom:'0',transform:'none',zIndex:'1'}:{position:'fixed',left:'0',bottom:'0',zIndex:'9999'});
     this.overlay.dataset.avatarDocked=String(!!host);
     this.halt();
-    if(!host){this.resume(performance.now());this.applyPosition();}
+    if(!host){
+      if(dockedRect){
+        const position=roamPositionForRect(dockedRect,window.innerHeight);
+        this.x=this.targetX=position.x;
+        this.y=this.targetY=position.y;
+        this.clampPosition();
+      }
+      this.resume(performance.now());this.applyPosition();
+    }
   }
   private hit!: HTMLDivElement;
   private targetX: number;
@@ -240,7 +254,7 @@ export class RoamController {
 
   private greet(): void {
     this.onGreet();
-    this.showBubble('你好呀～我是珂莱塔');
+    this.showBubble('你好呀～我是海小棠');
     this.idleUntil = performance.now() + 3200;
   }
 

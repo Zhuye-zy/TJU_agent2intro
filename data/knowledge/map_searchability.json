@@ -558,6 +558,7 @@
     "poi_id": "beiyangyuan-she-garden",
     "provider": "amap",
     "status": "searchable",
+    "frontend_visible": false,
     "checked_at": "2026-09-18",
     "provider_candidate_count": 1,
     "usable_candidate_count": 1
@@ -566,6 +567,7 @@
     "poi_id": "beiyangyuan-yu-garden",
     "provider": "amap",
     "status": "searchable",
+    "frontend_visible": false,
     "checked_at": "2026-09-18",
     "provider_candidate_count": 1,
     "usable_candidate_count": 1

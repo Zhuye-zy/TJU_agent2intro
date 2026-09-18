@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {build} from 'vite';
 import {spawn} from 'node:child_process';
 import {randomUUID as uuid} from 'node:crypto';
+import {readFileSync} from 'node:fs';
 const output=await build({configFile:false,logLevel:'silent',build:{write:false,minify:false,lib:{entry:'frontend/src/ui/tour-model.ts',formats:['es'],fileName:()=> 'tour-model.js'}}});
 const chunk=(Array.isArray(output)?output[0]:output).output.find(v=>v.type==='chunk');
 const {TourLifecycle,tourCommand,privateText,savedSnapshot,storeSaved,listSaved,SAVED_PREFIX,speechEventCurrent,remainingTimeIntent}=await import('data:text/javascript;base64,'+Buffer.from(chunk.code).toString('base64'));
@@ -140,6 +141,25 @@ test('tour constraints expose five ordered slots and compact cleared selections'
 const photosOutput=await build({configFile:false,logLevel:'silent',build:{write:false,minify:false,lib:{entry:'frontend/src/ui/tour-photos.ts',formats:['es'],fileName:()=> 'tour-photos.js'}}});
 const photosChunk=(Array.isArray(photosOutput)?photosOutput[0]:photosOutput).output.find(v=>v.type==='chunk');
 const {tourPhotoFor}=await import('data:text/javascript;base64,'+Buffer.from(photosChunk.code).toString('base64'));
+test('visible Weijin photo gaps reuse related resources under their own names',()=>{
+ const expected={
+  'weijinlu-09-teaching':['第九教学楼','/assets/campus/photos/weijinlu-25-teaching-1.jpg'],
+  'weijinlu-gym':['体育馆','/assets/campus/photos/beiyangyuan-gym-1.jpg'],
+  'weijinlu-swimming':['游泳馆','/assets/campus/photos/beiyangyuan-gym-1.jpg'],
+  'weijinlu-water-building':['水利馆','/assets/campus/photos/beiyangyuan-earthquake-facility-1.jpg'],
+  'weijinlu-haitang':['铭德道海棠','/assets/campus/photos/weijinlu-feng-jicai-1.jpg'],
+  'weijinlu-xue-4-dining':['学四食堂','/assets/campus/photos/beiyangyuan-xue-4-dining-1.jpg'],
+  'weijinlu-xue-5-dining':['学五食堂','/assets/campus/photos/beiyangyuan-xue-5-dining-1.jpg'],
+  'weijinlu-dorm-san':['三斋','/assets/campus/photos/beiyangyuan-dorm-cheng-1.jpg'],
+ };
+ for(const [poiId,[caption,src]] of Object.entries(expected)){
+  const photo=tourPhotoFor(poiId,poiId);
+  assert.equal(photo.caption,caption);
+  assert.equal(photo.src,src);
+  assert.equal(photo.placeholder,undefined);
+  assert.ok(!photo.caption.includes('复用'));
+ }
+});
 test('tour stop photos: unmapped stops keep a clearly marked placeholder slot',()=>{
  const photo=tourPhotoFor('poi-without-photo','第九教学楼');
  assert.equal(photo.placeholder,true);
@@ -148,4 +168,36 @@ test('tour stop photos: unmapped stops keep a clearly marked placeholder slot',(
  const decoded=decodeURIComponent(photo.src);
  assert.ok(decoded.includes('第九教学楼'));
  assert.ok(decoded.includes('实景图待补充'));
+});
+
+const introductionOutput=await build({configFile:false,logLevel:'silent',build:{write:false,minify:false,lib:{entry:'frontend/src/ui/poi-introduction.ts',formats:['es'],fileName:()=> 'poi-introduction.js'}}});
+const introductionChunk=(Array.isArray(introductionOutput)?introductionOutput[0]:introductionOutput).output.find(v=>v.type==='chunk');
+const {poiIntroduction,hasDetailedPoiIntroduction,MISSING_POI_INTRODUCTIONS}=await import('data:text/javascript;base64,'+Buffer.from(introductionChunk.code).toString('base64'));
+test('point introductions are one narrative paragraph and identify copy gaps',()=>{
+ const rich={id:'beiyangyuan-zhengdong-library',campus_id:'beiyangyuan',name:'郑东图书馆',category:'library',verification_status:'verified'};
+ const reviewed={id:'weijinlu-gym',campus_id:'weijinlu',name:'体育馆',category:'sports',verification_status:'verified'};
+ const unknown={id:'not-yet-reviewed',campus_id:'weijinlu',name:'待核验地点',category:'other',verification_status:'verified'};
+ assert.match(poiIntroduction(rich),/^郑东图书馆位于北洋园校区/);
+ assert.ok(!poiIntroduction(rich).includes('\n'));
+ assert.match(poiIntroduction(reviewed),/^体育馆位于卫津路校区/);
+ assert.match(poiIntroduction(unknown),/资料库暂时还缺少足够信息/);
+ assert.equal(hasDetailedPoiIntroduction(rich),true);
+ assert.equal(hasDetailedPoiIntroduction(reviewed),true);
+ assert.equal(hasDetailedPoiIntroduction(unknown),false);
+ assert.deepEqual(MISSING_POI_INTRODUCTIONS,[]);
+ const dorm={id:'weijinlu-dorm-san',campus_id:'weijinlu',name:'三斋',category:'dorm_area',verification_status:'historical'};
+ const dining={id:'weijinlu-xue-4-dining',campus_id:'weijinlu',name:'学四食堂',category:'dining',verification_status:'historical'};
+ assert.match(poiIntroduction(dorm),/天津大学本科生和研究生的宿舍区域/);
+ assert.match(poiIntroduction(dining),/菜肴选择丰富/);
+ assert.equal(hasDetailedPoiIntroduction(dorm),true);
+ assert.equal(hasDetailedPoiIntroduction(dining),true);
+});
+test('all 42 visible map points have reviewed narrative copy',()=>{
+ const pois=JSON.parse(readFileSync('data/knowledge/pois.json','utf8'));
+ const searchable=new Set(JSON.parse(readFileSync('data/knowledge/map_searchability.json','utf8')).filter(row=>row.status==='searchable'&&row.frontend_visible!==false).map(row=>row.poi_id));
+ const visible=pois.filter(poi=>searchable.has(poi.id));
+ assert.equal(visible.length,42);
+ assert.ok(visible.every(poi=>poiIntroduction(poi).length>30&&!poiIntroduction(poi).includes('\n')));
+ assert.deepEqual(visible.filter(poi=>!hasDetailedPoiIntroduction(poi)).map(poi=>poi.id).sort(),[...MISSING_POI_INTRODUCTIONS].sort());
+ assert.equal(MISSING_POI_INTRODUCTIONS.length,0);
 });

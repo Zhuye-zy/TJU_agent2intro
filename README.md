@@ -1,5 +1,5 @@
-# 珂莱塔校园导游
-天津大学双校区数字人工作台，沿用 React/Vite、FastAPI、Live2D 和 LangGraph。角色为用户指定的 kelaita（珂莱塔），素材来源只用于形象，产品是校园导游。
+# 海小棠校园导游
+天津大学双校区数字人工作台，沿用 React/Vite、FastAPI、Live2D 和 LangGraph。校园导游名为海小棠；形象素材沿用用户指定的 kelaita（珂莱塔），素材来源只用于形象。
 
 2026-09-17 功能更新：地点讲解显式开启/停止、选项式必去/避开、两站起行自动画真实路线、注册来源检索与缓存、出发前提示、短录音转写确认流程已接入。真实浏览器已验证音频播放事件和地图画线；真实 ASR 仍缺独立服务配置，人工听音待验。当前验收以 [本轮交付报告](docs/interaction/20260917-functional/REPORT.md) 为准（下方为历史记录）。[标准问题集](docs/evaluation/starter/questions.md) · [扩展40题](docs/evaluation/starter/cases.jsonl) · [来源注册表](docs/evaluation/starter/source_registry.json) · [检索政策](docs/evaluation/starter/retrieval_policy.json)。
 

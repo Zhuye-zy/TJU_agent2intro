@@ -36,7 +36,8 @@ def inspect(directory: Path) -> dict[str,int]:
     if {row["poi_id"] for row in searchability} != set(pois):
         raise ValueError("map searchability must cover exactly all POIs")
     if any(row.get("provider") != "amap" or row.get("status") not in {"searchable", "not_found"}
-           or not row.get("checked_at") for row in searchability):
+           or not row.get("checked_at") or ("frontend_visible" in row and type(row["frontend_visible"]) is not bool)
+           for row in searchability):
         raise ValueError("invalid map searchability")
     for row in rows["documents.json"]:
         copy=dict(row)

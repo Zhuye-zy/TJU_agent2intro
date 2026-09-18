@@ -2,7 +2,7 @@ import type { AvatarManifest } from '../../../shared/contracts';
 
 export const kelaitaManifest: AvatarManifest = {
   id: 'kelaita',
-  display_name: '珂莱塔',
+  display_name: '海小棠',
   source_character: '珂莱塔 / 鸣潮 BongoCat 风格',
   renderer: 'live2d',
   model_url: '/assets/kelaita/runtime/kelaita.model3.json',

@@ -29,7 +29,9 @@ class TourCatalog:
     def poi(self, poi_id, campus):
         poi = self.source.get_poi(poi_id)
         searchable = getattr(self.source, 'is_map_searchable', None)
-        if not poi or poi.campus_id != campus or (searchable and not searchable(poi_id)):
+        visible = getattr(self.source, 'is_frontend_visible', None)
+        if (not poi or poi.campus_id != campus or (searchable and not searchable(poi_id))
+                or (visible and not visible(poi_id))):
             raise DomainError('VALIDATION_ERROR', '地点不存在或不属于所选校区', 422)
         return poi
 

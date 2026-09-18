@@ -1,6 +1,6 @@
 # 参考图拍摄清单
 
-状态：已覆盖 48 / 106 个点位；缺 58 个（详见 MISSING.md）。
+状态：已覆盖 51 / 106 个点位；缺 55 个（详见 MISSING.md）。
 图片命名 `<poi_id>-N.<ext>`，由脚本自动关联，manifest.csv 可查来源。
 
 ## 卫津路校区（50）
@@ -117,9 +117,9 @@
 - [x] **恢复高考纪念墙** `beiyangyuan-gaokao-wall` P1 ×2
 - [x] **求实会堂** `beiyangyuan-qiushi-hall` P1 ×3
 - [x] **苏州亭** `beiyangyuan-suzhou-pavilion` P1 ×3
-- [ ] **书田广场** `beiyangyuan-shutian-square` P1
-- [ ] **天麟广场** `beiyangyuan-tianlin-square` P1
-- [ ] **太雷广场** `beiyangyuan-tailei-square` P1
+- [x] **书田广场** `beiyangyuan-shutian-square` P1 ×2
+- [x] **天麟广场** `beiyangyuan-tianlin-square` P1 ×2
+- [x] **太雷广场** `beiyangyuan-tailei-square` P1 ×2
 - [ ] **春晖园** `beiyangyuan-chunhui-garden` P1
 - [ ] **校友林景观带** `beiyangyuan-alumni-forest` P1
 - [ ] **校训鼎** `beiyangyuan-motto-ding` P1
@@ -146,4 +146,3 @@
 - [ ] **新元路** `beiyangyuan-xinyuan-road` P1
 - [ ] **礼园** `beiyangyuan-li-garden` P3
 - [ ] **西沽路** `beiyangyuan-xigu-road` P1
-

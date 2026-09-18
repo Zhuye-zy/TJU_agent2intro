@@ -66,6 +66,8 @@ def _proxy_payload(response,callback):
 def _poi(pid):
  searchable=getattr(knowledge,"is_map_searchable",None)
  if searchable and not searchable(pid):return None
+ visible=getattr(knowledge,"is_frontend_visible",None)
+ if visible and not visible(pid):return None
  getter=getattr(knowledge,"get_poi",None)
  if getter:
   try:return getter(pid)

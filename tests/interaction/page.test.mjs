@@ -53,7 +53,7 @@ test('I01-I05 selected ID, directory/card/photo identity, reverse-sync and late 
  let resolveB;const find=r.map.findDestination;r.map.findDestination=p=>p.id===samples[4].id?new Promise(resolve=>resolveB=resolve):find(p);
  directory(h,samples[4].name).props.onClick();await h.settle();directory(h,samples[3].name).props.onClick();await h.settle();resolveB([{poiId:samples[4].id,name:samples[4].name}]);await h.settle();assert.equal(r.destination.poiId,samples[3].id);
  globalThis.__mapSelect(samples[0].id);await h.settle();assert.equal(h.props.selected.id,samples[0].id);
- const photo=harness(PhotoCarousel,{campus:'beiyangyuan',selectedPoi:samples[4]});await photo.settle();assert.equal(nodes(photo.tree).find(n=>n.type==='img').props.alt,samples[4].name);photo.set({selectedPoi:samples[0]});await photo.settle();assert.ok(nodes(photo.tree).find(n=>n.type==='img').props.src.startsWith('data:image/svg'));photo.dispose();h.dispose();
+ const photo=harness(PhotoCarousel,{campus:'beiyangyuan',selectedPoi:samples[4]});await photo.settle();assert.equal(nodes(photo.tree).find(n=>n.type==='img').props.alt,samples[4].name);photo.set({selectedPoi:samples[0]});await photo.settle();assert.equal(nodes(photo.tree).find(n=>n.type==='img').props.src,'/assets/campus/photos/beiyangyuan-tailei-square-1.jpg');photo.dispose();h.dispose();
 });
 test('I06-I08 map/manual origin, route retention, late route cancellation, missing location',async()=>{
  const r=rig(),h=r.h;await h.settle();button(h,'在地图选择起点').onClick();await h.settle();assert.equal(typeof r.picker,'function');const picked=position();r.picker(picked);await h.settle();assert.deepEqual(r.map.position,picked);

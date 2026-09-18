@@ -33,7 +33,7 @@
     document.querySelector('#five').onclick = async () => {
       const started=performance.now();
       window.__speechProbe.fiveStarted=started;
-      try { for(let i=1;i<=5;i++){const r=run(i);const waiting=waitIdle(r.generation_id);await controller.playSegment(r,`这是珂莱塔第${i}次中文播放测试。本段只检查声音，不陈述校园事实。`,`answer-${i}`);await waiting;} state.dataset.status='five_complete'; state.textContent='连续 5 次播放完成'; result.dataset.elapsed=String(performance.now()-started); result.dataset.firstSpeaking=String(progress.find((event)=>event.status==='speaking'&&event.at>=started)?.at-started); }
+      try { for(let i=1;i<=5;i++){const r=run(i);const waiting=waitIdle(r.generation_id);await controller.playSegment(r,`这是海小棠第${i}次中文播放测试。本段只检查声音，不陈述校园事实。`,`answer-${i}`);await waiting;} state.dataset.status='five_complete'; state.textContent='连续 5 次播放完成'; result.dataset.elapsed=String(performance.now()-started); result.dataset.firstSpeaking=String(progress.find((event)=>event.status==='speaking'&&event.at>=started)?.at-started); }
       catch(error){state.dataset.status='failed';state.textContent=`播放失败：${error.message}`;}
     };
     document.querySelector('#stop').onclick = () => controller.stop('user');

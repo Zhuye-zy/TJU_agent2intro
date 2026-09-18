@@ -39,6 +39,7 @@ class KnowledgeAdapter(Protocol):
     def list_pois(self, campus_id: CampusId, category: str | None, query: str, limit: int, cursor: str | None) -> POIPage: ...
     def get_poi(self, id: str) -> POI | None: ...
     def is_map_searchable(self, id: str) -> bool: ...
+    def is_frontend_visible(self, id: str) -> bool: ...
     def get_coverage(self) -> Coverage: ...
     def get_campus_assets(self, campus_id: CampusId) -> CampusAssets: ...
     def resolve_entities(self, query: str, campus_id: CampusId) -> list[str]: ...
@@ -90,6 +91,7 @@ class LocalKnowledge:
         self._service_rules: list[dict] = []
         self._core_routes: list[dict] = []
         self._map_searchable: set[str] | None = None
+        self._frontend_hidden: set[str] = set()
         self._conflicts: dict[str, dict] = {}
         self._version: str | None = None
         self._updated_at: str | None = None
@@ -121,6 +123,8 @@ class LocalKnowledge:
         if searchability_path.is_file() and searchability:
             self._map_searchable = {str(row['poi_id']) for row in searchability
                                     if row.get('status') == 'searchable' and row.get('provider') == 'amap'}
+            self._frontend_hidden = {str(row['poi_id']) for row in searchability
+                                     if row.get('frontend_visible') is False}
         self._conflicts = {r['id']: r for r in _load_array(self.data_directory / 'r3/conflicts.json')}
         for row in raw_buildings:
             if not isinstance(row, dict):
@@ -240,6 +244,7 @@ class LocalKnowledge:
         query = query.strip().lower()
         offset = self._parse_cursor(cursor, campus_id, category, query) if cursor else 0
         candidates = [p for p in self._pois.values() if p.campus_id == campus_id and self.is_map_searchable(p.id)
+                      and self.is_frontend_visible(p.id)
                       and (category is None or p.category == category)]
         if query:
             resolved = set(self.resolve_entities(query, campus_id))
@@ -259,10 +264,15 @@ class LocalKnowledge:
         """Whether the latest provider audit found a usable in-campus destination."""
         return id in self._pois and (self._map_searchable is None or id in self._map_searchable)
 
+    def is_frontend_visible(self, id: str) -> bool:
+        """Whether a retained knowledge record may appear in public UI projections."""
+        return id in self._pois and id not in self._frontend_hidden
+
     def get_coverage(self) -> Coverage:
         campuses = []
         for campus in ("weijinlu","beiyangyuan"):
-            pois = [p for p in self._pois.values() if p.campus_id == campus and self.is_map_searchable(p.id)]
+            pois = [p for p in self._pois.values() if p.campus_id == campus and self.is_map_searchable(p.id)
+                    and self.is_frontend_visible(p.id)]
             verified = [p for p in pois if p.location and p.location.quality != "pending"
                         and p.location.verified_at and p.location.coordinate_source
                         and p.verification_status == "verified"]

@@ -1,7 +1,22 @@
 # 参考图缺口清单
 
-统计时间：自动生成。已覆盖 48 / 106 个点位，缺 58 个。
+## 当前在线地图目录（缺 0 / 42）
+
+以下仅统计 `map_searchability.json` 中当前可搜索、会出现在双校区点位目录里的地点；这是本轮界面最需要补齐的图片。
+
+### 卫津路校区（缺 0 / 22）
+
+当前前端展示的 22 个点位均已有图片；图片在界面中均按卫津路对应点位自身的名称展示，不标注复用来源。
+
+### 北洋园校区（缺 0 / 20）
+
+当前前端展示的 20 个点位均已有图片。御园、射园保留在知识库中，但不在前端展示。
+
+## 完整知识库
+
+统计时间：自动生成。已覆盖 51 / 106 个点位，缺 55 个。
 图片命名 `<poi_id>-N.<ext>`，放在对应校区目录下；补齐后重跑关联脚本即可。
+本节按“点位专属原始照片”统计，因此前端使用相近点位图片后，原始照片缺口仍会保留在这里。
 
 ## 卫津路校区（缺 32）
 
@@ -47,7 +62,7 @@
 - [ ] **青年湖畔双亭** `weijinlu-double-pavilions` P1
 - [ ] **马寅初像** `weijinlu-ma-yinchu` P1
 
-## 北洋园校区（缺 26）
+## 北洋园校区（缺 23）
 
 ### 教学/科研
 - [ ] **矩方规圆楼** `beiyangyuan-jufang-guiyuan` P1
@@ -56,9 +71,6 @@
 - [ ] **留学生食堂** `beiyangyuan-international-dining` P2
 
 ### 文化/景观
-- [ ] **书田广场** `beiyangyuan-shutian-square` P1
-- [ ] **天麟广场** `beiyangyuan-tianlin-square` P1
-- [ ] **太雷广场** `beiyangyuan-tailei-square` P1
 - [ ] **春晖园** `beiyangyuan-chunhui-garden` P1
 - [ ] **校友林景观带** `beiyangyuan-alumni-forest` P1
 - [ ] **校训鼎** `beiyangyuan-motto-ding` P1
@@ -82,4 +94,3 @@
 - [ ] **御园** `beiyangyuan-yu-garden` P3
 - [ ] **数园** `beiyangyuan-shu-garden-2` P3
 - [ ] **礼园** `beiyangyuan-li-garden` P3
-

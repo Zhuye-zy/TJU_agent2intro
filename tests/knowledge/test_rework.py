@@ -21,11 +21,20 @@ def test_all_pois_have_same_identity_in_legacy_projection():
 def test_amap_audit_removes_unusable_destinations_from_directory():
     k=LocalKnowledge(); rows=json.loads((DATA_DIRECTORY/"map_searchability.json").read_text(encoding="utf-8"))
     assert len(rows)==106 and {row["status"] for row in rows}=={"searchable","not_found"}
-    expected={campus:sum(1 for row in rows if row["status"]=="searchable" and row["poi_id"].startswith(campus))
+    expected={campus:sum(1 for row in rows if row["status"]=="searchable" and row.get("frontend_visible",True)
+                         and row["poi_id"].startswith(campus))
               for campus in ("weijinlu","beiyangyuan")}
     assert {campus:len(k.list_pois(campus,None,"",100,None).items) for campus in ("weijinlu","beiyangyuan")}==expected
     assert not k.is_map_searchable("beiyangyuan-bowen-road")
     assert k.get_poi("beiyangyuan-bowen-road") is not None
+
+def test_frontend_hidden_pois_remain_in_the_knowledge_store():
+    k=LocalKnowledge(); hidden={"beiyangyuan-she-garden","beiyangyuan-yu-garden"}
+    visible={p.id for p in k.list_pois("beiyangyuan",None,"",100,None).items}
+    assert hidden.isdisjoint(visible)
+    assert all(k.get_poi(poi_id) is not None for poi_id in hidden)
+    assert all(k.is_map_searchable(poi_id) for poi_id in hidden)
+    assert all(not k.is_frontend_visible(poi_id) for poi_id in hidden)
 
 def test_long_chinese_query_round_trip_all_pages():
     c=TestClient(app); params=dict(campus_id="beiyangyuan",query="天津大学北洋园校区图书馆和食堂的相对位置在哪里",limit=1)

@@ -16,7 +16,7 @@ const output = await build({
   },
 });
 const chunk = (Array.isArray(output) ? output[0] : output).output.find((item) => item.type === 'chunk');
-const { headingForScreenMotion } = await import(
+const { headingForScreenMotion, roamPositionForRect } = await import(
   `data:text/javascript;base64,${Buffer.from(chunk.code).toString('base64')}`
 );
 
@@ -25,6 +25,10 @@ test('VRM roaming faces the direction of screen travel', () => {
   assert.equal(headingForScreenMotion(-1, 0), -Math.PI / 2);
   assert.equal(headingForScreenMotion(0, 1), Math.PI);
   assert.ok(Object.is(headingForScreenMotion(0, -1), 0));
+});
+
+test('VRM resumes roaming from the presentation position instead of its old position', () => {
+  assert.deepEqual(roamPositionForRect({left: 420, bottom: 610}, 900), {x: 420, y: 290});
 });
 
 const gestureOutput = await build({

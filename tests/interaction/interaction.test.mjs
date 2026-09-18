@@ -18,11 +18,10 @@ const origin=()=>({lng:117.31,lat:38.998,crs:'GCJ02',source:'manual',accuracy_m:
 const config={js_key:'offline-fixture',service_host:'/api/maps/amap',status:{security_key_configured:true,online_map:'UNVERIFIED'}};
 const signal=()=>new AbortController().signal;
 const limits={map_load:10,poi_search:6,walking_route:2,geolocation:5};
-test('fixed five samples reuse the supplied image registry with two photos and three placeholders',()=>{
+test('fixed five samples all reuse the supplied image registry without placeholders',()=>{
  assert.equal(samples.length,5);assert.ok(samples.every(Boolean));
- assert.deepEqual(samples.map(p=>!!tourPhotoFor(p.id,p.name).placeholder),[true,true,true,false,false]);
- for(const p of [samples[3],samples[4],samples[3]])assert.equal(tourPhotoFor(p.id,p.name).caption,p.name);
- assert.ok(decodeURIComponent(tourPhotoFor(samples[0].id,samples[0].name).src).includes(samples[0].name));
+ assert.deepEqual(samples.map(p=>!!tourPhotoFor(p.id,p.name).placeholder),[false,false,false,false,false]);
+ for(const p of samples)assert.equal(tourPhotoFor(p.id,p.name).caption,p.name);
 });
 test('reject bus stops, wrong universities/campuses and distant names; replay previous real provider responses',()=>{
  const recorded=JSON.parse(readFileSync('docs/diagnostics/20260917-150656/map_candidates.json','utf8'));
