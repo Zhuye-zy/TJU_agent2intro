@@ -86,7 +86,12 @@ def campus_candidate(poi: dict, row: dict, campus: str) -> bool:
     location = row.get('location') or ''
     if ',' not in location:
         return False
-    lng, lat = (float(part) for part in location.split(',', 1))
+    try:
+        lng, lat = (float(part) for part in location.split(',', 1))
+    except (TypeError, ValueError):
+        return False
+    if not math.isfinite(lng) or not math.isfinite(lat):
+        return False
     center = CAMPUS_CENTER[campus]
     if abs(lng - center[0]) > 0.025 or abs(lat - center[1]) > 0.018:
         return False
@@ -114,11 +119,10 @@ def audit(poi: dict, previous: dict | None = None) -> dict:
         return {'poi_id': poi['id'], 'provider': 'amap', 'status': 'searchable',
                 'checked_at': str(date.today()), 'provider_candidate_count': len(rows),
                 'usable_candidate_count': len(accepted)}
-    if status != 'ok' and previous.get('status') == 'searchable':
-        return {'poi_id': poi['id'], 'provider': 'amap', 'status': 'searchable',
-                'checked_at': previous.get('checked_at', str(date.today())),
-                'provider_candidate_count': len(rows), 'usable_candidate_count': 0,
-                'note': f'kept_previous:{status}'}
+    if status != 'ok':
+        if not previous:
+            raise RuntimeError(f"Audit unavailable for {poi['id']}: {status}; directory unchanged")
+        return {**previous, 'note': f'kept_previous:{status}'}
     return {'poi_id': poi['id'], 'provider': 'amap', 'status': 'not_found',
             'checked_at': str(date.today()), 'provider_candidate_count': len(rows),
             'usable_candidate_count': 0, 'note': '' if status == 'ok' else status}

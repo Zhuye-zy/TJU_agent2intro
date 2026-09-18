@@ -18,6 +18,7 @@ from backend.model.routes import router as model_router
 from backend.model.stream_routes import router as stream_router
 from backend.maps.routes import router as maps_router
 from backend.knowledge.r2_routes import router as knowledge_r2_router
+from backend.knowledge.videos import router as videos_router
 from backend.speech.routes import router as speech_router
 from backend.knowledge.routes import router as knowledge_router
 from backend.model.service import connectivity
@@ -73,6 +74,7 @@ app.include_router(knowledge_router)
 app.include_router(stream_router)
 app.include_router(maps_router)
 app.include_router(knowledge_r2_router)
+app.include_router(videos_router)
 
 
 # Build output is an explicit opt-in. API routes always take precedence.

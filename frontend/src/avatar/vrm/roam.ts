@@ -41,6 +41,18 @@ export class RoamController {
   private bubble: HTMLDivElement;
   private screen!: HTMLDivElement;
   private videoElement!: HTMLVideoElement;
+  private screenVisible = false;
+  private palm = {x: OVERLAY_WIDTH / 2, y: OVERLAY_HEIGHT / 2};
+  private dock:HTMLElement|null=null;
+
+  setPresentationHost(host:HTMLElement|null):void{
+    this.dock=host;
+    (host??document.body).appendChild(this.overlay);
+    Object.assign(this.overlay.style,host?{position:'absolute',left:'0',bottom:'0',transform:'none',zIndex:'1'}:{position:'fixed',left:'0',bottom:'0',zIndex:'9999'});
+    this.overlay.dataset.avatarDocked=String(!!host);
+    this.halt();
+    if(!host){this.resume(performance.now());this.applyPosition();}
+  }
   private hit!: HTMLDivElement;
   private targetX: number;
   private targetY: number;
@@ -97,8 +109,7 @@ export class RoamController {
     this.screen = document.createElement('div');
     this.screen.dataset.avatarScreen = 'true';
     Object.assign(this.screen.style, {
-      // Floats above the head so it never covers the character.
-      position: 'absolute', left: '50%', top: '-6px', transform: 'translate(-50%, -100%)',
+      position: 'absolute', left: '0', top: '0',
       width: '176px', height: '99px', borderRadius: '10px', overflow: 'hidden',
       background: '#0d141c', border: '1px solid rgba(255,255,255,.35)',
       boxShadow: '0 8px 20px rgba(10,25,40,.28)', opacity: '0', transition: 'opacity .2s ease',
@@ -108,8 +119,8 @@ export class RoamController {
     this.videoElement.muted = true;
     this.videoElement.loop = true;
     this.videoElement.playsInline = true;
-    Object.assign(this.videoElement.style, { width: '100%', height: '100%', objectFit: 'cover', display: 'none' });
-    this.screen.appendChild(this.videoElement);
+    Object.assign(this.videoElement.style, { width: '100%', height: '100%', objectFit: 'contain', display: 'none' });
+    this.videoElement.addEventListener('error', () => this.hideScreen());
     this.overlay.appendChild(this.screen);
 
     document.body.appendChild(this.overlay);
@@ -119,10 +130,11 @@ export class RoamController {
     this.applyPosition();
   }
 
-  update(now: number): void {
+  update(now: number, deltaSeconds=1/60): void {
+    if(this.dock)return;
     if (this.dragging) return;
     if (this.motion === 'walk') {
-      const step = (WALK_SPEED / 1000) * 16;
+      const step = WALK_SPEED * Math.min(deltaSeconds,.1);
       const dx = this.targetX - this.x;
       const dy = this.targetY - this.y;
       const distance = Math.hypot(dx, dy);
@@ -155,18 +167,38 @@ export class RoamController {
 
   /** Show the narration screen while the guide speaks (blank placeholder without a clip). */
   showScreen(): void {
+    this.screenVisible = true;
+    this.clampPosition();
+    this.screen.setAttribute('aria-label', '点位讲解视频');
     this.screen.style.opacity = '1';
+    this.anchorScreen(this.palm.x, this.palm.y);
   }
 
   hideScreen(): void {
+    this.screenVisible = false;
     this.screen.style.opacity = '0';
     this.setScreenVideo(null);
+  }
+
+  /** Attach the bottom of the clip to the projected palm and keep it in view. */
+  anchorScreen(x: number, y: number): void {
+    this.palm = {x, y};
+    if (!this.screenVisible) return;
+    const box = this.overlay.getBoundingClientRect();
+    const width = Math.min(176, Math.max(1, window.innerWidth - MARGIN * 2));
+    const height = width * 9 / 16;
+    // Left hand projects to the right of the camera-facing avatar. The screen
+    // extends outwards so the body stays visible while its corner rests on hand.
+    const left = Math.min(window.innerWidth - width - MARGIN, Math.max(MARGIN, box.left + x - 18));
+    const top = Math.min(window.innerHeight - height - MARGIN, Math.max(MARGIN, box.top + y - height - 5));
+    Object.assign(this.screen.style, {left: `${left - box.left}px`, top: `${top - box.top}px`, width: `${width}px`, height: `${height}px`});
   }
 
   setScreenVideo(src: string | null): void {
     const video = this.videoElement;
     if (!src) {
       video.pause();
+      video.remove();
       if (video.dataset.src) {
         video.removeAttribute('src');
         delete video.dataset.src;
@@ -175,6 +207,7 @@ export class RoamController {
       video.style.display = 'none';
       return;
     }
+    if (!video.isConnected) this.screen.appendChild(video);
     if (video.dataset.src !== src) {
       video.dataset.src = src;
       video.src = src;
@@ -198,6 +231,7 @@ export class RoamController {
   }
 
   dispose(): void {
+    this.setScreenVideo(null);
     window.removeEventListener('resize', this.onResize);
     window.removeEventListener('pointermove', this.onPointerMove);
     window.removeEventListener('pointerup', this.onPointerUp);
@@ -211,6 +245,7 @@ export class RoamController {
   }
 
   private pointerDown(event: PointerEvent): void {
+    if(this.dock)return;
     this.dragging = true;
     this.moved = false;
     this.dragStartX = this.x;
@@ -247,7 +282,7 @@ export class RoamController {
   }
 
   private clampPosition(): void {
-    const maxX = Math.max(MARGIN, window.innerWidth - OVERLAY_WIDTH - MARGIN);
+    const maxX = Math.max(MARGIN, window.innerWidth - OVERLAY_WIDTH - MARGIN - (this.screenVisible ? 140 : 0));
     const maxY = Math.max(MARGIN, window.innerHeight - OVERLAY_HEIGHT - MARGIN);
     this.x = Math.min(maxX, Math.max(MARGIN, this.x));
     this.y = Math.min(maxY, Math.max(MARGIN, this.y));
@@ -257,6 +292,7 @@ export class RoamController {
   }
 
   private applyPosition(): void {
+    if(this.dock)return;
     this.overlay.style.transform = `translate(${Math.round(this.x)}px, ${-Math.round(this.y)}px)`;
   }
 }

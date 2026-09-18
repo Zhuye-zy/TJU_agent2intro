@@ -215,7 +215,7 @@ export class CampusSpeechAdapter implements SpeechAdapter {
   constructor(options: SpeechAdapterOptions = {}) {
     this.recognitionMode = options.recognitionMode ?? 'server';
     this.loadVad = options.loadVad ?? loadVadModule;
-    this.asrTimeoutMs = options.asrTimeoutMs ?? 35000;
+    this.asrTimeoutMs = options.asrTimeoutMs ?? 65000;
     this.captureTimeoutMs = options.captureTimeoutMs ?? 20000;
     this.onTrace = options.onTrace;
     this.volume = Math.max(0, Math.min(1, options.volume ?? 1));
@@ -455,8 +455,8 @@ export class CampusSpeechAdapter implements SpeechAdapter {
       if (!current()) return { status: 'failed', error_code: 'stopped' };
       const pending = module.MicVAD.new({
         model: 'v5', baseAssetPath: '/vendor/vad/', onnxWASMBasePath: '/vendor/ort/', startOnLoad: true,
-        positiveSpeechThreshold: 0.85, negativeSpeechThreshold: 0.65,
-        minSpeechMs: 480, redemptionMs: 650, preSpeechPadMs: 250,
+        positiveSpeechThreshold: 0.5, negativeSpeechThreshold: 0.35,
+        minSpeechMs: 250, redemptionMs: 1100, preSpeechPadMs: 450,
         getStream: async () => {
           const acquired = await navigator.mediaDevices.getUserMedia({ audio: {
             channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true,

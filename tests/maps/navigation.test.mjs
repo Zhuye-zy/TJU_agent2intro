@@ -73,6 +73,16 @@ test('map and location use SDK while walking parses same-origin provider results
  const route=await nav.walk(request(),poi(),sig());assert.equal(route.distance_m,120);assert.equal(route.duration_s,90);assert.equal(route.steps[0].instruction,'沿测试步道前行');
  assert.equal(route.campus_access,'unverified');assert.deepEqual(f.calls,{map:1,geo:1,walk:1});
 });
+test('campus cancellation releases a pending SDK load and never creates its late map',async()=>{
+ let now=0,resolve;const f=fakeSdk(),budget=new MapBudget({limits,now:()=>now});
+ const old=new AmapNavigation(config,budget,()=>new Promise(r=>{resolve=r;}));const abort=new AbortController();
+ const pending=old.createMap({},'old-campus',abort.signal,true);await new Promise(r=>setTimeout(r,0));
+ abort.abort();await assert.rejects(pending,{code:'cancelled'});
+ assert.equal(budget.snapshot().counters.map_load.cancelled,1);
+ now=6000;const next=new AmapNavigation(config,budget,async()=>f.sdk);
+ await next.createMap({},'new-campus',sig(),true);resolve(f.sdk);await new Promise(r=>setTimeout(r,0));
+ assert.equal(f.calls.map,1);
+});
 test('wrong campus and stale device origin spend zero direct route calls',async()=>{
  const f=fakeSdk();const nav=new AmapNavigation(config,new MapBudget(),async()=>f.sdk,f.readJson);
  await assert.rejects(nav.walk(request(),{...poi(),campus_id:'beiyangyuan'},sig()),{code:'poi_context_mismatch'});

@@ -178,6 +178,7 @@ def test_asr_chinese_result_safe_errors_and_client_cleanup(monkeypatch, tmp_path
         async def create(self, **kwargs):
             assert kwargs["file"][0] == "speech.wav"
             assert kwargs["file"][1].startswith(b"RIFF")
+            assert kwargs["language"] == "zh"
             if failure == "timeout":
                 raise asyncio.TimeoutError("private upstream details")
             if failure == "unavailable":
@@ -199,6 +200,48 @@ def test_asr_chinese_result_safe_errors_and_client_cleanup(monkeypatch, tmp_path
             assert result.text == "请介绍天津大学" and result.is_final
         assert service._operations == {}
         assert closed == [True]
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize('cancel', [False, True])
+def test_narration_prefetch_allows_distinct_utterances_and_stops_all(monkeypatch, tmp_path, cancel):
+    async def run():
+        started = asyncio.Event()
+        release = asyncio.Event()
+        count = 0
+
+        class WaitingAudio:
+            async def save(self, target):
+                nonlocal count
+                count += 1
+                if count == 2:
+                    started.set()
+                await release.wait()
+                Path(target).write_bytes(b'ID3prefetched')
+
+        monkeypatch.setattr('backend.speech.service.prepare_edge_tts', lambda *args: WaitingAudio())
+        service = CampusSpeechService(settings(), tmp_path)
+        first = TtsRequest(request_id=uuid4(), session_id=uuid4(), utterance_id=uuid4(),
+                           text='第一段', voice_id='zh-CN-XiaoxiaoNeural')
+        second = first.model_copy(update={'utterance_id': uuid4(), 'text': '第二段'})
+        tasks = [asyncio.create_task(service.synthesize(req)) for req in (first, second)]
+        await asyncio.wait_for(started.wait(), 2)
+        with pytest.raises(DomainError) as duplicate:
+            await service.synthesize(first)
+        assert duplicate.value.code == 'speech_conflict'
+        with pytest.raises(DomainError) as foreign:
+            await service.stop(SpeechContext(request_id=first.request_id, session_id=uuid4()))
+        assert foreign.value.code == 'session_conflict'
+        if cancel:
+            await service.stop(SpeechContext(request_id=first.request_id, session_id=first.session_id))
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            assert all(isinstance(result, DomainError) and result.code == 'stopped' for result in results)
+            assert not list(tmp_path.iterdir())
+        else:
+            release.set()
+            results = await asyncio.gather(*tasks)
+            assert len({result.audio_url for result in results}) == 2
+        assert service._operations == {}
     asyncio.run(run())
 
 

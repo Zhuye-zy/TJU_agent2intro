@@ -33,7 +33,7 @@ export type StreamEvent = {[K in keyof Payloads]:{event_id:string;request_id:str
 export interface GenerationRendered {event_id:string;request_id:string;session_id:string;message_id:string;campus_id:CampusId;answer_chars:number}
 export interface RenderReceipt {event_id:string;request_id:string;status:'recorded'|'duplicate';origin:'frontend'}
 export interface SpeechRun {request_id:string;session_id:string;campus_id:CampusId;generation_id:string;voice_id:string;mode:'brief'|'full';signal:AbortSignal}
-export interface SpeechProgress {request_id:string;generation_id:string;utterance_id:string|null;segment_id:string|null;status:'idle'|'buffering'|'speaking'|'paused'|'stopped'|'error';code:string|null}
+export interface SpeechProgress {request_id:string;generation_id:string;utterance_id:string|null;segment_id:string|null;status:'idle'|'buffering'|'speaking'|'paused'|'stopped'|'error';code:string|null;text?:string}
 export interface SpeechController {
  readonly capabilities:{incremental:boolean;pause:boolean;resume:boolean;timestamps:'none'|'word'|'viseme'};
  enable(enabled:boolean):Promise<AdapterResult>;

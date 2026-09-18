@@ -35,6 +35,14 @@ function Record-Process([int]$ProcessId,[string]$Role) {
  $process=Get-Process -Id $ProcessId -ErrorAction SilentlyContinue
  if ($process) { $records.Add([pscustomobject]@{pid=$process.Id;started_ticks=$process.StartTime.ToUniversalTime().Ticks.ToString();role=$Role}); Save-Receipt }
 }
+# Start the optional local Mandarin recognizer only when the backend points to it.
+# Remote ASR configurations are left to their existing service.
+$localAsr=& (Join-Path $root '.venv/Scripts/python.exe') -c "from backend.common.config import get_settings; s=get_settings(); print(s.asr_model.removeprefix('whisper-') if s.asr_url.rstrip('/') == 'http://127.0.0.1:8010/v1' else '')"
+if ($localAsr -and -not (Get-NetTCPConnection -LocalPort 8010 -State Listen -ErrorAction SilentlyContinue)) {
+ $env:HF_HOME=Join-Path $runtime 'huggingface'
+ $asr=Start-Process -FilePath (Join-Path $root '.venv/Scripts/python.exe') -ArgumentList @('scripts/local-asr-server.py','--model',$localAsr.Trim(),'--port','8010') -WorkingDirectory $root -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logs 'asr.stdout.log') -RedirectStandardError (Join-Path $logs 'asr.stderr.log')
+ Record-Process $asr.Id 'asr-launcher'
+}
 $api=Start-Process -FilePath (Join-Path $root '.venv/Scripts/python.exe') -ArgumentList @('-m','uvicorn','backend.app:app','--host','127.0.0.1','--port',[string]$ApiPort,'--no-access-log') -WorkingDirectory $root -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logs 'api.stdout.log') -RedirectStandardError (Join-Path $logs 'api.stderr.log')
 Record-Process $api.Id 'api-launcher'
 if ($Mode -eq 'dev') {

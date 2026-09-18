@@ -36,6 +36,15 @@ export class VrmRenderer {
   private baseY = 0;
   private halted = false;
   private screenShown = false;
+  private presentationBlend = 0;
+  private presentationHost:HTMLElement|null=null;
+  private lastFrameAt=0;
+  private canvasWidth=190;
+  private canvasHeight=260;
+  private palmVector=new THREE.Vector3();
+  private lastPalm={x:NaN,y:NaN};
+
+  setPresentationHost(host:HTMLElement|null):void{this.presentationHost=host;this.lastPalm={x:NaN,y:NaN};this.roam?.setPresentationHost(host);}
   private companionVideo: { src: string; mime?: string; caption?: string } | null = null;
   private speakMotion: { kind: 'spread' | 'tilt'; startedAt: number; duration: number; sign: 1 | -1 } | null = null;
   private nextSpeakMotionAt = 0;
@@ -58,7 +67,7 @@ export class VrmRenderer {
     this.dispose();
     try {
       const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power' });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       const canvas = renderer.domElement;
       canvas.dataset.avatarRenderer = 'vrm';
@@ -172,7 +181,7 @@ export class VrmRenderer {
     return `gesture: ${kind}`;
   }
 
-  /** Bind the clip shown on the narration screen; null keeps the blank placeholder. */
+  /** Bind the clip shown above the palm; null hides the presentation. */
   setCompanionVideo(video: { src: string; mime?: string; caption?: string } | null): void {
     this.companionVideo = video;
     if (this.state === 'speaking') this.roam?.setScreenVideo(video?.src ?? null);
@@ -196,6 +205,7 @@ export class VrmRenderer {
     this.gestureOffsetY = 0;
     this.halted = false;
     this.screenShown = false;
+    this.presentationBlend = 0;
     this.speakMotion = null;
     this.companionVideo = null;
     if (this.vrm) {
@@ -234,6 +244,7 @@ export class VrmRenderer {
     if (!this.renderer || !this.camera) return;
     const width = Math.max(1, host.clientWidth || 640);
     const height = Math.max(1, host.clientHeight || 640);
+    this.canvasWidth=width;this.canvasHeight=height;
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
@@ -242,19 +253,24 @@ export class VrmRenderer {
 
   private tick(): void {
     if (!this.renderer || !this.scene || !this.camera || !this.vrm) return;
-    const delta = this.clock.getDelta();
     const now = performance.now();
+    const typing=document.activeElement?.matches('textarea,input,[contenteditable="true"]');
+    if(document.hidden||now-this.lastFrameAt<1000/(typing?20:30))return;
+    this.lastFrameAt=now;
+    const delta=Math.min(.1,this.clock.getDelta());
     this.smoothedLevel += (this.audioLevel - this.smoothedLevel) * 0.45;
     // Speech playback keeps the avatar standing in place: roaming halts and the
     // model turns back to face the camera until the utterance ends.
     const speaking = this.state === 'speaking';
     if (speaking && !this.halted) { this.halted = true; this.roam?.halt(); }
     else if (!speaking && this.halted) { this.halted = false; this.roam?.resume(now); }
-    if (!speaking) this.roam?.update(now);
+    if (!speaking) this.roam?.update(now,delta);
     this.advanceGesture(now, speaking);
-    if (speaking !== this.screenShown) {
-      this.screenShown = speaking;
-      if (speaking) {
+    const presenting = speaking && !!this.companionVideo;
+    this.presentationBlend += ((presenting || this.presentationHost ? 1 : 0) - this.presentationBlend) * Math.min(1, delta * 7);
+    if (presenting !== this.screenShown) {
+      this.screenShown = presenting;
+      if (presenting) {
         this.roam?.showScreen();
         this.roam?.setScreenVideo(this.companionVideo?.src ?? null);
       } else {
@@ -262,9 +278,11 @@ export class VrmRenderer {
       }
     }
     if (this.renderer) {
-      this.renderer.domElement.dataset.avatarHalted = String(this.halted);
-      this.renderer.domElement.dataset.avatarMotion = this.roam?.motion ?? 'none';
-      this.renderer.domElement.dataset.avatarSpeakMotion = this.speakMotion?.kind ?? 'none';
+      const data=this.renderer.domElement.dataset;
+      const halted=String(this.halted),motion=this.roam?.motion??'none',speak=this.speakMotion?.kind??'none';
+      if(data.avatarHalted!==halted)data.avatarHalted=halted;
+      if(data.avatarMotion!==motion)data.avatarMotion=motion;
+      if(data.avatarSpeakMotion!==speak)data.avatarSpeakMotion=speak;
     }
     const walking = this.roam?.motion === 'walk';
     this.walkBlend += ((walking ? 1 : 0) - this.walkBlend) * Math.min(1, delta * 8);
@@ -281,6 +299,19 @@ export class VrmRenderer {
     this.driveExpressions(now);
     this.driveBones(now, delta);
     this.vrm.update(delta);
+    // Project the animated palm instead of anchoring the screen to fixed pixels.
+    if ((presenting || this.presentationHost) && this.roam) {
+      const hand = this.vrm.humanoid.getRawBoneNode('leftHand');
+      if (hand) {
+        const palm = hand.getWorldPosition(this.palmVector).project(this.camera);
+        const x=Math.round((palm.x+1)*this.canvasWidth/2),y=Math.round((1-palm.y)*this.canvasHeight/2);
+        if(x!==this.lastPalm.x||y!==this.lastPalm.y){
+          this.lastPalm={x,y};
+          if(this.presentationHost){this.presentationHost.style.setProperty('--palm-x',`${x}px`);this.presentationHost.style.setProperty('--palm-y',`${y}px`);}
+          else this.roam.anchorScreen(x,y);
+        }
+      }
+    }
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -291,7 +322,7 @@ export class VrmRenderer {
       return { kind: null, env: 0, sign: 1 };
     }
     if (!this.speakMotion && now >= this.nextSpeakMotionAt) {
-      const kind = Math.random() < 0.55 ? 'spread' : 'tilt';
+      const kind = this.companionVideo || this.presentationHost ? 'tilt' : Math.random() < 0.55 ? 'spread' : 'tilt';
       this.speakMotion = { kind, startedAt: now, duration: 1.3 + Math.random() * 0.7, sign: Math.random() < 0.5 ? -1 : 1 };
       this.nextSpeakMotionAt = now + 3200 + Math.random() * 4200;
     }
@@ -306,6 +337,7 @@ export class VrmRenderer {
 
   /** Advance the active gesture and occasionally play one while idle. */
   private advanceGesture(now: number, speaking: boolean): void {
+    if (speaking) this.gesture = null;
     this.gestureKind = null;
     this.gestureElapsed = 0;
     this.gestureWeight = 0;
@@ -398,7 +430,7 @@ export class VrmRenderer {
     const weight = this.gestureWeight;
     const gestureTime = this.gestureElapsed;
     const motion = this.speakMotionData(now);
-    if (motion.kind === 'spread' && motion.env > 0 && this.walker) {
+    if (motion.kind === 'spread' && motion.env > 0 && this.walker && !this.companionVideo && !this.presentationHost) {
       // Arms open outward and close again, at irregular moments while narrating.
       const spread = motion.env;
       add(this.walker.leftUpperArm, -0.15 * spread, 0, 0.95 * spread);
@@ -406,6 +438,14 @@ export class VrmRenderer {
       add(this.walker.leftLowerArm, 0, 0, -0.3 * spread);
       add(this.walker.rightLowerArm, 0, 0, 0.3 * spread);
     }
+    if (this.walker && this.presentationBlend > 0.001) {
+      const hold = this.presentationBlend;
+      // Raise the left forearm sideways, keep the wrist level and palm upward.
+      add(this.walker.leftUpperArm, -0.2 * hold, 0.08 * hold, 0.75 * hold);
+      add(this.walker.leftLowerArm, -0.12 * hold, -0.15 * hold, 0.65 * hold);
+      add(this.walker.leftHand, Math.PI * hold, 0, -0.15 * hold);
+      if(this.renderer!.domElement.dataset.avatarPresentation!=='palm')this.renderer!.domElement.dataset.avatarPresentation='palm';
+    } else if (this.renderer&&this.renderer.domElement.dataset.avatarPresentation!=='none') this.renderer.domElement.dataset.avatarPresentation = 'none';
     if (gesture && weight > 0 && this.walker) {
       if (gesture === 'wave') {
         add(this.walker.rightUpperArm, -0.12 * weight, 0.08 * weight, -1.7 * weight);

@@ -70,7 +70,7 @@ const { tourVideoFor, registeredVideos } = await import(
   `data:text/javascript;base64,${Buffer.from(videosChunk.code).toString('base64')}`
 );
 
-test('narration videos fall back to a blank screen until a clip is bound', () => {
+test('unregistered narration videos return no clip', () => {
   assert.equal(tourVideoFor(null), null);
   assert.equal(tourVideoFor(undefined), null);
   assert.equal(tourVideoFor('unknown-poi'), null);

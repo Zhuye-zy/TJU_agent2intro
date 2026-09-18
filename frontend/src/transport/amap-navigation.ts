@@ -99,8 +99,20 @@ export class AmapNavigation {
  }
  async createMap(host:HTMLElement,operationId:string,signal:AbortSignal,userInitiated:boolean,options:Record<string,unknown>={}):Promise<MapHandle>{
   this.assertReady();
+  await this.budget.waitForSlot('map_load',signal);
   return this.budget.run('map_load',operationId,userInitiated,signal,async()=>{
-   const sdk=await this.getSdk();if(signal.aborted)throw new MapCallError('cancelled');
+   // A campus change must release the old load reservation even if the vendor
+   // script cannot itself be cancelled. Late scripts never create an old map.
+   const sdk=await new Promise<AmapSdk>((resolve,reject)=>{
+    const abort=()=>finish(new MapCallError('cancelled'));
+    const timer=setTimeout(()=>finish(new MapCallError('map_timeout')),15000);
+    let done=false;
+    const finish=(error:unknown,value?:AmapSdk)=>{if(done)return;done=true;clearTimeout(timer);signal.removeEventListener('abort',abort);if(error)reject(error);else resolve(value!);};
+    signal.addEventListener('abort',abort,{once:true});
+    if(signal.aborted){abort();return;}
+    void this.getSdk().then(value=>finish(null,value),error=>finish(error));
+   });
+   if(signal.aborted)throw new MapCallError('cancelled');
    const handle=new sdk.Map(host,{zoom:15,...options});
    if(signal.aborted){handle.destroy();throw new MapCallError('cancelled');}
    return handle;

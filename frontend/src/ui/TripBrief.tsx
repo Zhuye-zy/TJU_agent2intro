@@ -13,6 +13,5 @@ export function TripBrief({session,route}:{session:TourSession;route:RouteRespon
  {brief?.items.slice(0,3).map(item=><p key={item.source.url}>{item.text}<br/><small>{item.publishedAt??'一般指南，发布日期未载明'} · <a href={item.source.url} target="_blank" rel="noreferrer">{item.source.title}</a></small></p>)}
  <p>入馆与入校规则需分别确认；已收录消息不代表当天开放。</p>
  {warnings.map(w=><p key={w}>{w}</p>)}
- <details><summary>技术详情与资料状态</summary><p>查询状态：{brief?.status??'正在读取本地资料'}；动态开放未核验。</p>{(session.plan.warnings??[]).map((w,i)=><p key={i}>{w}</p>)}</details>
  </section>;
 }

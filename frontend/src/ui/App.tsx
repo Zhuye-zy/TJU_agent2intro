@@ -4,12 +4,16 @@ import type { SpeechInteractionController, SpeechInteractionContext } from '../.
 import type { SpeechInteractionEvent } from '../../../shared/r3';
 import { createSpeechInteractionController } from '../speech/interaction';
 import { connectSpeechInteraction } from '../transport/r3-speech';
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { ApiError, AvatarAdapter, AvatarState, CampusId, ChatResponse, Health, Mode, RuntimeEvent, Source, SpeechAdapter, Voice } from '../../../shared/contracts';
-import { tourVideoFor } from './tour-videos';
+import { NarrationSession, type NarrationSnapshot } from './narration-session';
+import { GuidePresentation } from './GuidePresentation';
+import { introductionIntent,mentionedPois } from './introduction';
+import {ChatComposer,type ChatComposerHandle} from './ChatComposer';
+import {presentationText} from '../../../shared/presentation-text';
 import type { CampusAssets, GenerationOptions, POI, SpeechController, SpeechProgress, SpeechRun, StreamEvent } from '../../../shared/r2';
 import { createAvatarAdapter } from '../avatar/adapter';
-import { createSpeechController } from '../speech/controller';
+import { createSpeechController, SPEECH_ERROR_MESSAGES } from '../speech/controller';
 import { MandarinRecorder } from '../speech/recorder';
 import { transport } from '../transport/api';
 import { createSseParser, r2Transport } from '../transport/r2';
@@ -18,6 +22,7 @@ import { freshUuid, mergeRuntimeEvents, safeSourceUrl, sanitizedLogExport } from
 import { applyStreamEvent, consumeR2Stream, exportGeneratedText, newTask, readableParagraphs, shouldFollowLatest, StreamTaskError, type GenerationDraft, type StreamTaskView, validateGenerationDraft, responseWithDeadline } from './r2-model';
 import './theme.css';
 import './style.css';
+import './guide-presentation.css';
 
 type Lane = 'chat' | 'generation';
 type WorkView = 'chat' | 'generation';
@@ -26,6 +31,7 @@ type SpeechMode = 'off' | 'brief' | 'full';
 interface TaskRecord extends StreamTaskView {
   lane: Lane; prompt: string; mode: Mode; campus: CampusId; poiId: string | null; generation: GenerationOptions | null;
   queryStatus?:string;
+  localKind?:'introduction'|'clarification'|'control';
 }
 interface Preferences { campus: CampusId; avatarScale: number; panelWidth: number; speechMode: SpeechMode }
 
@@ -55,24 +61,14 @@ function safeInline(text: string) {
   });
 }
 
-function MicIcon() {
-  return <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>;
-}
-function StopIcon() {
-  return <svg viewBox="0 0 24 24" width="21" height="21" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>;
-}
-function SendIcon() {
-  return <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg>;
-}
-
 function RichText({ text, onReadParagraph }: { text: string; onReadParagraph?: (text: string, index: number) => void }) {
-  const paragraphs = readableParagraphs(text);
+  const paragraphs = readableParagraphs(presentationText(text));
   return <div className="rich-text">{paragraphs.map((paragraph, index) => <div className="readable-paragraph" key={index}><div>{paragraph.split('\n').map((line, lineIndex) => <p key={lineIndex}>{safeInline(line)}</p>)}</div>{onReadParagraph && paragraph.trim() && <button aria-label={`朗读第 ${index + 1} 段`} onClick={() => onReadParagraph(paragraph, index)}>读这一段</button>}</div>)}</div>;
 }
 
 function SourceDetails({ sources, final }: { sources: Source[]; final: boolean }) {
   if (!sources.length) return null;
-  return <details className="task-sources"><summary>{final ? '参考资料' : '正在检索的资料'} {sources.length} 条</summary><ol>{sources.map((source, index) => { const href = safeSourceUrl(source.url); return <li key={source.id}><span>[{index + 1}]</span><div><strong>{source.title}</strong><p>{source.snippet}</p>{href && <a href={href} target="_blank" rel="noreferrer">打开资料</a>}</div></li>; })}</ol></details>;
+  return <details className="task-sources"><summary>{final ? '资料来源' : '资料来源'} {sources.length} 条</summary><ol>{sources.map((source, index) => { const href = safeSourceUrl(source.url); return <li key={source.id}><span>[{index + 1}]</span><div><strong>{source.title}</strong><p>{source.snippet}</p>{href && <a href={href} target="_blank" rel="noreferrer">打开资料</a>}</div></li>; })}</ol></details>;
 }
 
 function TaskStatus({ task }: { task: TaskRecord }) {
@@ -88,20 +84,22 @@ function TaskCard({ task, currentCampus, canStop, onStop, onRetry, onLogs, onCop
   const [waited,setWaited]=useState(false);
   useEffect(()=>{setWaited(false);const timer=setTimeout(()=>setWaited(true),8000);return()=>clearTimeout(timer);},[task.requestId]);
   const hasText = Boolean(task.answer.trim()); const sameCampus = task.campus === currentCampus;
+  const shortReply=task.localKind==='control'||task.localKind==='clarification';
   return <article className={`task-card ${task.phase}`} data-task-id={task.requestId}><header><div><TaskStatus task={task}/><span className="task-campus">{CAMPUS_NAMES[task.campus]}</span></div></header>
     <div className="task-prompt"><span>{task.lane === 'generation' ? '生成主题' : '你'}</span><p>{task.prompt}</p></div>
-    {(task.phase === 'pending' || (task.phase === 'running' && !hasText)) && <div className="stream-wait"><span/><p>{task.phase === 'pending' ? '正在提交请求…' : '等待第一段可见正文；不会把心跳或推理当作内容。'}</p></div>}
-    {waited&&!hasText&&canStop&&<aside className="query-preview"><p>回答仍在生成，可以随时停止。以下是已取得的资料，不代表动态事项已核验：</p>{task.sources.slice(0,2).map(source=><p key={source.id}>{source.snippet} <small>——{source.title}</small></p>)}{!task.sources.length&&<p>暂未取得可展示的依据。</p>}</aside>}
-    {hasText && <div className={`task-body ${expanded ? '' : 'collapsed'}`}><RichText text={task.answer} onReadParagraph={(text, index) => onRead(text, `${task.messageId}-p${index}`)}/></div>}
+    {(task.phase === 'pending' || (task.phase === 'running' && !hasText)) && <div className="stream-wait"><span/><p>{task.phase === 'pending' ? '正在提交请求…' : '海小棠正在回答，你可以继续输入或停止等待。'}</p></div>}
+    {waited&&!hasText&&canStop&&task.sources.length>0&&<aside className="query-preview"><p>回答仍在生成，可以随时停止。</p>{task.sources.slice(0,2).map(source=><p key={source.id}>{source.snippet} <small>——{source.title}</small></p>)}</aside>}
+    {hasText && <div className={`task-body ${expanded ? '' : 'collapsed'}`}><RichText text={task.answer} onReadParagraph={shortReply?undefined:(text, index) => onRead(text, `${task.messageId}-p${index}`)}/></div>}
     {task.phase === 'error' && <div className="task-error" role="alert"><strong>{task.partial && hasText ? '输出未完整结束' : '本次操作失败'}</strong><p>{task.errorMessage}</p><button onClick={onLogs}>查看相关日志</button></div>}
-    {task.phase === 'cancelled' && <p className="task-cancelled">请求已取消，旧流事件不会写入后续任务。</p>}
-    {task.queryStatus&&<p className="query-status">资料查询：{({success:'已取得依据',partial:'部分内容尚待核实',no_evidence:'本次查询范围内未取得依据',timeout:'查询超时，未完成核验',unavailable:'来源暂不可用，未完成核验',cancelled:'已取消',error:'查询失败'} as Record<string,string>)[task.queryStatus]??task.queryStatus}</p>}
+    {task.phase === 'cancelled' && <p className="task-cancelled">已停止这次回答，可以继续提问。</p>}
     <SourceDetails sources={task.sources} final={task.phase === 'complete'}/>
-    <details className="task-technical"><summary>技术详情</summary><code>{task.requestId}</code><p>{task.errorCode}</p>{hasText && <div className="task-meta"><span>{task.model ?? '模型未返回'}</span><span>{task.elapsedMs == null ? '耗时未返回' : `${Math.round(task.elapsedMs)} ms`}</span><span>{task.usage ? `${task.usage.total_tokens} tokens` : '用量未返回'}</span></div>}</details>
-    <footer>{canStop && <button className="danger" onClick={onStop}>停止回答</button>}{(task.phase === 'error' || task.phase === 'cancelled') && <button onClick={onRetry}>新请求重试</button>}{hasText && <><button onClick={() => setExpanded((value) => !value)}>{expanded ? '收起正文' : '展开正文'}</button><button onClick={onCopy}>复制</button>{task.lane === 'generation' && <button onClick={onExport}>导出文本</button>}<button onClick={onReadFull}>读全文</button></>}{task.phase === 'complete' && <button onClick={onContinue}>展开讲讲</button>}{task.phase === 'complete' && sameCampus && task.poiId && <button onClick={onMap}>在地图查看</button>}</footer>
+    {!task.localKind&&<details className="task-technical"><summary>技术详情</summary><code>{task.requestId}</code><p>{task.errorCode}</p>{hasText && <div className="task-meta"><span>{task.model ?? '模型未返回'}</span><span>{task.elapsedMs == null ? '耗时未返回' : `${Math.round(task.elapsedMs)} ms`}</span><span>{task.usage ? `${task.usage.total_tokens} tokens` : '用量未返回'}</span></div>}</details>}
+    {!shortReply&&<footer>{canStop && <button className="danger" onClick={onStop}>停止回答</button>}{(task.phase === 'error' || task.phase === 'cancelled') && <button onClick={onRetry}>新请求重试</button>}{hasText && <><button onClick={() => setExpanded((value) => !value)}>{expanded ? '收起正文' : '展开正文'}</button><button onClick={onCopy}>复制</button>{task.lane === 'generation' && <button onClick={onExport}>导出文本</button>}<button onClick={onReadFull}>读全文</button></>}{task.phase === 'complete' && <button onClick={onContinue}>展开讲讲</button>}{task.phase === 'complete' && sameCampus && task.poiId && <button onClick={onMap}>在地图查看</button>}</footer>}
     {task.relatedRequestId && <small className="retry-link">此结果来自一次重新请求</small>}
   </article>;
 }
+
+const MemoTaskCard=memo(TaskCard,(a,b)=>a.task===b.task&&a.currentCampus===b.currentCampus&&a.canStop===b.canStop);
 
 export function App() {
   const [prefs, setPrefs] = useState(readPreferences); const [health, setHealth] = useState<Health | null>(null); const [serviceError, setServiceError] = useState(false);
@@ -110,7 +108,8 @@ export function App() {
   const [voiceSend,setVoiceSend]=useState<'confirm'|'auto'>('confirm');
   const interactionRef=useRef<SpeechInteractionController|null>(null); const interactionContext=useRef<SpeechInteractionContext|null>(null); const voiceSendRef=useRef(voiceSend); voiceSendRef.current=voiceSend;
   const [workView, setWorkView] = useState<WorkView>('chat');
-  const [chatInput, setChatInput] = useState(''); const [chatValidation, setChatValidation] = useState(''); const [draft, setDraft] = useState(DEFAULT_DRAFT); const [generationValidation, setGenerationValidation] = useState('');
+  const composerRef=useRef<ChatComposerHandle|null>(null),composerDraft=useRef('');
+  const setChatInput=(text:string)=>composerRef.current?.setText(text); const [chatValidation, setChatValidation] = useState(''); const [draft, setDraft] = useState(DEFAULT_DRAFT); const [generationValidation, setGenerationValidation] = useState('');
   const [chatTasks, setChatTasks] = useState<TaskRecord[]>([]); const [generationTasks, setGenerationTasks] = useState<TaskRecord[]>([]); const [events, setEvents] = useState<RuntimeEvent[]>([]); const [logsOpen, setLogsOpen] = useState(false); const [logRequest, setLogRequest] = useState<string | null>(null); const [notice, setNotice] = useState('');
   const [selectedPoi, setSelectedPoi] = useState<POI | null>(null); const [focusPoiId, setFocusPoiId] = useState<string | null>(null); const [focusRevision,setFocusRevision]=useState(0); const [campusAssets, setCampusAssets] = useState<CampusAssets | null>(null);
   const [avatarState, setAvatarState] = useState<AvatarState>('idle'); const [avatarReady, setAvatarReady] = useState(false); const [avatarMessage, setAvatarMessage] = useState('正在连接人物渲染器…');
@@ -118,10 +117,22 @@ export function App() {
   const [asrBusy, setAsrBusy] = useState(false);
   const recorderRef=useRef<MandarinRecorder|null>(null);
   const [recordingState,setRecordingState]=useState('');
-  useEffect(()=>{recorderRef.current=new MandarinRecorder(state=>{setRecordingState(state);setAsrBusy(state.startsWith('正在'));},text=>setChatInput(text));return()=>recorderRef.current?.cancel();},[]);
+  useEffect(()=>{recorderRef.current=new MandarinRecorder(state=>{setRecordingState(state);setAsrBusy(state.startsWith('正在'));},text=>{setChatInput(text);if(voiceSendRef.current==='auto')void submitTextRef.current(text);});return()=>recorderRef.current?.cancel();},[]);
   const [laneBusy, setLaneBusy] = useState<Record<Lane, boolean>>({ chat: false, generation: false });
   const [showLatest, setShowLatest] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  const narratorRef=useRef<NarrationSession|null>(null);
+  const [narrationSession,setNarrationSession]=useState<NarrationSnapshot|null>(null);
+  const narrationSnapshotRef=useRef(narrationSession);narrationSnapshotRef.current=narrationSession;
+  const catalogRef=useRef<Promise<POI[]>|null>(null);
+  const conversationPoi=useRef<POI|null>(null),conversationEstablished=useRef(false);
+  const introductionTask=useRef<{id:string;poiId:string}|null>(null);
+  const [dialogContext,setDialogContext]=useState<POI|null>(null);
+  const pendingIntroduction=useRef<{poi:POI;topic:string}|null>(null);
+  const [introCandidates,setIntroCandidates]=useState<POI[]>([]);
+  const submitEpoch=useRef(0);
+  const submitTextRef=useRef<(text:string)=>Promise<void>>(async()=>{});submitTextRef.current=submitTourText;
+
   const [narrationText,setNarrationText]=useState('');
   const [now, setNow] = useState(() => new Date());
   const [weather, setWeather] = useState<{ temp: number; label: string } | null>(null);
@@ -142,11 +153,11 @@ export function App() {
     return () => { active = false; window.clearInterval(timer); };
   }, []);
   useEffect(() => {
-    let downX = 0, downY = 0, hitAtDown = false;
-    const onDown = (event: PointerEvent) => { const target = event.target as HTMLElement | null; hitAtDown = Boolean(target?.closest?.('[data-avatar-hit]')); downX = event.clientX; downY = event.clientY; };
+    let downX = 0, downY = 0;
+    const onDown = (event: PointerEvent) => { downX = event.clientX; downY = event.clientY; };
     const onClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement | null;
-      const onAvatar = hitAtDown || Boolean(target?.closest?.('.guide-character'));
+      const onAvatar = Boolean(target?.closest?.('[data-avatar-hit],.guide-character'));
       if (!onAvatar) return;
       if (Math.hypot(event.clientX - downX, event.clientY - downY) > 6) return;
       setPanelOpen((value) => !value);
@@ -159,33 +170,39 @@ export function App() {
   const sessionsRef = useRef<Record<Lane, Record<CampusId, string>>>({ chat: { weijinlu: freshUuid(), beiyangyuan: freshUuid() }, generation: { weijinlu: freshUuid(), beiyangyuan: freshUuid() } });
   const laneAbortRef = useRef<Record<Lane, AbortController | null>>({ chat: null, generation: null }); const laneGenerationRef = useRef<Record<Lane, number>>({ chat: 0, generation: 0 }); const runningRef = useRef<Record<Lane, boolean>>({ chat: false, generation: false }); const requestRef = useRef<Record<Lane, string | null>>({ chat: null, generation: null });
   const requestSessionRef=useRef<Record<Lane,string|null>>({chat:null,generation:null});
-  const composingRef = useRef(false); const composerRef = useRef<HTMLTextAreaElement|null>(null); const messageListRef = useRef<HTMLDivElement>(null); const autoFollowRef = useRef(true); const previousCampusRef = useRef(prefs.campus); const campusRef = useRef(prefs.campus);
+  const messageListRef = useRef<HTMLDivElement>(null); const autoFollowRef = useRef(true); const previousCampusRef = useRef(prefs.campus); const campusRef = useRef(prefs.campus);
   const speechProgressRef = useRef<SpeechProgress | null>(null); const renderReceiptsRef = useRef(new Set<string>());
   const selectedPoiRef = useRef<POI | null>(null); const speechRunRequestRef = useRef<string | null>(null);
   const asrAbortRef = useRef<AbortController | null>(null); const asrGenerationRef = useRef(0); const asrRequestRef = useRef<string | null>(null);
   const playbackEpoch=useRef(0);
   const onSelectPoi = useCallback((poi: POI | null) => {
-    if(selectedPoiRef.current?.id!==poi?.id){playbackEpoch.current++;void speechControllerRef.current?.stop('new_request');lastSpeechRunRef.current=null;void cancelLane('chat');void cancelLane('generation');setAvatarState('idle');}
+    if(selectedPoiRef.current?.id!==poi?.id){void narratorRef.current?.stop(true);playbackEpoch.current++;void speechControllerRef.current?.stop('new_request');lastSpeechRunRef.current=null;void cancelLane('chat');void cancelLane('generation');setAvatarState('idle');}
     selectedPoiRef.current = poi; setSelectedPoi(poi);setNarrationText(poi?.description??'');
   }, []);
-  const onRouteChange=useCallback(()=>{setNarrationText('');playbackEpoch.current++;lastSpeechRunRef.current=null;void speechControllerRef.current?.stop('new_request');setAvatarState('idle');},[]); const onCampusAssets = useCallback((assets: CampusAssets | null) => setCampusAssets(assets), []);
+  const onRouteChange=useCallback(()=>{void narratorRef.current?.stop(true);setNarrationText('');playbackEpoch.current++;lastSpeechRunRef.current=null;void speechControllerRef.current?.stop('new_request');setAvatarState('idle');},[]); const onCampusAssets = useCallback((assets: CampusAssets | null) => setCampusAssets(assets), []);
 
   useEffect(() => { try { localStorage.setItem('ai4tju.r2.preferences', JSON.stringify(prefs)); } catch { /* Preferences remain in memory. */ } }, [prefs]);
   campusRef.current=prefs.campus;
   useEffect(() => {
     let active = true; const avatar = createAvatarAdapter(); const controller = createSpeechController(); const asr = controller.getAdapter(); avatarRef.current = avatar; asrRef.current = asr; speechControllerRef.current = controller;
+    narratorRef.current=new NarrationSession(controller,value=>{
+      narrationSnapshotRef.current=value;setNarrationSession(value);
+      const task=introductionTask.current;
+      if(value?.text&&task?.poiId===value.poi.id)setChatTasks(items=>items.some(t=>t.requestId===task.id&&t.answer!==value.text)?items.map(t=>t.requestId===task.id?{...t,answer:value.text}:t):items);
+    });
     interactionRef.current=connectSpeechInteraction(()=>createSpeechInteractionController({speechController:controller}),controller);
     const unsubscribeLevel=controller.getAdapter().subscribeAudioLevel(level=>avatar.setAudioLevel?.(level));
     void transport.health().then((value) => { if (active) { setHealth(value); setServiceError(false); } }).catch(() => { if (active) setServiceError(true); });
     if (avatarHostRef.current) void avatar.mount(avatarHostRef.current).then((result) => { if (active) { setAvatarReady(result.status === 'ready'); setAvatarMessage(result.status === 'ready' ? '人物已就位' : result.status === 'failed' ? '人物渲染失败' : '人物渲染尚未接入'); } });
-    const unsubscribe = controller.subscribe((progress) => { if (!active) return; speechProgressRef.current = progress; setSpeechProgress(progress); if (progress.status === 'error') setNotice('播报失败：' + (progress.code ?? 'speech_failed') + '。可点击恢复声音或重新朗读。'); speechRunRequestRef.current = progress.status === 'idle' || progress.status === 'stopped' || progress.status === 'error' ? null : progress.request_id; if (progress.status === 'speaking') setAvatarState('speaking'); else if (!runningRef.current.chat && !runningRef.current.generation) setAvatarState(progress.status === 'error' ? 'error' : 'idle'); });
-    return () => { active = false; laneAbortRef.current.chat?.abort(); laneAbortRef.current.generation?.abort(); asrAbortRef.current?.abort(); unsubscribe(); unsubscribeLevel(); controller.dispose(); interactionContext.current=null;interactionRef.current?.dispose(); avatar.dispose(); if (asrRequestRef.current) void asr.stop(asrRequestRef.current); };
+    const unsubscribe = controller.subscribe((progress) => { if (!active) return; speechProgressRef.current = progress; setSpeechProgress(progress); if (progress.status === 'error') setNotice(SPEECH_ERROR_MESSAGES[progress.code??'']??'声音暂未播放，请点击继续讲解或重新朗读。'); speechRunRequestRef.current = progress.status === 'idle' || progress.status === 'stopped' || progress.status === 'error' ? null : progress.request_id; if (progress.status === 'speaking') setAvatarState('speaking'); else if (!runningRef.current.chat && !runningRef.current.generation) setAvatarState(progress.status === 'error' ? 'error' : 'idle'); });
+    return () => { active = false; laneAbortRef.current.chat?.abort(); laneAbortRef.current.generation?.abort(); asrAbortRef.current?.abort(); unsubscribe(); unsubscribeLevel(); narratorRef.current?.dispose();narratorRef.current=null;controller.dispose(); interactionContext.current=null;interactionRef.current?.dispose(); avatar.dispose(); if (asrRequestRef.current) void asr.stop(asrRequestRef.current); };
   }, []);
   useEffect(() => { avatarRef.current?.setState(avatarState); }, [avatarState]);
-  useEffect(() => { const video = avatarState === 'speaking' && selectedPoi ? tourVideoFor(selectedPoi.id) : null; avatarRef.current?.setCompanionVideo?.(video ? { src: video.src, mime: video.mime, caption: video.caption } : null); }, [avatarState, selectedPoi]);
   useEffect(() => {
     if (previousCampusRef.current === prefs.campus) return; previousCampusRef.current = prefs.campus; setSelectedPoi(null); selectedPoiRef.current = null; setFocusPoiId(null); setCampusAssets(null); setNotice('已切换浏览校区；实际位置不会自动改变。');
-    void stopListening(); void cancelLane('chat', 'campus_change'); void cancelLane('generation', 'campus_change'); void speechControllerRef.current?.stop('campus_change');
+    void (async()=>{await narratorRef.current?.stop(true);await stopListening();await cancelLane('chat','campus_change');await cancelLane('generation','campus_change');
+      const pending=pendingIntroduction.current;if(pending?.poi.campus_id===campusRef.current){pendingIntroduction.current=null;await startIntroduction(pending.poi,pending.topic);}
+    })();
   }, [prefs.campus]);
   useEffect(() => {
     if (!autoFollowRef.current || !messageListRef.current || workView !== 'chat') return;
@@ -204,13 +221,13 @@ export function App() {
 
   function focusMap(poiId:string|null){mapFocusRef.current?.(poiId);}
   function currentSession(lane: Lane, campus = prefs.campus) { return tourMemoryRef.current[campus]?.session?.session_id ?? sessionsRef.current[lane][campus]; }
-  function setTasks(lane: Lane, update: (current: TaskRecord[]) => TaskRecord[]) { if (lane === 'chat') setChatTasks(update); else setGenerationTasks(update); }
+  function setTasks(lane: Lane, update: (current: TaskRecord[]) => TaskRecord[]) { if (lane === 'chat') setChatTasks(items=>update(items).slice(-40)); else setGenerationTasks(items=>update(items).slice(-10)); }
   function setRunning(lane: Lane, value: boolean) { runningRef.current[lane] = value; setLaneBusy((current) => ({ ...current, [lane]: value })); }
   function isCurrent(lane: Lane, generation: number, requestId: string) { return laneGenerationRef.current[lane] === generation && requestRef.current[lane] === requestId; }
   function pollRuntime(requestId: string, lane: Lane, generation: number) {
     let cursor = 0; let stopped = false; let timer = 0; let pending = false;
-    const poll = async () => { if (stopped || pending || !isCurrent(lane, generation, requestId)) return; pending = true; try { const page = await transport.events(requestId, cursor); if (isCurrent(lane, generation, requestId)) { cursor = page.next_cursor; setEvents((current) => mergeRuntimeEvents(current, page.events)); } } catch { /* SSE error card remains authoritative. */ } finally { pending = false; } };
-    void poll(); timer = window.setInterval(() => void poll(), 500); return async () => { window.clearInterval(timer); await poll(); stopped = true; };
+    const poll = async () => { if (stopped || pending || !isCurrent(lane, generation, requestId)) return; pending = true; try { const page = await transport.events(requestId, cursor); if (isCurrent(lane, generation, requestId)) { cursor = page.next_cursor; if(page.events.length)setEvents((current) => mergeRuntimeEvents(current, page.events)); } } catch { /* SSE error card remains authoritative. */ } finally { pending = false; } };
+    void poll(); timer = window.setInterval(() => void poll(), 1000); return async () => { window.clearInterval(timer); await poll(); stopped = true; };
   }
   const lastSpeechRunRef=useRef<SpeechRun|null>(null);
   function bindPlayback(run:SpeechRun){
@@ -244,10 +261,10 @@ export function App() {
     if (!clean) { if (lane === 'chat') setChatValidation('请输入问题后再发送。'); else setGenerationValidation('请先说明要生成的校园内容。'); return; }
     if (runningRef.current[lane]) { setNotice(`${lane === 'chat' ? '对话' : '生成'}任务仍在执行，请先停止或等待完成。`); return; }
     void stopListening();
-    const campus = prefs.campus; const requestId = freshUuid(requestRef.current[lane] ?? undefined); const messageId = freshUuid(); const controller = new AbortController(); const laneGeneration = ++laneGenerationRef.current[lane];
+    const campus = poi?.campus_id??prefs.campus; const requestId = freshUuid(requestRef.current[lane] ?? undefined); const messageId = freshUuid(); const controller = new AbortController(); const laneGeneration = ++laneGenerationRef.current[lane];
     requestSessionRef.current[lane]=currentSession(lane,campus); requestRef.current[lane] = requestId; laneAbortRef.current[lane] = controller; setRunning(lane, true); setAvatarState('thinking');
     const initial: TaskRecord = { ...newTask(requestId, messageId, relatedRequestId), lane, prompt: clean, mode, campus, poiId: poi?.campus_id === campus ? poi.id : poiIdOverride, generation: options };
-    setTasks(lane, (current) => [...current, initial]); if (lane === 'chat') { setChatInput(''); setChatValidation(''); } else setGenerationValidation(''); setNotice('');
+    setTasks(lane, (current) => [...current, initial]); if (lane === 'chat') { setChatValidation(''); } else setGenerationValidation(''); setNotice('');
     const startedAt = Date.now(); let hardTimedOut = false; const hardDeadline = setTimeout(() => { hardTimedOut = true; controller.abort(); }, 45000); const finishPoll = pollRuntime(requestId, lane, laneGeneration); const speechGenerationId = freshUuid(); let speechStarted = false; let localTask = initial;
     let paintTimer:ReturnType<typeof setTimeout>|null=null;
     const paint=()=>{paintTimer=null;if(isCurrent(lane,laneGeneration,requestId)){const snapshot=localTask;setTasks(lane,current=>current.map(task=>task.requestId===requestId?snapshot:task));}};
@@ -260,7 +277,7 @@ export function App() {
       const completed = await consumeR2Stream(response, requestId, controller.signal, (event) => {
         if (!isCurrent(lane, laneGeneration, requestId)) return; localTask = { ...localTask, ...applyStreamEvent(localTask, event) };
         if(event.type==='status'&&event.payload.query_state)localTask.queryStatus=event.payload.query_state;
-        if(event.type==='answer_delta'){if(!paintTimer)paintTimer=setTimeout(paint,40);}else{if(paintTimer)clearTimeout(paintTimer);paint();}
+        if(event.type==='answer_delta'){if(!paintTimer)paintTimer=setTimeout(paint,80);}else{if(paintTimer)clearTimeout(paintTimer);paint();}
         if (event.type === 'answer_delta' && speechStarted) speechControllerRef.current?.append(speechGenerationId, event.payload.text);
         if (event.type === 'poi_action') void handleSceneEvent(event, localTask, laneGeneration);
       }, createSseParser, { startedAt, onTimeout: () => controller.abort(), expected: { sessionId: currentSession(lane, campus), messageId, campusId: campus, mode } });
@@ -283,7 +300,8 @@ export function App() {
     const sessionId = requestSessionRef.current[lane];if(!sessionId)return; ++laneGenerationRef.current[lane]; laneAbortRef.current[lane]?.abort(); laneAbortRef.current[lane] = null; setRunning(lane, false);
     setTasks(lane, (current) => current.map((item) => item.requestId === requestId && item.phase !== 'complete' ? { ...item, phase: 'cancelled', errorCode: 'CANCELLED', errorMessage: '本次操作已取消。', finishedAt: Date.now() } : item));
     if (speechRunRequestRef.current === requestId) await speechControllerRef.current?.stop(reason === 'user' ? 'cancel' : reason);
-    await transport.cancel(requestId, sessionId).then((result) => { if (result.upstream_stop === 'unconfirmed') setNotice('本地已停止；上游停止状态未确认。'); }).catch(() => setNotice('本地已停止；取消回执未确认。'));
+    // Local stop must not wait on a potentially unavailable cancellation endpoint.
+    void transport.cancel(requestId, sessionId).catch(()=>undefined);
     if (!runningRef.current.chat && !runningRef.current.generation) setAvatarState('idle');
   }
   async function enableSpeech() {
@@ -291,6 +309,7 @@ export function App() {
     const available = await controller.listVoices(); const chinese = available.find((voice) => /^zh(?:-|_)/i.test(voice.locale)); setVoices(available); if (!chinese) { setNotice('未检测到中文音色，语音导览未开启。'); return; } setVoiceId(chinese.id); setSpeechEnabled(true); setPrefs((current) => ({ ...current, speechMode: current.speechMode === 'off' ? 'brief' : current.speechMode }));
   }
   async function playTask(task: TaskRecord, text: string, segmentId?: string) {
+    void narratorRef.current?.stop(true);
     const speech=speechControllerRef.current;if(!speech||!text.trim())return;
     const epoch=playbackEpoch.current;
     // Unlock the existing player in this click, before network or cancellation awaits.
@@ -313,12 +332,79 @@ export function App() {
     const result=await speechControllerRef.current?.continueRemaining?.(run);
     if(result?.status!=='ready')setNotice('没有可继续的内容，请选择正文朗读。');
   }
+  function loadDirectory():Promise<POI[]>{
+    if(!catalogRef.current)catalogRef.current=Promise.all((['weijinlu','beiyangyuan'] as const).map(campus=>r2Transport.pois(campus,{limit:100}))).then(pages=>pages.flatMap(page=>page.items)).catch(error=>{catalogRef.current=null;throw error;});
+    return catalogRef.current;
+  }
+  function rememberPoi(poi:POI|null){conversationEstablished.current=true;conversationPoi.current=poi;setDialogContext(poi);}
+  function addDialog(prompt:string,answer:string,localKind:TaskRecord['localKind'],poi:POI|null=null){
+    const id=freshUuid();setTasks('chat',items=>[...items,{...newTask(id,freshUuid()),lane:'chat',prompt,answer,phase:'complete',finishedAt:Date.now(),mode:'campus_qa',campus:poi?.campus_id??campusRef.current,poiId:poi?.id??null,generation:null,localKind}]);return id;
+  }
+  async function startIntroduction(poi:POI,topic=poi.name){
+    setIntroCandidates([]);setNotice('');
+    if(poi.campus_id!==campusRef.current){pendingIntroduction.current={poi,topic};setPrefs(current=>({...current,campus:poi.campus_id}));return;}
+    const activation=speechControllerRef.current?.enable(true);
+    onSelectPoi(poi);
+    const epoch=++playbackEpoch.current;
+    await Promise.all([cancelLane('chat'),cancelLane('generation'),stopListening(),activation]);
+    if(epoch!==playbackEpoch.current||poi.id!==selectedPoiRef.current?.id)return;
+    rememberPoi(poi);
+    const prior=narrationSnapshotRef.current;
+    if(!prior||prior.poi.id!==poi.id||['ended','stopped','error'].includes(prior.status))introductionTask.current={id:addDialog(topic===poi.name?'介绍一下'+poi.name:topic,poi.name+'。'+poi.description,'introduction',poi),poiId:poi.id};
+    setSpeechEnabled(true);setNarrationText(poi.description);
+    await narratorRef.current?.start(poi,topic,currentSession('chat',poi.campus_id),voiceId);
+  }
+  async function recoverSpeech(){
+    const active=narrationSnapshotRef.current;
+    if(active&&!['ended','stopped'].includes(active.status)){await narratorRef.current?.resume();return;}
+    const enabled=await speechControllerRef.current?.enable(true);
+    if(enabled?.status==='ready')await speechControllerRef.current?.resume();
+    else setNotice('请允许网页播放声音后重试。');
+  }
+  async function explainPoi(poi:POI){
+    const active=narrationSnapshotRef.current;
+    if(active?.poi.id===poi.id&&['playing','preparing','buffering'].includes(active.status)){await narratorRef.current?.pause();return;}
+    if(active?.poi.id===poi.id&&['paused','error'].includes(active.status)){await narratorRef.current?.resume();return;}
+    await startIntroduction(poi);
+  }
   async function submitTourText(text:string){
-    if(await tourTextRef.current?.(text)){setChatInput('');return;}
-    await runTask('chat',text,'campus_qa',null);
+    text=text.trim();if(!text)return;
+    const epoch=++submitEpoch.current,pendingCandidates=introCandidates;
+    pendingIntroduction.current=null;++playbackEpoch.current;
+    setPanelOpen(true);setChatInput('');setNotice('');setIntroCandidates([]);
+    await cancelLane('chat');
+    let pois:POI[]=[];if(introductionIntent(text,[],null).kind!=='control')try{pois=await Promise.race([loadDirectory(),new Promise<POI[]>(resolve=>setTimeout(()=>resolve([]),1000))]);}catch{/* Server retrieval can answer even if the directory is unavailable. */}
+    if(epoch!==submitEpoch.current)return;
+    const context=conversationEstablished.current?conversationPoi.current:selectedPoiRef.current;
+    const chosen=pendingCandidates.filter(p=>text.includes(p.name)||text.includes(CAMPUS_NAMES[p.campus_id].replace('校区','')));
+    const intent=chosen.length===1?{kind:'introduce' as const,poi:chosen[0]}:introductionIntent(text,pois,context);
+    if(intent.kind==='control'){
+      if(intent.action==='pause')await narratorRef.current?.pause();
+      else if(intent.action==='resume'){
+        if(narrationSnapshotRef.current&&!['ended','stopped'].includes(narrationSnapshotRef.current.status))await narratorRef.current?.resume();
+        else if(context)await startIntroduction(context,'进一步介绍'+context.name);
+        else await runTask('chat','请继续刚才的话题。','campus_qa',null,null,null);
+      }else{await narratorRef.current?.stop(intent.action==='change');if(intent.action==='change'){rememberPoi(null);onSelectPoi(null);}}
+      if(intent.action!=='resume')addDialog(text,intent.action==='pause'?'讲解已暂停，你可以继续提问。':intent.action==='change'?'想聊哪个地方？直接告诉我名字就可以。':'已停止讲解。','control');
+      return;
+    }
+    if(intent.kind==='introduce'){await startIntroduction(intent.poi,text);return;}
+    if(intent.kind==='clarify'){
+      // A follow-up to a broad topic stays in that conversation, not an old map selection.
+      if(!intent.candidates.length&&!context&&conversationEstablished.current&&/进一步|再详细|展开|刚才/.test(text)){await narratorRef.current?.stop(true);await runTask('chat',text,'campus_qa',null,null,null);return;}
+      setIntroCandidates(intent.candidates);addDialog(text,intent.candidates.length?'你说的是哪一处？可以回复名称或校区，也可以点下面的选项。':'你想了解哪个地方？直接告诉我名字就可以，也可以说“介绍天津大学”。','clarification');return;
+    }
+    await narratorRef.current?.stop(true);
+    if(epoch!==submitEpoch.current)return;
+    const tourHandled=await tourTextRef.current?.(text);
+    if(epoch!==submitEpoch.current)return;
+    if(tourHandled){addDialog(text,'已处理导航或行程请求，可以在地图中查看。','control');return;}
+    const named=mentionedPois(text,pois),poi=named.length===1?named[0]:/它|这里|那里|这个地方|刚才/.test(text)?context:null;
+    if(poi)rememberPoi(poi);else if(!/它|这里|那里|这个地方|刚才|继续/.test(text))rememberPoi(null);
+    await runTask('chat',text,'campus_qa',null,null,poi);
   }
   async function startListening() {
-    await speechControllerRef.current?.stop('new_request');
+    if(narrationSnapshotRef.current&&!['ended','stopped'].includes(narrationSnapshotRef.current.status))await narratorRef.current?.pause();else await speechControllerRef.current?.stop('new_request');
     try{await recorderRef.current?.start(currentSession('chat'));}catch(e){setRecordingState((e as Error).message);setAsrBusy(false);}
   }
   async function startContinuousListening() {
@@ -366,7 +452,7 @@ export function App() {
   function exportTask(task: TaskRecord) { const blob = exportGeneratedText({...task,answer:privateText(task.answer)}); if (!blob) { setNotice('正文为空，无法导出。'); return; } const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = `tju-${task.generation?.type ?? 'content'}-${task.requestId.slice(0, 8)}.txt`; anchor.click(); URL.revokeObjectURL(url); }
   function retryTask(task: TaskRecord) { if (task.lane === 'generation') void runTask('generation', task.prompt, 'content_generation', task.generation, task.requestId, task.poiId === selectedPoi?.id ? selectedPoi : null, task.poiId); else void runTask('chat', task.prompt, task.mode, null, task.requestId, task.poiId === selectedPoi?.id ? selectedPoi : null, task.poiId); }
   function submitGeneration() { const error = validateGenerationDraft(draft); if (error) { setGenerationValidation(error); return; } void runTask('generation', draft.prompt, 'content_generation', { type: draft.type, requirements: draft.requirements, length: draft.length, style: draft.style }); }
-  function clearChat() { void stopListening(); void speechControllerRef.current?.stop('clear'); void cancelLane('chat', 'clear'); sessionsRef.current.chat[prefs.campus] = freshUuid(sessionsRef.current.chat[prefs.campus]); setChatTasks((current) => current.filter((task) => task.campus !== prefs.campus)); setChatValidation(''); }
+  function clearChat() { ++submitEpoch.current;rememberPoi(null);setIntroCandidates([]);introductionTask.current=null;void narratorRef.current?.stop(true); void stopListening(); void speechControllerRef.current?.stop('clear'); void cancelLane('chat', 'clear'); sessionsRef.current.chat[prefs.campus] = freshUuid(sessionsRef.current.chat[prefs.campus]); setChatTasks([]); setChatValidation(''); }
   function onMessageScroll() { const node = messageListRef.current; if (!node) return; const atBottom = shouldFollowLatest(node.scrollTop, node.scrollHeight, node.clientHeight); autoFollowRef.current = atBottom; setShowLatest(!atBottom); }
   function goLatest() { const node = messageListRef.current; if (!node) return; autoFollowRef.current = true; node.scrollTop = node.scrollHeight; setShowLatest(false); }
   function resizeStart(event: React.PointerEvent<HTMLDivElement>) { if (window.innerWidth < 900) return; const startX = event.clientX; const startWidth = prefs.panelWidth; const move = (next: PointerEvent) => setPrefs((current) => ({ ...current, panelWidth: Math.min(760, Math.max(420, startWidth + startX - next.clientX)) })); const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); }; window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); }
@@ -375,25 +461,38 @@ export function App() {
   const dateText = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', month: 'numeric', day: 'numeric', weekday: 'short' }).format(now);
   const speechSummary = !speechEnabled ? '未开启' : speechProgress?.status === 'speaking' ? '播报中' : speechProgress?.status === 'buffering' ? '准备中' : speechProgress?.status === 'error' ? '播报失败' : speechProgress?.status === 'paused' ? '已暂停' : '已开启';
   const shownEvents = logRequest ? events.filter((event) => event.request_id === logRequest) : events;
-  const campusChatTasks = chatTasks.filter((task) => task.campus === prefs.campus);
+  const cardActions=useRef({cancelLane,retryTask,showLogs,copyTask,playTask,focusMap,continueTask:async(task:TaskRecord)=>{}});
+  cardActions.current={cancelLane,retryTask,showLogs,copyTask,playTask,focusMap,continueTask:async task=>{
+    if(task.poiId){try{const poi=await r2Transport.poi(task.poiId);await startIntroduction(poi,'进一步介绍'+poi.name);}catch{setNotice('这个地点暂时无法读取，请稍后再试。');}}
+    else void submitTextRef.current('请基于刚才的回答进一步介绍：'+task.prompt);
+  }};
+  const campusChatTasks = chatTasks;
   const serviceTone = serviceError ? 'off' : health ? 'ready' : 'pending'; const modelTone = health?.model.verified ? 'ready' : health?.model.configured ? 'pending' : 'off';
 
   return <div className="app-shell r2-shell">
-    <header className="topbar"><div className="topbar-left"><div className="topbar-pill topbar-clock" title="北京时间（Asia/Shanghai）"><strong>{timeText}</strong><span>{dateText}</span></div><div className="topbar-pill topbar-weather" title={weather ? `天津 · ${weather.label}` : '天津天气暂不可用'}><strong>{weather ? `${weather.temp}°C` : '--'}</strong><span>{weather ? weather.label : '天气 --'}</span></div></div><div className="topbar-right"><details className="speech-menu"><summary>语音讲解<small>{speechSummary}</small></summary><div className="speech-menu-body"><div className="speech-controls">{!speechEnabled ? <button onClick={() => void enableSpeech()}>开启语音导览</button> : <><select aria-label="自动播报方式" value={prefs.speechMode} onChange={(event) => { setPrefs({ ...prefs, speechMode: event.target.value as SpeechMode }); if (event.target.value === 'off') void speechControllerRef.current?.stop('user'); }}><option value="off">自动播报关闭</option><option value="brief">自动简述</option><option value="full">自动全文</option></select><select aria-label="导览语音" value={voiceId} onChange={(event) => setVoiceId(event.target.value)}>{voices.map((voice) => <option key={voice.id} value={voice.id}>{voice.name}</option>)}</select><button onClick={() => void enableSpeech()}>刷新音色</button><button onClick={() => void speechControllerRef.current?.enable(true).then((result) => setNotice(result.status === 'ready' ? '已请求恢复声音。' : '声音恢复失败，请检查浏览器权限。'))}>恢复声音</button>{speechControllerRef.current?.continueRemaining && <button onClick={() => void continueSpeech()}>继续讲</button>}<span>{speechProgress?.status === 'speaking' ? '正在播报' : speechProgress?.status === 'buffering' ? '准备播报' : speechProgress?.status === 'error' ? '播报失败，请恢复或重读' : speechProgress?.status === 'paused' ? '播报已暂停' : '语音已开启'}</span>{(speechProgress?.status === 'speaking' || speechProgress?.status === 'buffering') && <button onClick={() => void speechControllerRef.current?.stop('user')}>停止播报</button>}</>}</div></div></details><button className="logs-button" onClick={() => showLogs()}><span>运行日志</span>{events.length > 0 && <b>{events.length}</b>}</button></div></header>
+    <header className="topbar"><div className="topbar-left"><div className="topbar-pill topbar-clock" title="北京时间（Asia/Shanghai）"><strong>{timeText}</strong><span>{dateText}</span></div><div className="topbar-pill topbar-weather" title={weather ? `天津 · ${weather.label}` : '天津天气暂不可用'}><strong>{weather ? `${weather.temp}°C` : '--'}</strong><span>{weather ? weather.label : '天气 --'}</span></div></div><div className="topbar-right"><details className="speech-menu"><summary>语音讲解<small>{speechSummary}</small></summary><div className="speech-menu-body"><div className="speech-controls">{!speechEnabled ? <button onClick={() => void enableSpeech()}>开启语音导览</button> : <><select aria-label="自动播报方式" value={prefs.speechMode} onChange={(event) => { setPrefs({ ...prefs, speechMode: event.target.value as SpeechMode }); if (event.target.value === 'off') void speechControllerRef.current?.stop('user'); }}><option value="off">自动播报关闭</option><option value="brief">自动简述</option><option value="full">自动全文</option></select><select aria-label="导览语音" value={voiceId} onChange={(event) => setVoiceId(event.target.value)}>{voices.map((voice) => <option key={voice.id} value={voice.id}>{voice.name}</option>)}</select><button onClick={() => void enableSpeech()}>刷新音色</button><button onClick={() => void recoverSpeech()}>恢复声音</button>{speechControllerRef.current?.continueRemaining && <button onClick={() => void continueSpeech()}>继续讲</button>}<span>{speechProgress?.status === 'speaking' ? '正在播报' : speechProgress?.status === 'buffering' ? '准备播报' : speechProgress?.status === 'error' ? '播报失败，请恢复或重读' : speechProgress?.status === 'paused' ? '播报已暂停' : '语音已开启'}</span>{(speechProgress?.status === 'speaking' || speechProgress?.status === 'buffering') && <button onClick={() => void speechControllerRef.current?.stop('user')}>停止播报</button>}</>}</div></div></details><button className="logs-button" onClick={() => showLogs()}><span>运行日志</span>{events.length > 0 && <b>{events.length}</b>}</button></div></header>
     <aside className="guide-character" aria-label="数字人导游"><div ref={avatarHostRef} className="guide-character-host" style={{transform: `scale(${prefs.avatarScale})`}}/></aside>
-    <TourWorkspace key={prefs.campus} campus={prefs.campus} memory={tourMemoryRef.current[prefs.campus]} onMemory={value=>{tourMemoryRef.current[prefs.campus]=value;}} registerCancel={handler=>{tourCancelRef.current=handler;}} registerText={handler=>{tourTextRef.current=handler;}} registerMapFocus={handler=>{mapFocusRef.current=handler;}} selectedPoi={selectedPoi} onExplainPoi={poi=>{playbackEpoch.current++;void cancelLane('chat');void cancelLane('generation');const task:TaskRecord={...newTask(freshUuid(),freshUuid()),lane:'chat',prompt:poi.name,mode:'campus_qa',campus:poi.campus_id,poiId:poi.id,generation:null};void playTask(task,privateText(poi.name+'。'+poi.description));}} onRouteChange={onRouteChange} onSelectPoi={onSelectPoi} onCampus={campus=>setPrefs(current=>({...current,campus}))}
-      speechStatus={<div className="poi-speech-status" role="status" aria-live="polite"><span>{speechProgress?.status==='speaking'?'正在播放':speechProgress?.status==='buffering'?'正在准备语音':speechProgress?.status==='stopped'?'已停止':speechProgress?.status==='error'?'播放失败：'+speechProgress.code:!speechEnabled?'点击开始讲解，将开启中文语音':'语音已就绪'}</span>{speechProgress?.status==='error'&&<button onClick={()=>void speechControllerRef.current?.enable(true)}>再次播放声音</button>}{notice&&<p>{notice}</p>}</div>}
+    <button className="open-guide" onClick={()=>setPanelOpen(!panelOpen)}>{panelOpen?'收起对话':'和海小棠聊聊'}</button><TourWorkspace key={prefs.campus} campus={prefs.campus} memory={tourMemoryRef.current[prefs.campus]} onMemory={value=>{tourMemoryRef.current[prefs.campus]=value;}} registerCancel={handler=>{tourCancelRef.current=handler;}} registerText={handler=>{tourTextRef.current=handler;}} registerMapFocus={handler=>{mapFocusRef.current=handler;}} selectedPoi={selectedPoi} onExplainPoi={poi=>void explainPoi(poi)} onRouteChange={onRouteChange} onSelectPoi={onSelectPoi} onCampus={campus=>setPrefs(current=>({...current,campus}))}
+      explainLabel={narrationSession&&narrationSession.poi.id===selectedPoi?.id?(['playing','buffering','preparing'].includes(narrationSession.status)?'暂停讲解':['paused','error'].includes(narrationSession.status)?'继续讲解':'开始讲解'):'开始讲解'}
+      presentation={narrationSession?.poi.id===selectedPoi?.id&&narrationSession?<GuidePresentation key={narrationSession.id} session={narrationSession} avatar={avatarRef.current} onPause={()=>void narratorRef.current?.pause()} onResume={()=>void narratorRef.current?.resume()} onStop={()=>void narratorRef.current?.stop()}/>:null}
+      speechStatus={<div className="poi-speech-status" role="status" aria-live="polite"><span>{speechProgress?.status==='speaking'?'正在播放':speechProgress?.status==='buffering'?'正在准备语音':speechProgress?.status==='stopped'?'已停止':speechProgress?.status==='error'?'声音暂未播放，请点击继续讲解':!speechEnabled?'点击开始讲解，将开启中文语音':'语音已就绪'}</span>{speechProgress?.status==='error'&&<button onClick={()=>void recoverSpeech()}>再次播放声音</button>}{notice&&<p>{notice}</p>}</div>}
       onReadRoute={route=>{const task:TaskRecord={...newTask(freshUuid(),freshUuid()),lane:'chat',prompt:'路线讲解',mode:'campus_qa',campus:prefs.campus,poiId:null,generation:null};void playTask(task,privateText(routeNarration(route)));}}
-      onStop={async()=>{playbackEpoch.current++;lastSpeechRunRef.current=null;void speechControllerRef.current?.stop('user');await stopListening();await cancelLane('chat');await cancelLane('generation');await speechControllerRef.current?.stop('user');}}
-      panelOpen={panelOpen} onPanelClose={()=>setPanelOpen(false)} onExplain={stop=>{const epoch=++playbackEpoch.current;void r2Transport.poi(stop.poi_id).then(poi=>{if(epoch!==playbackEpoch.current||poi.campus_id!==campusRef.current)return;onSelectPoi(poi);void cancelLane('chat');void cancelLane('generation');const task:TaskRecord={...newTask(freshUuid(),freshUuid()),lane:'chat',prompt:poi.name,mode:'campus_qa',campus:poi.campus_id,poiId:poi.id,generation:null};void playTask(task,privateText(poi.name+'。'+poi.description));}).catch(()=>setNotice('当前地点资料暂不可用，未开始讲解。'));}}
+      onStop={async()=>{void narratorRef.current?.stop();playbackEpoch.current++;lastSpeechRunRef.current=null;void speechControllerRef.current?.stop('user');await stopListening();await cancelLane('chat');await cancelLane('generation');await speechControllerRef.current?.stop('user');}}
+      panelOpen={panelOpen} onPanelClose={()=>setPanelOpen(false)} onExplain={stop=>{void r2Transport.poi(stop.poi_id).then(poi=>startIntroduction(poi)).catch(()=>setNotice('地点暂时无法读取。'));}}
       caption={asrBusy?'正在聆听…':speechProgress?.status==='speaking'?'正在播报当前讲解':notice}
       narration={narrationText}
       voice={<>
-<div className="task-scroll tour-chat-history" ref={messageListRef} onScroll={onMessageScroll}>{campusChatTasks.length===0&&<p className="tour-chat-empty">问点校园的事，也可以直接说想去哪；流式正文会写入同一条消息。</p>}{campusChatTasks.map(task=><TaskCard key={task.requestId} task={task} currentCampus={prefs.campus} canStop={laneBusy.chat&&requestRef.current.chat===task.requestId} onStop={()=>void cancelLane('chat')} onRetry={()=>retryTask(task)} onLogs={()=>showLogs(task.requestId)} onCopy={()=>copyTask(task)} onExport={()=>undefined} onRead={(text,id)=>void playTask(task,text,id)} onReadFull={()=>void playTask(task,task.answer)} onContinue={()=>setChatInput(`请基于刚才的回答展开讲讲：${task.prompt}`)} onMap={()=>focusMap(task.poiId)}/>)}</div>
+<div className="task-scroll tour-chat-history" ref={messageListRef} onScroll={onMessageScroll}>{campusChatTasks.length===0&&<p className="tour-chat-empty">你好，我是海小棠。可以直接聊校园、问问题或告诉我想了解的地方，不用先选地点。</p>}{campusChatTasks.map(task=><MemoTaskCard key={task.requestId} task={task} currentCampus={prefs.campus} canStop={laneBusy.chat&&requestRef.current.chat===task.requestId} onStop={()=>void cardActions.current.cancelLane('chat')} onRetry={()=>cardActions.current.retryTask(task)} onLogs={()=>cardActions.current.showLogs(task.requestId)} onCopy={()=>cardActions.current.copyTask(task)} onExport={()=>undefined} onRead={(text,id)=>void cardActions.current.playTask(task,text,id)} onReadFull={()=>void cardActions.current.playTask(task,task.answer)} onContinue={()=>void cardActions.current.continueTask(task)} onMap={()=>cardActions.current.focusMap(task.poiId)}/>)}
+{introCandidates.length>0&&<div className="dialog-candidates" role="group" aria-label="选择介绍地点">{introCandidates.map(poi=><button key={poi.id} onClick={()=>void startIntroduction(poi)}>{poi.name} · {CAMPUS_NAMES[poi.campus_id]}</button>)}</div>}
+{narrationSession&&<div className="dialog-narration-controls"><span>{narrationSession.poi.name}</span><button onClick={()=>void explainPoi(narrationSession.poi)}>{narrationSession.status==='paused'?'继续讲解':['ended','stopped','error'].includes(narrationSession.status)?'重新讲解':'暂停讲解'}</button><button onClick={()=>void narratorRef.current?.stop()}>停止讲解</button><button onClick={()=>{setPanelOpen(false);document.querySelector('.guide-presentation')?.scrollIntoView({behavior:'smooth',block:'center'});}}>查看讲解画面</button></div>}
+</div>
 
 {showLatest&&<button className="latest-button" onClick={goLatest}>回到最新</button>}
 
-{selectedPoi&&<div className="context-chip">当前点位：{selectedPoi.name}<button onClick={()=>onSelectPoi(null)}>×</button></div>}<div className="tour-composer" onClick={(event)=>{const el=event.target as HTMLElement;if(el.closest('button'))return;composerRef.current?.focus();}}><textarea ref={composerRef} id="tour-composer-input" className="tour-composer-input" value={chatInput} rows={2} maxLength={8000} placeholder="对导游说" aria-label="对导游说" onChange={e=>{if(asrBusy){recorderRef.current?.cancel();setAsrBusy(false);setRecordingState('已取消识别，保留编辑文字。');}setChatInput(e.target.value);}} onCompositionStart={()=>{composingRef.current=true;}} onCompositionEnd={()=>{composingRef.current=false;}} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing&&!composingRef.current){e.preventDefault();void submitTourText(chatInput);}}}/><div className="tour-composer-actions"><button type="button" className={'composer-icon mic'+(asrBusy?' recording':'')} aria-label={asrBusy?'停止录音并识别':'语音输入'} title={asrBusy?'停止录音并识别':'语音输入'} disabled={recorderRef.current?.state==='transcribing'} onClick={()=>asrBusy?recorderRef.current?.finish():void startListening()}>{asrBusy?<StopIcon/>:<MicIcon/>}</button>{laneBusy.chat?<button type="button" className="composer-icon send cancel" aria-label="取消本次回答" title="取消本次回答" onClick={()=>void cancelLane('chat')}><StopIcon/></button>:<button type="button" className="composer-icon send" aria-label="发送" title="发送" disabled={!chatInput.trim()||asrBusy} onClick={()=>void submitTourText(chatInput)}><SendIcon/></button>}</div></div>
+{dialogContext&&<div className="context-chip">正在聊：{dialogContext.name}<button onClick={()=>rememberPoi(null)} aria-label="清除对话地点">×</button></div>}
+<ChatComposer ref={composerRef} draft={composerDraft} recording={asrBusy} transcribing={recorderRef.current?.state==='transcribing'} busy={laneBusy.chat}
+ onSubmit={text=>void submitTextRef.current(text)} onCancel={()=>void cancelLane('chat')} onRecord={()=>asrBusy?recorderRef.current?.finish():void startListening()}
+ onEdit={()=>{if(asrBusy){recorderRef.current?.cancel();setAsrBusy(false);setRecordingState('已取消识别，保留编辑文字。');}}}/>
 {recordingState&&<p role="status">{recordingState}{asrBusy&&<button onClick={()=>{void stopListening();setRecordingState('录音与识别已取消。');}}>取消录音/识别</button>}</p>}
 <div className="tour-composer-foot"><details className="tour-voice-more"><summary>语音设置</summary><div className="tour-voice-menu"><p>录音停止后转成可编辑文字，由你确认发送，不会自动执行路线。</p><div className="tour-voice-buttons"><button type="button" className="tour-voice-action" onClick={()=>void enableSpeech()}>开启中文播报</button><button type="button" className="tour-voice-action danger" onClick={()=>void speechControllerRef.current?.stop('user')}>停止播报</button></div></div></details><button type="button" className="tour-chat-clear" onClick={clearChat} disabled={campusChatTasks.length===0}>清空对话</button></div></>}/>
     <div className={`drawer-backdrop ${logsOpen ? 'open' : ''}`} onClick={() => setLogsOpen(false)}/><aside className={`log-drawer ${logsOpen ? 'open' : ''}`} inert={!logsOpen} aria-hidden={!logsOpen}><header><div><strong>{logRequest ? `请求 ${logRequest.slice(0, 8)} 的日志` : '当前会话日志'}</strong><span>仅显示服务返回的真实事件</span></div><button onClick={() => setLogsOpen(false)}>关闭</button></header><div className="drawer-tools"><button disabled={!shownEvents.length} onClick={() => { const blob = new Blob([sanitizedLogExport(shownEvents)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'ai4tju-runtime-events.json'; anchor.click(); URL.revokeObjectURL(url); }}>脱敏导出</button></div><div className="log-list">{shownEvents.length === 0 ? <p>尚无实际运行事件。</p> : shownEvents.map((event) => <article key={`${event.origin}:${event.event_id}`}><i className={event.status}/><div><strong>{event.origin === 'backend' ? '后端' : '浏览器'} · {event.stage}</strong><span>{event.status} · {event.duration_ms == null ? '耗时未返回' : `${Math.round(event.duration_ms)} ms`}</span><time>{new Date(event.timestamp).toLocaleTimeString('zh-CN', { hour12: false })}</time></div></article>)}</div></aside>

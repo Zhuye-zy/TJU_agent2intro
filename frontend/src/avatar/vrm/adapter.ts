@@ -10,6 +10,7 @@ type VrmRendererLike = {
   setAudioLevel(level: number): void;
   setScale(scale: number): void;
   setCompanionVideo(video: CompanionVideo): void;
+  setPresentationHost(host:HTMLElement|null):void;
   dispose(): void;
 };
 
@@ -21,6 +22,7 @@ export class VrmAvatarAdapter implements AvatarAdapter {
   private pendingState: AvatarState = 'idle';
   private pendingScale = 1;
   private pendingVideo: CompanionVideo = null;
+  private presentationHost:HTMLElement|null=null;
 
   async mount(host: HTMLElement): Promise<AdapterResult> {
     this.dispose();
@@ -39,6 +41,7 @@ export class VrmAvatarAdapter implements AvatarAdapter {
       renderer.setState(this.pendingState);
       renderer.setScale(this.pendingScale);
       renderer.setCompanionVideo(this.pendingVideo);
+      renderer.setPresentationHost(this.presentationHost);
       return result;
     } catch {
       this.renderer = undefined;
@@ -64,6 +67,8 @@ export class VrmAvatarAdapter implements AvatarAdapter {
     this.pendingVideo = video;
     this.renderer?.setCompanionVideo(video);
   }
+
+  setPresentationHost(host:HTMLElement|null):void{this.presentationHost=host;this.renderer?.setPresentationHost(host);}
 
   dispose(): void {
     this.generation += 1;

@@ -61,7 +61,7 @@ test('I06-I08 map/manual origin, route retention, late route cancellation, missi
  const online=nodes(h.tree).find(n=>n.props?.className==='online-map-wrap');assert.equal(online.props.hidden,false);assert.ok(text(h.tree).includes('步行方案'));
  directory(h,samples[4].name).props.onClick();await h.settle();assert.equal(r.drawn.length,1);assert.ok(text(h.tree).includes('步行方案'));
  let finish;const original=r.map.navigate;r.map.navigate=async req=>new Promise(resolve=>finish=()=>original(req).then(resolve));button(h,'从起点步行到这里').onClick();await h.settle();button(h,'清空路线').onClick();finish();await h.settle();assert.equal(r.drawn.length,0);
- r.map.findDestination=async()=>{throw Error('destination_not_found');};directory(h,samples[2].name).props.onClick();await h.settle();assert.equal(r.destination,null);assert.ok(text(h.tree).includes('暂未定位'));assert.ok(text(h.tree).includes(samples[2].description));
+ r.map.findDestination=async()=>{throw Error('destination_not_found');};directory(h,samples[2].name).props.onClick();await h.settle();assert.equal(r.destination,null);assert.ok(text(h.tree).includes('暂未定位'));assert.ok(nodes(h.tree).some(n=>n.type?.name==='PoiProfile'&&n.props.poi.id===samples[2].id&&n.props.poi.description===samples[2].description)); // This fixture does not render child components; Chrome verifies visibility.
  input(h,'手动起点经度').onChange({target:{value:'181'}});input(h,'手动起点纬度').onChange({target:{value:'39'}});await h.settle();button(h,'应用').onClick();await h.settle();assert.ok(text(h.tree).includes('请输入有效'));
  h.dispose();
 });

@@ -29,7 +29,7 @@ export class MandarinRecorder {
  private release(){if(this.timer)clearTimeout(this.timer);this.timer=null;this.stream?.getTracks().forEach(t=>t.stop());this.stream=null;}
  private async transcribe(sessionId:string,epoch:number,mime:string){
   this.state='transcribing';this.update('正在识别普通话，可取消…');const abort=new AbortController();this.abort=abort;
-  const timer=setTimeout(()=>abort.abort(),35000);let context:AudioContext|null=null;
+  const timer=setTimeout(()=>abort.abort(),65000);let context:AudioContext|null=null;
   try{
    const blob=new Blob(this.chunks,{type:mime});this.chunks=[];if(blob.size<100)throw Error('录音为空，请重试。');
    context=new AudioContext();const decoded=await context.decodeAudioData(await blob.arrayBuffer());
