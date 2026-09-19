@@ -140,7 +140,7 @@ test('tour constraints expose five ordered slots and compact cleared selections'
 
 const photosOutput=await build({configFile:false,logLevel:'silent',build:{write:false,minify:false,lib:{entry:'frontend/src/ui/tour-photos.ts',formats:['es'],fileName:()=> 'tour-photos.js'}}});
 const photosChunk=(Array.isArray(photosOutput)?photosOutput[0]:photosOutput).output.find(v=>v.type==='chunk');
-const {tourPhotoFor}=await import('data:text/javascript;base64,'+Buffer.from(photosChunk.code).toString('base64'));
+const {tourPhotoFor,tourPhotosFor}=await import('data:text/javascript;base64,'+Buffer.from(photosChunk.code).toString('base64'));
 test('visible Weijin photo gaps reuse related resources under their own names',()=>{
  const expected={
   'weijinlu-09-teaching':['第九教学楼','/assets/campus/photos/weijinlu-25-teaching-1.jpg'],
@@ -159,6 +159,15 @@ test('visible Weijin photo gaps reuse related resources under their own names',(
   assert.equal(photo.placeholder,undefined);
   assert.ok(!photo.caption.includes('复用'));
  }
+});
+test('narration photo sets expose every numbered point image',()=>{
+ const library=tourPhotosFor('beiyangyuan-zhengdong-library','郑东图书馆');
+ assert.deepEqual(library.map(photo=>photo.src),[
+  '/assets/campus/photos/beiyangyuan-zhengdong-library-1.jpg',
+  '/assets/campus/photos/beiyangyuan-zhengdong-library-2.jpg',
+  '/assets/campus/photos/beiyangyuan-zhengdong-library-3.jpg',
+ ]);
+ assert.ok(library.every(photo=>photo.caption==='郑东图书馆'));
 });
 test('tour stop photos: unmapped stops keep a clearly marked placeholder slot',()=>{
  const photo=tourPhotoFor('poi-without-photo','第九教学楼');

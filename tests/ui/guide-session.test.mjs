@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {build} from 'vite';
 import {pathToFileURL} from 'node:url';
 await build({configFile:false,logLevel:'silent',build:{outDir:'.runtime/guide-session-tests',emptyOutDir:false,minify:false,lib:{entry:'tests/ui/guide-entry.ts',formats:['es'],fileName:()=> 'guide.js'}}});
-const {introductionIntent,NarrationSession,cachedRead,CampusSpeechController,presentationText}=await import(pathToFileURL(process.cwd()+'/.runtime/guide-session-tests/guide.js'));
+const {introductionIntent,NarrationSession,cachedRead,CampusSpeechController,presentationText,tourPhotosFor}=await import(pathToFileURL(process.cwd()+'/.runtime/guide-session-tests/guide.js'));
 const poi=(id,name,campus='weijinlu')=>({id,name,campus_id:campus,aliases:[],description:'校园里的参观地点。'});
 const a=poi('a','第九教学楼'),b=poi('b','郑东图书馆','beiyangyuan');
 const flush=()=>new Promise(r=>setTimeout(r,0));
@@ -44,20 +44,21 @@ test('shared read cancels consumers independently and never mixes campus/cache k
 function speechMock(){
  let listener;return {runs:[],subscribe(fn){listener=fn;return()=>{};},enable:async()=>({status:'ready'}),stop:async()=>{},pause:async()=>({status:'ready'}),resume:async()=>({status:'ready'}),playFull:async function(run,text){this.runs.push({run,text});return {status:'ready'};},emit(value){listener(value);}};
 }
-test('late media and speech from a replaced or stopped introduction cannot resurrect its presentation',async t=>{
+test('narration binds a point-specific image carousel and ignores late speech from the replaced point',async t=>{
  const original=globalThis.fetch;t.after(()=>globalThis.fetch=original);
- const mediaA=deferred(),mediaB=deferred();
- globalThis.fetch=async url=>String(url).includes('/videos/search')?(String(url).includes('poi_id=a')?mediaA.promise:mediaB.promise):Response.json({evidence:[]});
+ const requests=[];globalThis.fetch=async url=>{requests.push(String(url));return Response.json({evidence:[]});};
+ const photoA=poi('weijinlu-aiwan-lake','爱晚湖'),photoB=poi('beiyangyuan-zhengdong-library','郑东图书馆','beiyangyuan');
  const speech=speechMock();let current;const session=new NarrationSession(speech,value=>current=value);t.after(()=>session.dispose());
- await session.start(a,'a',crypto.randomUUID(),'v');const old=current.id;
- await session.start(b,'b',crypto.randomUUID(),'v');const next=current.id;
- mediaA.resolve(Response.json({video:{poi_id:'a',campus_id:'weijinlu',src:'/api/knowledge/videos/file/a.mp4'}}));
- speech.emit({generation_id:old,status:'speaking',text:'old'});await flush();assert.equal(current.id,next);assert.equal(current.video,null);
- await session.stop();mediaB.resolve(Response.json({video:{poi_id:'b',campus_id:'beiyangyuan',src:'/api/knowledge/videos/file/b.mp4'}}));await flush();
- assert.equal(current.status,'stopped');assert.equal(current.video,null);
+ await session.start(photoA,'a',crypto.randomUUID(),'v');const old=current.id;assert.equal(current.photos.length,2);
+ await session.start(photoB,'b',crypto.randomUUID(),'v');const next=current.id;
+ speech.emit({generation_id:old,status:'speaking',text:'old'});await flush();assert.equal(current.id,next);assert.equal(current.photos.length,3);assert.ok(current.photos.every(photo=>photo.caption==='郑东图书馆'));
+ await session.stop();assert.equal(current.status,'stopped');assert.ok(requests.every(url=>!url.includes('/videos/search')));
+});
+test('reused image sequences keep the target point identity',()=>{
+ const photos=tourPhotosFor('weijinlu-gym','体育馆');assert.equal(photos.length,2);assert.ok(photos.every(photo=>photo.caption==='体育馆'));assert.match(photos[1].src,/-2\.jpg$/);
 });
 test('permission failure has an actionable session retry, not permanent fake buffering',async t=>{
- const original=globalThis.fetch;t.after(()=>globalThis.fetch=original);globalThis.fetch=async url=>Response.json(String(url).includes('/videos/search')?{video:null}:{evidence:[]});
+ const original=globalThis.fetch;t.after(()=>globalThis.fetch=original);globalThis.fetch=async()=>Response.json({evidence:[]});
  const speech=speechMock();speech.enable=async()=>({status:'failed'});let current;const session=new NarrationSession(speech,v=>current=v);t.after(()=>session.dispose());
  await session.start(a,'permission-retry',crypto.randomUUID(),'v');assert.equal(current.status,'error');
  speech.enable=async()=>({status:'ready'});await session.resume();assert.equal(speech.runs.length,1);assert.notEqual(current.status,'error');

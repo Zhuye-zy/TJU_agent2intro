@@ -72,6 +72,44 @@ const PHOTOS: Record<string, TourPhoto> = {
   'weijinlu-dorm-san': { src: '/assets/campus/photos/beiyangyuan-dorm-cheng-1.jpg', caption: '三斋', creator: '用户提供', license: '本机导览使用', sourceUrl: null },
 };
 
+// Web assets use a stable `<poi>-N.jpg` sequence. Entries omitted here have one image.
+// Reused point images inherit the complete source sequence while keeping the target caption.
+const PHOTO_COUNTS: Record<string, number> = {
+  'beiyangyuan-datong-center': 2,
+  'beiyangyuan-earthquake-facility': 3,
+  'beiyangyuan-east-gate': 2,
+  'beiyangyuan-gaokao-wall': 2,
+  'beiyangyuan-gym': 2,
+  'beiyangyuan-main-building': 3,
+  'beiyangyuan-memorial-pavilion': 2,
+  'beiyangyuan-qiushi-hall': 3,
+  'beiyangyuan-sanwen-bridge': 2,
+  'beiyangyuan-shutian-square': 2,
+  'beiyangyuan-suzhou-pavilion': 3,
+  'beiyangyuan-tailei-square': 2,
+  'beiyangyuan-tianlin-square': 2,
+  'beiyangyuan-xingsun-building': 3,
+  'beiyangyuan-xuanhuai-square': 2,
+  'beiyangyuan-xue-1-dining': 2,
+  'beiyangyuan-xue-2-dining': 2,
+  'beiyangyuan-xue-3-dining': 3,
+  'beiyangyuan-zhengdong-library': 3,
+  'weijinlu-aiwan-lake': 2,
+  'weijinlu-alumni-home': 2,
+  'weijinlu-beiyang-square': 2,
+  'weijinlu-chunshui-library': 2,
+  'weijinlu-east-gate': 2,
+  'weijinlu-feng-jicai': 2,
+  'weijinlu-history-museum': 2,
+  'weijinlu-newton-tree': 2,
+  'weijinlu-qiushi-pavilion': 2,
+  'weijinlu-science-library': 2,
+  'weijinlu-stadium': 2,
+  'weijinlu-student-center': 2,
+  'weijinlu-youth-lake': 2,
+  'weijinlu-youyi-lake': 2,
+};
+
 function placeholderImage(title: string): string {
   const safe = title.replace(/[<>&"']/g, '').slice(0, 24);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400">`
@@ -90,6 +128,16 @@ export function tourPhotoFor(poiId: string, title: string): TourPhoto {
   const photo = PHOTOS[poiId];
   if (photo && photo.src) return photo;
   return { src: placeholderImage(title), caption: title, placeholder: true };
+}
+
+export function tourPhotosFor(poiId: string, title: string): TourPhoto[] {
+  const primary = tourPhotoFor(poiId, title);
+  if (primary.placeholder) return [primary];
+  const match = primary.src.match(/^(.*)-1\.jpg$/);
+  if (!match) return [primary];
+  const sourceId = match[1].split('/').at(-1) ?? '';
+  const count = PHOTO_COUNTS[sourceId] ?? 1;
+  return Array.from({length: count}, (_, index) => ({...primary, src: `${match[1]}-${index + 1}.jpg`}));
 }
 
 export function registeredPhotos(): Array<{ poiId: string; src: string; caption: string; campus: CampusId }> {

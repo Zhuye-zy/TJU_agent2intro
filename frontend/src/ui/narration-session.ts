@@ -1,12 +1,12 @@
 import type {POI, SpeechProgress, SpeechRun} from '../../../shared/r2';
 import type {CampusSpeechController} from '../speech/controller';
 import {tourKnowledgeContext} from '../transport/r3-knowledge';
-import {findTourVideo,type TourVideo} from './tour-videos';
+import {tourPhotosFor,type TourPhoto} from './tour-photos';
 
 export type NarrationStatus='preparing'|'playing'|'buffering'|'paused'|'ended'|'stopped'|'error';
 export interface NarrationSnapshot {
   id:string; poi:POI; status:NarrationStatus; text:string; caption:string;
-  video:TourVideo|null; mediaStatus:'loading'|'ready'|'missing'|'failed'; error:string|null;
+  photos:TourPhoto[]; mediaStatus:'ready'|'missing'; error:string|null;
 }
 export function guideTrace(event:string,fields:Record<string,unknown>={}) {
   if(typeof window==='undefined')return;
@@ -33,13 +33,11 @@ export class NarrationSession {
     this.paused=false;
     this.lastStart={poi,topic,sessionId,voiceId};this.started=false;
     const id=crypto.randomUUID(), abort=new AbortController();this.abort=abort;
-    this.active={id,poi,status:'preparing',text:poi.name+'。'+poi.description,caption:'',video:null,mediaStatus:'loading',error:null};
+    const photos=tourPhotosFor(poi.id,poi.name);
+    this.active={id,poi,status:'preparing',text:poi.name+'。'+poi.description,caption:'',photos,mediaStatus:photos[0]?.placeholder?'missing':'ready',error:null};
     this.publish(this.active);guideTrace('introduction.request',{id,poi:poi.id,campus:poi.campus_id});
     const current=()=>this.active?.id===id&&!abort.signal.aborted;
-    // Prepare independent resources concurrently. Missing media cannot block narration.
-    void findTourVideo(poi.id,poi.campus_id,topic,abort.signal).then(video=>{
-      if(current()&&!['ended','stopped','error'].includes(this.active!.status))this.update({video,mediaStatus:video?'ready':'missing'});
-    }).catch(()=>{if(current())this.update({mediaStatus:'failed'});});
+    // Point-specific image sets are local and never block narration preparation.
     const context=tourKnowledgeContext(poi.id,poi.campus_id,undefined,abort.signal).catch(()=>null);
     const enabled=await this.speech.enable(true);
     if(!current())return;

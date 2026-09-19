@@ -58,6 +58,7 @@
 .narration-visual video,.narration-visual img{width:100%;height:100%;object-fit:contain;display:block;background:#dce9ed}
 .narration-visual .place-cover{min-height:0;border-radius:0;padding:12px;gap:8px}.narration-visual .place-cover strong{font-size:20px}
 .media-caption{position:absolute;bottom:8px;left:8px;font-size:11px;padding:3px 7px;background:#ffffffed;border-radius:6px;color:#234d60}
+.tour-workspace .media-arrow{position:absolute;top:50%;translate:0 -50%;z-index:3;width:34px;min-height:42px;padding:0;border:0;border-radius:0 9px 9px 0;background:#ffffffd9;color:#17495e;font-size:28px;line-height:1}.tour-workspace .media-arrow.prev{left:0}.tour-workspace .media-arrow.next{right:0;border-radius:9px 0 0 9px}.media-dots{position:absolute;left:50%;bottom:10px;translate:-50% 0;display:flex;gap:6px;z-index:3}.tour-workspace .media-dots button{width:8px;height:8px;min-height:0;padding:0;border:1px solid #fff;border-radius:50%;background:#315b6b99;box-shadow:0 1px 3px #0004}.tour-workspace .media-dots button.active{width:20px;border-radius:8px;background:#fff}
 .tour-workspace .media-expand{position:absolute;right:8px;top:8px;min-height:28px;padding:4px 8px;font-size:12px;background:#ffffffed}
 .narration-subtitle{font-size:15px!important;color:#214b5e!important;line-height:1.8!important;max-height:110px;overflow:auto;padding:12px;background:#fff;border-radius:9px}
 .narration-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}.narration-controls>span{font-size:12px}

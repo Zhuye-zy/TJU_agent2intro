@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
 const root='docs/interaction/20260918-ui-sync';await fs.mkdir(root,{recursive:true});
 const browser=await chromium.launch({channel:'chrome',headless:true});
-const report={browser:await browser.version(),mode:'real Chrome, real backend, real TTS, local photo film',scenarios:[],errors:[]};
+const report={browser:await browser.version(),mode:'real Chrome, real backend, real TTS, local point image carousel',scenarios:[],errors:[]};
 async function makePage(viewport={width:1440,height:900}){
  const page=await browser.newPage({viewport});page.on('pageerror',e=>report.errors.push(e.message));
  await page.addInitScript(()=>{window.__mediaEvents=[];const play=HTMLMediaElement.prototype.play,seen=new WeakSet();HTMLMediaElement.prototype.play=function(){if(!seen.has(this)){seen.add(this);for(const event of ['playing','pause','ended','loadedmetadata','error'])this.addEventListener(event,()=>window.__mediaEvents.push({event,tag:this.tagName,at:performance.now(),time:this.currentTime,src:this.currentSrc,muted:this.muted}));}return play.call(this);};});
@@ -15,55 +15,48 @@ async function send(page,text){
 }
 async function dimensions(page){return page.evaluate(()=>{
  const card=document.querySelector('.poi-card'),r=card.getBoundingClientRect();
- return {viewport:innerWidth,body:document.documentElement.scrollWidth,card:{width:r.width,height:r.height,client:card.clientHeight,scroll:card.scrollHeight},children:[...card.querySelectorAll('.poi-profile,.poi-actions')].map(e=>({name:e.className,...e.getBoundingClientRect().toJSON()})),video:[...card.querySelectorAll('video')].map(v=>({width:v.videoWidth,height:v.videoHeight,paused:v.paused,time:v.currentTime,muted:v.muted}))};
+ return {viewport:innerWidth,body:document.documentElement.scrollWidth,card:{width:r.width,height:r.height,client:card.clientHeight,scroll:card.scrollHeight},children:[...card.querySelectorAll('.poi-profile,.poi-actions')].map(e=>({name:e.className,...e.getBoundingClientRect().toJSON()})),images:[...card.querySelectorAll('.narration-visual img')].map(img=>({src:img.getAttribute('src'),alt:img.getAttribute('alt')}))};
 });}
 async function scenario(name,fn){try{const data=await fn();report.scenarios.push({name,pass:true,...data});console.log('PASS '+name);}catch(e){report.scenarios.push({name,pass:false,error:String(e)});console.log('FAIL '+name+': '+e.message);}}
 let page;
 try{
  page=await makePage();
- await scenario('named introduction switches to correct campus and automatically plays matching film',async()=>{
+ await scenario('named introduction switches to correct campus and rotates matching point images',async()=>{
   await send(page,'介绍一下郑东图书馆');
   await page.locator('[data-poi-id="beiyangyuan-zhengdong-library"]').waitFor({timeout:12000});
-  await page.locator('.narration-visual video').waitFor({timeout:12000});
-  await page.waitForFunction(()=>{const v=document.querySelector('.narration-visual video');return v&&!v.paused&&v.currentTime>0.1;},null,{timeout:40000});
+  await page.locator('.narration-visual img').waitFor({timeout:12000});
+  await page.waitForFunction(()=>document.querySelector('.guide-presentation')?.dataset.narrationStatus==='playing',null,{timeout:40000});
+  const first=await page.locator('.narration-visual img').getAttribute('src');await page.waitForFunction(src=>document.querySelector('.narration-visual img')?.getAttribute('src')!==src,first,{timeout:7000});
   if(await page.locator('.tour-panel.open').count())await page.locator('.open-guide').click();
-  assert.equal(await page.locator('video').count(),1);
-  assert.equal(await page.locator('video[src]').count(),1);
-  const trace=await page.evaluate(()=>window.__guideTrace),speech=trace.find(e=>e.event==='speech.speaking'),video=trace.find(e=>e.event==='video.playing');
-  assert.ok(speech&&video);const delta=video.at-speech.at;
+  assert.equal(await page.locator('.narration-visual video').count(),0);assert.equal(await page.locator('.narration-visual img').count(),1);
+  const trace=await page.evaluate(()=>window.__guideTrace),speech=trace.find(e=>e.event==='speech.speaking');assert.ok(speech);
   await page.locator('.guide-presentation').screenshot({path:root+'/holding-detail.png'});await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:root+'/desktop-playing-1440.png',fullPage:true});
-  return {startupDeltaMs:delta,origin:'audio onplaying to video playing; local film, first browser load',dimensions:await dimensions(page)};
+  return {first,second:await page.locator('.narration-visual img').getAttribute('src'),origin:'point-specific local images rotate during real narration',dimensions:await dimensions(page)};
  });
- await scenario('pause and resume preserve both audio and video positions',async()=>{
+ await scenario('pause freezes the carousel and resume continues it',async()=>{
   await page.locator('.poi-actions button').first().click();await page.waitForFunction(()=>document.querySelector('.guide-presentation')?.dataset.narrationStatus==='paused');
-  const before=await page.locator('.narration-visual video').evaluate(v=>v.currentTime);await page.waitForTimeout(600);const after=await page.locator('.narration-visual video').evaluate(v=>v.currentTime);assert.ok(Math.abs(after-before)<.05);
-  let trace=await page.evaluate(()=>window.__guideTrace),command=trace.findLast(e=>e.event==='command.pause'),pause=trace.findLast(e=>e.event==='video.pause');
-  await page.locator('.poi-actions button').first().click();await page.waitForFunction(()=>{const v=document.querySelector('.narration-visual video');return v&&!v.paused;});
-  assert.ok(await page.locator('.narration-visual video').evaluate((v,t)=>v.currentTime>=t,before));
-  return {pauseResponseMs:pause.at-command.at,pausedPosition:before,resumedPosition:await page.locator('.narration-visual video').evaluate(v=>v.currentTime)};
+  const before=await page.locator('.narration-visual img').getAttribute('src');await page.waitForTimeout(5000);assert.equal(await page.locator('.narration-visual img').getAttribute('src'),before);
+  await page.locator('.poi-actions button').first().click();await page.waitForFunction(()=>document.querySelector('.guide-presentation')?.dataset.narrationStatus==='playing');
+  await page.waitForFunction(src=>document.querySelector('.narration-visual img')?.getAttribute('src')!==src,before,{timeout:7000});
+  return {pausedImage:before,resumedImage:await page.locator('.narration-visual img').getAttribute('src')};
  });
- await scenario('audio segment changes retain one video load',async()=>{
+ await scenario('audio segment changes retain one point carousel',async()=>{
   await page.waitForFunction(()=>new Set(window.__guideTrace.filter(e=>e.event==='speech.speaking').map(e=>e.utterance)).size>=2,null,{timeout:35000});
-  const events=await page.evaluate(()=>window.__mediaEvents);const videos=events.filter(e=>e.tag==='VIDEO');
-  assert.ok(videos.filter(e=>e.event==='loadedmetadata').length<=1);assert.ok(await page.locator('.narration-visual video').evaluate(v=>v.currentTime>0));
-  return {mediaEvents:videos};
+  assert.equal(await page.locator('.narration-visual img').count(),1);assert.match(await page.locator('.media-caption').innerText(),/图片轮播/);
+  return {image:await page.locator('.narration-visual img').getAttribute('src')};
  });
- await scenario('stop pauses visual within the session and returns stable frame',async()=>{
+ await scenario('stop freezes the carousel on a stable image',async()=>{
   await page.locator('.narration-controls').getByRole('button',{name:'停止讲解',exact:true}).click();
   await page.waitForFunction(()=>document.querySelector('.guide-presentation')?.dataset.narrationStatus==='stopped');
-  assert.ok(await page.locator('.narration-visual video').evaluate(v=>v.paused));
-  const trace=await page.evaluate(()=>window.__guideTrace),stop=trace.findLast(e=>e.event==='session.stop'),pause=trace.findLast(e=>e.event==='video.pause');
-  return {stopResponseMs:pause.at-stop.at};
+  const image=await page.locator('.narration-visual img').getAttribute('src');await page.waitForTimeout(5000);assert.equal(await page.locator('.narration-visual img').getAttribute('src'),image);return {image};
  });
- await scenario('here introduction uses current selection and cached local video',async()=>{
+ await scenario('here introduction uses current selection and local point images',async()=>{
   await send(page,'介绍一下这里');await page.waitForFunction(()=>document.querySelector('.guide-presentation')?.dataset.narrationStatus==='playing',null,{timeout:40000});
-  await page.waitForFunction(()=>document.querySelector('.narration-visual video')?.paused===false);
-  const trace=await page.evaluate(()=>window.__guideTrace),id=await page.locator('.guide-presentation').getAttribute('data-narration-id'),events=trace.filter(e=>e.id===id);
-  const delta=events.find(e=>e.event==='video.playing').at-events.find(e=>e.event==='speech.speaking').at;
+  await page.locator('.narration-visual img').waitFor();
   await send(page,'暂停');await page.waitForFunction(()=>document.querySelector('.guide-presentation')?.dataset.narrationStatus==='paused');
   await send(page,'继续');await page.waitForFunction(()=>document.querySelector('.guide-presentation')?.dataset.narrationStatus==='playing');
   await send(page,'停止讲解');await page.waitForFunction(()=>document.querySelector('.guide-presentation')?.dataset.narrationStatus==='stopped');
-  return {cachedStartupDeltaMs:delta};
+  return {image:await page.locator('.narration-visual img').getAttribute('src')};
  });
  await scenario('selecting and navigating do not start narration',async()=>{
   await page.getByRole('combobox',{name:'当前介绍地点'}).selectOption('beiyangyuan-datong-center');
@@ -81,7 +74,7 @@ try{
   await p.evaluate(()=>scrollTo(0,0));await p.screenshot({path:`${root}/card-${size.width}.png`,fullPage:true});
   const d=await dimensions(p);assert.ok(d.card.height>250);assert.ok(d.card.scroll<=d.card.client+2);assert.ok(d.body<=size.width+1);
   assert.ok(!/资料查询：|已取得依据|未取得依据|核查通过|资料待核验/.test(await p.locator('body').innerText()));
-  await p.locator('.poi-actions button').first().click();await p.waitForFunction(()=>document.querySelector('.narration-visual video')?.paused===false,null,{timeout:40000});
+  await p.locator('.poi-actions button').first().click();await p.waitForFunction(()=>document.querySelector('.narration-visual img')&&document.querySelector('.guide-presentation')?.dataset.narrationStatus==='playing',null,{timeout:40000});
   await p.locator('.guide-presentation').scrollIntoViewIfNeeded();
   const boxes=await p.evaluate(()=>{const a=document.querySelector('.narration-visual').getBoundingClientRect(),b=document.querySelector('.guide-presentation>header').getBoundingClientRect();return {mediaTop:a.top,headerBottom:b.bottom};});assert.ok(boxes.mediaTop>=boxes.headerBottom);
   await p.evaluate(()=>scrollTo(0,0));await p.screenshot({path:`${root}/playing-${size.width}.png`,fullPage:true});

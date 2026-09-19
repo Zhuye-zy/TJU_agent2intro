@@ -20,15 +20,15 @@ try{
   const answer=await p.locator('.tour-chat-history .task-card').last().locator('.task-body').innerText();assert.ok(answer.length>20);assert.ok(!answer.includes('先选择'));assert.equal(await p.locator('.guide-presentation').count(),0);
   await p.screenshot({path:root+'/general-conversation.png',animations:'disabled'});return {layer:'real model stream',answer:answer.slice(0,600)};
  });
- await scenario('ordinary point question establishes context; follow-up introduces with matching video',async()=>{
+ await scenario('ordinary point question establishes context; follow-up introduces with matching image carousel',async()=>{
   await send('郑东图书馆是什么？');await p.locator('.tour-chat-history .task-card').last().waitFor();
   await p.waitForFunction(()=>document.querySelector('.context-chip')?.textContent.includes('郑东图书馆'));
   assert.equal(await p.locator('.guide-presentation').count(),0);
-  await send('请进一步介绍');await p.waitForFunction(()=>document.querySelector('.narration-visual video')?.paused===false,null,{timeout:45000});
+  await send('请进一步介绍');await p.waitForFunction(()=>document.querySelector('.narration-visual img')&&document.querySelector('.guide-presentation')?.dataset.narrationStatus==='playing',null,{timeout:45000});
   assert.equal(await p.locator('.poi-card').getAttribute('data-poi-id'),'beiyangyuan-zhengdong-library');
   assert.ok((await p.locator('.tour-chat-history').innerText()).includes('请进一步介绍'));assert.ok((await p.locator('.tour-chat-history').innerText()).includes('北洋园校区图书馆'));
-  await p.locator('.open-guide').click();await p.locator('.guide-presentation').screenshot({path:root+'/context-video.png'});await p.locator('.open-guide').click();
-  return {layer:'real context and real TTS/local photo film'};
+  await p.locator('.open-guide').click();await p.locator('.guide-presentation').screenshot({path:root+'/context-carousel.png'});await p.locator('.open-guide').click();
+  return {layer:'real context and real TTS/local point image carousel'};
  });
  await scenario('typing and IME stay usable during narration; controls and next draft survive',async()=>{
   const input=p.getByRole('textbox',{name:'对导游说',exact:true});await input.fill('我还想了解它的建筑');await p.waitForTimeout(900);assert.equal(await input.inputValue(),'我还想了解它的建筑');
@@ -40,7 +40,7 @@ try{
  await scenario('a broad topic clears the old selected-point context for further explanation',async()=>{
   const request=p.waitForRequest(r=>r.url().endsWith('/api/chat/stream'));await send('介绍天津大学的文化');assert.equal((await request).postDataJSON().selected_poi_id,null);
   const follow=p.waitForRequest(r=>r.url().endsWith('/api/chat/stream'));await send('请进一步介绍');assert.equal((await follow).postDataJSON().selected_poi_id,null);assert.equal(await p.locator('.guide-presentation').count(),0);
-  await send('停止讲解');return {layer:'real request identity, no old library video'};
+  await send('停止讲解');return {layer:'real request identity, no old library carousel'};
  });
  await scenario('hung answer and cancel endpoints cannot lock a replacement question',async()=>{
   let release,streamCount=0,cancelCount=0;const gate=new Promise(r=>release=r);
